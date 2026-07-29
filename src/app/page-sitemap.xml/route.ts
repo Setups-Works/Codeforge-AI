@@ -19,6 +19,9 @@ export async function GET() {
     { loc: `${base}/careers`, lastmod: now, changefreq: "weekly", priority: 0.6 },
     // /about carries the founder + organisation entity (also in site-wide JSON-LD).
     { loc: `${base}/about`, lastmod: now, changefreq: "monthly", priority: 0.6 },
+    // The founder's own page — the one whose title and H1 are his name, which
+    // is what a name query actually matches on.
+    { loc: `${base}/about/nitheesh-rajendran`, lastmod: now, changefreq: "monthly", priority: 0.6 },
     { loc: `${base}/contact`, lastmod: now, changefreq: "monthly", priority: 0.5 },
     { loc: `${base}/changelog`, lastmod: now, changefreq: "weekly", priority: 0.6 },
     { loc: `${base}/status`, lastmod: now, changefreq: "daily", priority: 0.4 },

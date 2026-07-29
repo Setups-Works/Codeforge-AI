@@ -96,6 +96,10 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
       { protocol: "https", hostname: "avatars.githubusercontent.com" },
+      // Founder portrait, served from the same asset the parent company's site
+      // uses so both entities show one face. next/image throws on an
+      // unlisted remote host, so this is required, not cosmetic.
+      { protocol: "https", hostname: "res.cloudinary.com" },
     ],
   },
   async headers() {

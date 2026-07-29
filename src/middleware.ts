@@ -1,4 +1,5 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextRequest, type NextFetchEvent } from "next/server";
+import { CRAWLER_UA_RE } from "@/lib/crawlers";
 import { createServerClient } from "@supabase/ssr";
 
 const PUBLIC_PREFIXES = [
@@ -69,9 +70,40 @@ function isSameOrigin(req: NextRequest): boolean {
 /** Reject API request bodies larger than this (defense against memory-exhaustion fuzzing). */
 const MAX_BODY_BYTES = 1_000_000; // 1 MB
 
-export async function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest, event: NextFetchEvent) {
   const { pathname } = req.nextUrl;
   const method = req.method;
+
+  /* ---------------------------- crawler logging ---------------------------
+   * Records search-engine and AI-crawler visits, so "is GPTBot actually
+   * reading this site?" is answerable from data rather than assumption.
+   *
+   * Matching the UA proves nothing — /api/crawler-log does the real IP check.
+   * This is only a cheap filter deciding what is worth that cost.
+   *
+   * Wrapped in waitUntil so it extends the middleware's lifetime without
+   * delaying the response: a crawler must never wait on our bookkeeping.
+   */
+  const ua = req.headers.get("user-agent") ?? "";
+  if (CRAWLER_UA_RE.test(ua)) {
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+      req.headers.get("x-real-ip") ??
+      "";
+    event.waitUntil(
+      fetch(new URL("/api/crawler-log", req.nextUrl.origin), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Shared secret so only the middleware can write log entries.
+          "x-crawler-log-key": process.env.CRAWLER_LOG_KEY ?? "",
+        },
+        body: JSON.stringify({ path: pathname, userAgent: ua, ip }),
+      }).catch(() => {
+        // Logging must never surface as an error to the crawler.
+      }),
+    );
+  }
 
   const isMutatingApi =
     pathname.startsWith("/api/") &&

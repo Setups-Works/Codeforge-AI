@@ -39,6 +39,14 @@ const founderLd = {
       "@id": `${SITE}/#org`,
       url: SITE,
     },
+    birthDate: FOUNDER.birthDate,
+    birthPlace: { "@type": "Place", name: FOUNDER.birthPlace },
+    identifier: {
+      "@type": "PropertyValue",
+      propertyID: "Wikidata",
+      value: FOUNDER.wikidataId,
+      url: `https://www.wikidata.org/wiki/${FOUNDER.wikidataId}`,
+    },
     sameAs: [...FOUNDER.sameAs],
   },
 };

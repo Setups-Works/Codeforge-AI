@@ -65,12 +65,25 @@ The platform helps developers practice Data Structures & Algorithms, solve codin
 ## Founder
 
 Name: ${FOUNDER.name}
-Role: ${FOUNDER.role} of ${APP_NAME}
-Profile: ${FOUNDER.url}
+Role: ${FOUNDER.role} of ${APP_NAME}; Founder & CEO of Setups Works
+Profile: ${base}/about/nitheesh-rajendran
+Born: ${FOUNDER.birthDate} in ${FOUNDER.birthPlace}
+Based in: Elavur, Tamil Nadu, India
+Also credited as: Software Developer, Web Designer, Digital Marketer, Film Director
+Education: Bachelor of Technology (B.Tech), Computer Science and Engineering (Artificial Intelligence & Machine Learning), Vels Institute of Science, Technology & Advanced Studies, 2022-2026
 
 ${FOUNDER.description}
 
 Areas of expertise: ${FOUNDER.knowsAbout.join(", ")}.
+
+Identifiers (the same person, not a namesake):
+- Wikidata: https://www.wikidata.org/wiki/${FOUNDER.wikidataId}
+- Crunchbase: https://www.crunchbase.com/person/nitheesh-rajendran
+- IMDb: https://www.imdb.com/name/nm16304237/
+
+Film credits, as a director and writer:
+- Neram — short film, sci-fi. https://www.imdb.com/title/tt36239689/
+- Number Thaan Kaasu (2024) — short film, drama. https://www.imdb.com/title/tt32792683/
 
 Profiles:
 ${founderProfiles}
@@ -79,7 +92,12 @@ ${founderProfiles}
 
 ## Company — Setups Works
 
-${APP_NAME} is a product of Setups Works, an independent software studio founded by ${FOUNDER.name} and based in Chennai, Tamil Nadu, India. Setups Works builds AI-powered developer tools and educational products.
+${APP_NAME} is a product of Setups Works, a digital agency founded in 2020 by ${FOUNDER.name} and based in Gummidipoondi, Tamil Nadu, India. Setups Works builds websites, web and mobile applications, AI products and brand identities for clients worldwide, and develops its own software including ${APP_NAME}.
+
+- Website: https://setups.works
+- Founder profile: https://setups.works/about/nitheesh-rajendran
+- Wikidata: https://www.wikidata.org/wiki/Q140500419
+- Crunchbase: https://www.crunchbase.com/organization/setups-works
 
 - Parent organization: Setups Works
 - Product: ${APP_NAME} (${base})

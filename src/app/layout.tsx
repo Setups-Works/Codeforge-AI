@@ -151,7 +151,24 @@ export default async function RootLayout({
         telephone: "+91-6383984698",
         foundingDate: "2026-06-17",
         founder: { "@id": `${url}/#founder` },
-        parentOrganization: { "@type": "Organization", name: "Setups Works" },
+        /**
+         * The parent was a bare name string, which asserts a relationship to
+         * nothing resolvable — a consumer cannot tell whether "Setups Works"
+         * is the agency Google already knows or a coincidence of naming. The
+         * @id matches the Organization node setups.works publishes, and the
+         * sameAs entries are that entity's own registry identifiers, so the
+         * two graphs describe one company rather than two.
+         */
+        parentOrganization: {
+          "@type": "Organization",
+          "@id": "https://setups.works/#organization",
+          name: "Setups Works",
+          url: "https://setups.works",
+          sameAs: [
+            "https://www.wikidata.org/wiki/Q140500419",
+            "https://www.crunchbase.com/organization/setups-works",
+          ],
+        },
         address: {
           "@type": "PostalAddress",
           addressLocality: "Chennai",
@@ -202,8 +219,20 @@ export default async function RootLayout({
         description: FOUNDER.description,
         knowsAbout: [...FOUNDER.knowsAbout],
         worksFor: { "@id": `${url}/#org` },
-        url: `${url}/about`,
+        url: `${url}/about/nitheesh-rajendran`,
         ...(FOUNDER.image ? { image: FOUNDER.image } : {}),
+        // Birth facts match IMDb exactly, which is what lets Google merge this
+        // node with the Person entity it already holds a panel for.
+        birthDate: FOUNDER.birthDate,
+        birthPlace: { "@type": "Place", name: FOUNDER.birthPlace },
+        // Wikidata as a typed identifier, not only a sameAs link: sameAs says
+        // "this is also me", identifier says "this is my ID in that registry".
+        identifier: {
+          "@type": "PropertyValue",
+          propertyID: "Wikidata",
+          value: FOUNDER.wikidataId,
+          url: `https://www.wikidata.org/wiki/${FOUNDER.wikidataId}`,
+        },
         sameAs: [...FOUNDER.sameAs],
       },
       {
