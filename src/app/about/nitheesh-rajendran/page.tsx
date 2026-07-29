@@ -101,6 +101,9 @@ const graph = {
       "@type": "Movie",
       "@id": `${SITE}${PATH}#film-${slug(f.title)}`,
       name: f.title,
+      // Required by Google's Movie rich result — a node without it is a
+      // critical error, not a warning.
+      image: f.image,
       description: f.description,
       ...(f.year ? { datePublished: f.year } : {}),
       genre: f.format,

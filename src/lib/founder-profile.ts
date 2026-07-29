@@ -72,6 +72,8 @@ export const FOUNDER_PROFILE = {
   films: [
     {
       title: "Neram",
+      // Google treats a Movie without an image as a critical error.
+      image: "https://m.media-amazon.com/images/M/MV5BNDZkZmRjZTItZmQ3Zi00MjNiLTk1YmItNGIwM2M5Y2IyNGE1XkEyXkFqcGc@._V1_.jpg",
       year: "",
       role: "Director, Writer",
       format: "Short film · Sci-Fi",
@@ -81,6 +83,8 @@ export const FOUNDER_PROFILE = {
     },
     {
       title: "Number Thaan Kaasu",
+      // Google treats a Movie without an image as a critical error.
+      image: "https://m.media-amazon.com/images/M/MV5BNWM0MDU1ZWQtZGJkMC00ZTEzLWI4ZGItNDI3OWQ4MWVmN2ViXkEyXkFqcGc@._V1_.jpg",
       year: "2024",
       role: "Director, Writer",
       format: "Short film · Drama",
