@@ -1,6 +1,14 @@
 export const FOUNDER = {
   name: "Nitheesh Rajendran",
 
+  /**
+   * Legal name and the variants people actually type. "Rajendran" is a Tamil
+   * patronymic — his father's name — so the initialised form is the legal one.
+   * These match the aliases on the Wikidata item, so a query for either
+   * resolves to one entity rather than two.
+   */
+  alternateNames: ["Nitheesh D R", "Nitheesh DR", "Nitheesh D.R."],
+
   role: "Founder",
   jobTitle: "Founder",
 

@@ -57,6 +57,7 @@ const graph = {
       "@type": "Person",
       "@id": `${SITE}/#founder`,
       name: FOUNDER.name,
+      alternateName: [...FOUNDER.alternateNames],
       givenName: FOUNDER.name.split(" ")[0],
       familyName: FOUNDER.name.split(" ").slice(1).join(" "),
       // Multiple titles, because Google's own panel describes him as a

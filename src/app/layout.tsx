@@ -215,6 +215,7 @@ export default async function RootLayout({
         "@type": "Person",
         "@id": `${url}/#founder`,
         name: FOUNDER.name,
+        alternateName: [...FOUNDER.alternateNames],
         jobTitle: FOUNDER.role,
         description: FOUNDER.description,
         knowsAbout: [...FOUNDER.knowsAbout],
