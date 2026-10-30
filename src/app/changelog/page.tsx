@@ -10,10 +10,28 @@ export const metadata = {
 
 const RELEASES: Release[] = [
   {
-    version: "3.3.0",
-    date: "July 20, 2026",
+    version: "3.4.0",
+    date: "October 30, 2026",
     tag: "Latest",
     tagColor: "bg-green-500/15 text-green-500 border-green-500/30",
+    changes: {
+      new: [
+        "A cleaner video player in the Editorial tab — YouTube's own title bar, share buttons and “More videos” panel are gone, replaced by our own controls: play/pause, seek, time, mute and fullscreen",
+      ],
+      improved: [
+        "AI mentor, question generation and discussion summaries now run on open-source models (OpenAI gpt-oss) for faster, more reliable responses",
+        "Videos stay covered by a poster while loading, paused or finished, so nothing distracts from the lesson",
+      ],
+      fixed: [
+        "AI features returned a “model not found” error after a model was retired — they now use a currently available model",
+      ],
+    },
+  },
+  {
+    version: "3.3.0",
+    date: "July 20, 2026",
+    tag: "Stable",
+    tagColor: "bg-blue-500/15 text-blue-500 border-blue-500/30",
     changes: {
       new: [
         "Video tutorials in every problem's Editorial tab — a custom player with the language switcher built in: Tamil first, plus English, Hindi, Telugu, Kannada, Bengali, Spanish and Portuguese",
