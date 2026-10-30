@@ -13,22 +13,9 @@ import { cn } from "@/lib/utils";
 
 declare global {
   interface Window {
-    Razorpay: new (opts: Record<string, unknown>) => {
-      open(): void;
-      /** Custom Checkout (headless) — needs enabling on the Razorpay account. */
-      createPayment?(data: Record<string, unknown>): void;
-      on?(event: string, cb: (data: Record<string, unknown>) => void): void;
-    };
+    Razorpay: new (opts: Record<string, unknown>) => { open(): void };
   }
 }
-
-/**
- * Pay with UPI on our own page (VPA entry) instead of Razorpay's popup. Needs
- * Razorpay Custom Checkout enabled on the account; off by default so checkout
- * is unchanged until it is. Cards always use the popup (no card data here).
- */
-const INLINE_UPI = process.env.NEXT_PUBLIC_RAZORPAY_INLINE_UPI === "1";
-const UPI_ID = /^[a-zA-Z0-9._-]{2,256}@[a-zA-Z]{2,64}$/;
 
 interface PaymentSuccess {
   razorpay_payment_id: string;
@@ -93,8 +80,6 @@ export function CheckoutForm({
   // verifying the signature → animated success receipt.
   const [step, setStep] = useState<"billing" | "review" | "processing" | "success">("billing");
   const [paymentId, setPaymentId] = useState<string | null>(null);
-  const [vpa, setVpa] = useState("");
-  const [upiWaiting, setUpiWaiting] = useState(false);
   // Card-on-file trial: the card is authenticated now, the first charge fires
   // when the trial ends. Only offered to eligible accounts.
   const [trial, setTrial] = useState(initialTrial && trialEligible);
@@ -183,7 +168,6 @@ export function CheckoutForm({
   }
 
   async function onPaid(response: PaymentSuccess) {
-    setUpiWaiting(false);
     setStep("processing");
     const verify = await fetch("/api/subscription/verify", {
       method: "POST",
@@ -206,16 +190,7 @@ export function CheckoutForm({
     }
   }
 
-  function payWithUpi() {
-    const id = vpa.trim();
-    if (!UPI_ID.test(id)) {
-      toast.error("Enter a valid UPI ID, e.g. name@okaxis");
-      return;
-    }
-    void pay(id);
-  }
-
-  async function pay(upiVpa?: string) {
+  async function pay() {
     const err = validate();
     if (err) {
       toast.error(err);
@@ -278,6 +253,16 @@ export function CheckoutForm({
         retry: { enabled: true, max_count: 3 },
         timeout: 15 * 60,
         remember_customer: true,
+        // Open the popup with UPI listed first (other methods stay available).
+        config: {
+          display: {
+            blocks: {
+              upi: { name: "Pay with UPI", instruments: [{ method: "upi" }] },
+            },
+            sequence: ["block.upi"],
+            preferences: { show_default_blocks: true },
+          },
+        },
         send_sms_hash: true,
         // Prefilled so Razorpay skips the contact/email step and goes straight
         // to the payment apps (UPI / cards / netbanking).
@@ -302,28 +287,6 @@ export function CheckoutForm({
         handler: onPaid,
       });
 
-      if (upiVpa && INLINE_UPI) {
-        const custom = new window.Razorpay({ key: data.key });
-        if (custom.createPayment && custom.on) {
-          custom.on("payment.success", (r) => void onPaid(r as unknown as PaymentSuccess));
-          custom.on("payment.error", (r) => {
-            const msg = (r as { error?: { description?: string } }).error?.description;
-            toast.error(msg ?? "UPI payment failed — try again or use another method");
-            setUpiWaiting(false);
-            setLoading(false);
-          });
-          setUpiWaiting(true);
-          custom.createPayment({
-            subscription_id: data.subscriptionId,
-            method: "upi",
-            vpa: upiVpa,
-            email: form.email.trim() || session?.user?.email || "",
-            contact: form.phone.trim(),
-          });
-          return;
-        }
-        // Custom Checkout isn't available — fall back to the popup.
-      }
       rzp.open();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Payment failed");
@@ -628,51 +591,16 @@ export function CheckoutForm({
                 Continue to review <ArrowLeft className="size-4 rotate-180" />
               </Button>
             ) : (
-              <>
-                {INLINE_UPI && due > 0 && (
-                  <div className="mt-5 rounded-xl border p-4">
-                    <Label htmlFor="upi-id" className="text-xs font-semibold">Pay with UPI</Label>
-                    <div className="mt-2 flex gap-2">
-                      <Input
-                        id="upi-id"
-                        value={vpa}
-                        onChange={(e) => setVpa(e.target.value)}
-                        placeholder="yourname@okaxis"
-                        autoComplete="off"
-                        inputMode="email"
-                        disabled={loading}
-                      />
-                      <Button onClick={payWithUpi} disabled={loading || !vpa.trim()}>
-                        {upiWaiting ? <Loader2 className="size-4 animate-spin" /> : "Pay"}
-                      </Button>
-                    </div>
-                    <p className="mt-2 text-[11px] text-muted-foreground">
-                      {upiWaiting
-                        ? "Approve the auto-pay request in your UPI app — this page updates automatically."
-                        : "We'll send a request to your UPI app. No popup."}
-                    </p>
-                    <p className="my-3 text-center text-[11px] uppercase tracking-wider text-muted-foreground">or</p>
-                  </div>
-                )}
-                <Button
-                  onClick={() => void pay()}
-                  disabled={loading}
-                  size="lg"
-                  variant={INLINE_UPI && due > 0 ? "outline" : "default"}
-                  className="mt-5 w-full gap-2"
-                >
-                  {loading && !upiWaiting ? <Loader2 className="size-4 animate-spin" /> : <Lock className="size-4" />}
-                  {loading && !upiWaiting
-                    ? "Opening payment…"
-                    : trial
-                      ? `Start ${trialDays}-day free trial`
-                      : due <= 0
-                        ? "Activate plan"
-                        : INLINE_UPI
-                          ? "Pay with card or netbanking"
-                          : `Pay ${formatPrice(due)}`}
-                </Button>
-              </>
+              <Button onClick={() => void pay()} disabled={loading} size="lg" className="mt-5 w-full gap-2">
+                {loading ? <Loader2 className="size-4 animate-spin" /> : <Lock className="size-4" />}
+                {loading
+                  ? "Opening payment…"
+                  : trial
+                    ? `Start ${trialDays}-day free trial`
+                    : due <= 0
+                      ? "Activate plan"
+                      : `Pay ${formatPrice(due)}`}
+              </Button>
             )}
 
             <div className="mt-4 space-y-1.5 text-[11px] text-muted-foreground">
