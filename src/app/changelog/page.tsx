@@ -21,6 +21,7 @@ const RELEASES: Release[] = [
       improved: [
         "AI mentor, question generation and discussion summaries now run on open-source models (OpenAI gpt-oss) for faster, more reliable responses",
         "Videos stay covered by a poster while loading, paused or finished, so nothing distracts from the lesson",
+        "Safer checkout — the payment window asks before closing so a stray click can't drop a payment, offers retries after a failed attempt, expires abandoned sessions after 15 minutes and remembers returning customers",
       ],
       fixed: [
         "AI features returned a “model not found” error after a model was retired — they now use a currently available model",
