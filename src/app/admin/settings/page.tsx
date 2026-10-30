@@ -268,7 +268,7 @@ export default function SettingsPage() {
         <TabsContent value="ai" className="mt-6 space-y-4">
           <p className="text-xs text-muted-foreground">Groq API powers all AI features — hints, coaching, pair programmer.</p>
           <SecretInput id="groqApiKey" label="Groq API Key" value={s.groqApiKey} onChange={set("groqApiKey")} hint="gsk_…" />
-          <Field id="groqModel" label="Groq Model" value={s.groqModel} onChange={set("groqModel")} placeholder="llama-3.3-70b-versatile" />
+          <Field id="groqModel" label="Groq Model" value={s.groqModel} onChange={set("groqModel")} placeholder="openai/gpt-oss-120b" />
           <TestBtn
             status={tGroq}
             onClick={() => test("groq", { groqApiKey: s.groqApiKey, groqModel: s.groqModel }, setTGroq)}

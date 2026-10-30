@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
   // ── Groq / AI ─────────────────────────────────────────────────────────────
   if (service === "groq") {
     const apiKey = val(body.groqApiKey, cfg.groqApiKey, process.env.GROQ_API_KEY);
-    const model = val(body.groqModel, cfg.groqModel, process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile");
+    const model = val(body.groqModel, cfg.groqModel, process.env.GROQ_MODEL ?? "openai/gpt-oss-120b");
     try {
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
