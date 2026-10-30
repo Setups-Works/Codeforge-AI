@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2, Play, ExternalLink, MonitorPlay } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { YouTubePlayer } from "./youtube-player";
 
 interface TutorialVideo {
   id: string;
@@ -122,11 +121,12 @@ export function EditorialVideos({ slug, title }: { slug: string; title: string }
               {/* Stage: poster until play, then the nocookie embed */}
               <div className="relative aspect-video w-full bg-black">
                 {started ? (
-                  <YouTubePlayer
-                    key={current.id}
-                    videoId={current.id}
+                  <iframe
+                    src={`https://www.youtube-nocookie.com/embed/${current.id}?autoplay=1&rel=0`}
                     title={current.title}
-                    poster={current.thumbnail?.replace("mqdefault", "hqdefault")}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="size-full"
                   />
                 ) : (
                   <button

@@ -15,12 +15,9 @@ const RELEASES: Release[] = [
     tag: "Latest",
     tagColor: "bg-green-500/15 text-green-500 border-green-500/30",
     changes: {
-      new: [
-        "A cleaner video player in the Editorial tab — YouTube's own title bar, share buttons and “More videos” panel are gone, replaced by our own controls: play/pause, seek, time, mute and fullscreen",
-      ],
+      new: [],
       improved: [
         "AI mentor, question generation and discussion summaries now run on open-source models (OpenAI gpt-oss) for faster, more reliable responses",
-        "Videos stay covered by a poster while loading, paused or finished, so nothing distracts from the lesson",
         "Safer checkout — the payment window asks before closing so a stray click can't drop a payment, offers retries after a failed attempt, expires abandoned sessions after 15 minutes and remembers returning customers",
       ],
       fixed: [
