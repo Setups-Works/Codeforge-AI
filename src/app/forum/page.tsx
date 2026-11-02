@@ -7,7 +7,7 @@ import { PublicHeader } from "@/components/layout/public-header";
 import { Button } from "@/components/ui/button";
 import { ForumList } from "@/features/discussions/forum-list";
 
-export const metadata: Metadata = { title: "Community Forum — CodeForge AI" };
+export const metadata: Metadata = { title: "Community Forum — Setups Works Lab" };
 export const dynamic = "force-dynamic";
 
 export default async function ForumPage() {

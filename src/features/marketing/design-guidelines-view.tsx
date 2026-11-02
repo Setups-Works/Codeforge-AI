@@ -73,10 +73,10 @@ const NAV = [
 ] as const;
 
 const ASSETS = [
-  { name: "Wordmark · light", file: "/logo.png", download: "codeforge-ai-logo-light.png", meta: "PNG · 774×186", dark: false },
-  { name: "Wordmark · dark", file: "/logo-dark.png", download: "codeforge-ai-logo-dark.png", meta: "PNG · 774×186", dark: true },
-  { name: "App icon · vector", file: "/icon.svg", download: "codeforge-ai-icon.svg", meta: "SVG", dark: false },
-  { name: "App icon · 512", file: "/icon-512.png", download: "codeforge-ai-icon-512.png", meta: "PNG · 512×512", dark: false },
+  { name: "Wordmark · light", file: "/logo.png", download: "setups-works-lab-logo-light.png", meta: "PNG · 774×186", dark: false },
+  { name: "Wordmark · dark", file: "/logo-dark.png", download: "setups-works-lab-logo-dark.png", meta: "PNG · 774×186", dark: true },
+  { name: "App icon · vector", file: "/icon.svg", download: "setups-works-lab-icon.svg", meta: "SVG", dark: false },
+  { name: "App icon · 512", file: "/icon-512.png", download: "setups-works-lab-icon-512.png", meta: "PNG · 512×512", dark: false },
 ];
 
 export function DesignGuidelinesView({ signedIn }: { signedIn: boolean }) {
@@ -120,11 +120,11 @@ export function DesignGuidelinesView({ signedIn }: { signedIn: boolean }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex h-36 items-center justify-center rounded-2xl border border-black/[0.08] bg-white">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.png" alt="CodeForge AI logo on light" className="h-9 w-auto" />
+              <img src="/logo.png" alt="Setups Works Lab logo on light" className="h-9 w-auto" />
             </div>
             <div className="flex h-36 items-center justify-center rounded-2xl border border-white/10 bg-[#0a0a0a]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-dark.png" alt="CodeForge AI logo on dark" className="h-9 w-auto" />
+              <img src="/logo-dark.png" alt="Setups Works Lab logo on dark" className="h-9 w-auto" />
             </div>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -294,7 +294,7 @@ export function DesignGuidelinesView({ signedIn }: { signedIn: boolean }) {
         </Section>
 
         {/* ── Voice ── */}
-        <Section id="voice" no="07" title="Voice" sub="How CodeForge AI talks, everywhere from buttons to billing emails.">
+        <Section id="voice" no="07" title="Voice" sub="How Setups Works Lab talks, everywhere from buttons to billing emails.">
           <div className="grid gap-3 sm:grid-cols-2">
             <Rule ok text="Plain and direct: “Run code”, “Start free trial”, “Cancel anytime”." />
             <Rule ok text="Honest about money and terms — the first-charge date is always shown before payment." />
@@ -330,14 +330,14 @@ export function DesignGuidelinesView({ signedIn }: { signedIn: boolean }) {
           {/* One-page bento poster */}
           <div className="mt-5 overflow-hidden rounded-2xl border border-black/[0.08] dark:border-white/10">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/codeforge-ai-brand-bento.png" alt="The full CodeForge AI brand system on one bento poster" className="w-full" />
+            <img src="/brand/setups-works-lab-brand-bento.png" alt="The full Setups Works Lab brand system on one bento poster" className="w-full" />
             <div className="flex items-center justify-between gap-3 border-t border-black/[0.06] bg-white px-4 py-3 dark:border-white/[0.07] dark:bg-white/[0.04]">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">The whole system, one poster</p>
                 <p className="font-mono text-[11px] text-neutral-500">PNG · 3200×2000 · bento</p>
               </div>
               <Button asChild size="sm" variant="outline" className="shrink-0 gap-1.5">
-                <a href="/brand/codeforge-ai-brand-bento.png" download="codeforge-ai-brand-bento.png">
+                <a href="/brand/setups-works-lab-brand-bento.png" download="setups-works-lab-brand-bento.png">
                   <Download className="size-3.5" /> Download
                 </a>
               </Button>
@@ -350,7 +350,7 @@ export function DesignGuidelinesView({ signedIn }: { signedIn: boolean }) {
               Wordmarks, icons (SVG + PNG), maskable icon, the bento poster, plus a README with clear-space rules and the color palette.
             </p>
             <Button asChild className="mt-2 gap-2">
-              <a href="/brand/codeforge-ai-brand-assets.zip" download>
+              <a href="/brand/setups-works-lab-brand-assets.zip" download>
                 <Download className="size-4" /> Download brand kit (.zip)
               </a>
             </Button>

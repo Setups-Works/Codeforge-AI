@@ -60,7 +60,7 @@ export default async function CareerDetailPage({ params }: PageProps) {
     title: role.title,
     description: role.about,
     employmentType: role.type === "Internship" ? "INTERN" : "VOLUNTEER",
-    hiringOrganization: { "@type": "Organization", name: APP_NAME, sameAs: "https://codeforgeai.io" },
+    hiringOrganization: { "@type": "Organization", name: APP_NAME, sameAs: "https://labs.setups.works" },
     jobLocationType: "TELECOMMUTE",
     applicantLocationRequirements: { "@type": "Country", name: "Anywhere" },
     datePosted: "2026-06-26",

@@ -16,7 +16,7 @@ function page(title: string, message: string, ok: boolean): NextResponse {
 <div style="font-size:40px;line-height:1;color:${color};margin-bottom:16px;">${ok ? "✓" : "!"}</div>
 <h1 style="margin:0 0 10px;font-size:22px;color:#171717;">${title}</h1>
 <p style="margin:0 0 24px;font-size:15px;color:#4d4d4d;line-height:22px;">${message}</p>
-<a href="https://codeforgeai.io" style="display:inline-block;padding:12px 22px;background:#171717;color:#fff;border-radius:6px;text-decoration:none;font-size:15px;">Back to CodeForge AI</a>
+<a href="https://labs.setups.works" style="display:inline-block;padding:12px 22px;background:#171717;color:#fff;border-radius:6px;text-decoration:none;font-size:15px;">Back to Setups Works Lab</a>
 </div></body></html>`;
   return new NextResponse(html, { status: ok ? 200 : 400, headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
   }
   return page(
     "You're unsubscribed",
-    "You won't receive newsletters from CodeForge AI anymore. You'll still get important account and billing emails.",
+    "You won't receive newsletters from Setups Works Lab anymore. You'll still get important account and billing emails.",
     true,
   );
 }

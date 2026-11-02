@@ -7,14 +7,14 @@ import { FOUNDER_PROFILE as P } from "@/lib/founder-profile";
 import { InfoLayout } from "@/components/shared/info-layout";
 import { JsonLd } from "@/components/json-ld";
 
-const SITE = "https://codeforgeai.io";
+const SITE = "https://labs.setups.works";
 const PATH = "/about/nitheesh-rajendran";
 
 /**
  * The founder's own page.
  *
  * Split out of /about deliberately. That page is visibly about the product —
- * its title, H1 and description all describe CodeForge AI — while carrying
+ * its title, H1 and description all describe Setups Works Lab — while carrying
  * ProfilePage schema claiming a person as its subject. Google weights title and
  * H1 heavily for name queries, so a page that never states the name in either
  * will not rank for it no matter what the markup asserts.

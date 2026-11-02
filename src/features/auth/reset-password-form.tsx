@@ -141,7 +141,7 @@ export function ResetPasswordForm() {
     <Card className="border-0 bg-transparent shadow-none">
       <CardHeader className="space-y-2 px-0 pt-0">
         <CardTitle className="text-[26px] font-bold tracking-tight">Set a new password</CardTitle>
-        <CardDescription>Choose a strong password for your CodeForge AI account.</CardDescription>
+        <CardDescription>Choose a strong password for your Setups Works Lab account.</CardDescription>
       </CardHeader>
       <CardContent className="px-0">
         <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">

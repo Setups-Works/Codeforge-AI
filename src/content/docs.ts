@@ -1,5 +1,5 @@
 /**
- * Static content for the CodeForge AI Documentation Center (/help).
+ * Static content for the Setups Works Lab Documentation Center (/help).
  * Framework-free (no React/server imports) so it can be used on both the
  * server (pages, metadata, sitemap) and the client (search).
  */
@@ -43,16 +43,16 @@ export const DOC_CATEGORIES: DocCategory[] = [
 export const DOC_ARTICLES: DocArticle[] = [
   // ── Getting Started ───────────────────────────────────────
   {
-    slug: "what-is-codeforge-ai",
+    slug: "what-is-setups-works-lab",
     category: "getting-started",
-    title: "What is CodeForge AI?",
+    title: "What is Setups Works Lab?",
     description: "An overview of the platform and what you can do with it.",
     tags: ["overview", "intro", "start"],
-    body: `# What is CodeForge AI?
+    body: `# What is Setups Works Lab?
 
-![The CodeForge AI workspace](/docs/dashboard.png)
+![The Setups Works Lab workspace](/docs/dashboard.png)
 
-CodeForge AI is an AI-powered coding-interview preparation platform. It combines a
+Setups Works Lab is an AI-powered coding-interview preparation platform. It combines a
 deep problem bank, an instant multi-language compiler, AI mentoring, spaced
 repetition, skill analytics, contests, and a community — so you can practice
 smarter and walk into interviews with confidence.
@@ -311,7 +311,7 @@ plan regardless of credits.`,
     tags: ["api", "rest", "auth", "session", "cookie"],
     body: `# API overview & authentication
 
-CodeForge AI ships a REST API under \`/api\`. An interactive **OpenAPI/Swagger**
+Setups Works Lab ships a REST API under \`/api\`. An interactive **OpenAPI/Swagger**
 explorer is available at \`/docs\` (admin access).
 
 ## Authentication
@@ -541,7 +541,7 @@ Every successful payment (including each auto-renewal) creates an invoice.
 2. Find the payment in **Subscription history**.
 3. Click **Invoice** to open a printable, branded invoice (use your browser's
    *Print → Save as PDF*). It includes your billing address and our contact,
-   **info@codeforgeai.io**.`,
+   **info@setups.works**.`,
   },
   {
     slug: "delete-account",
@@ -568,7 +568,7 @@ Every successful payment (including each auto-renewal) creates an invoice.
     tags: ["faq", "help", "questions"],
     body: `# Frequently asked questions
 
-**Is CodeForge AI free?**
+**Is Setups Works Lab free?**
 Yes — the core platform is free, including 90 AI credits per month. Paid plans add
 more credits and advanced features.
 
@@ -590,7 +590,7 @@ Settings → Billing & Usage → Subscription history → **Invoice**.
 **Can I cancel anytime?**
 Yes. Cancelling stops auto-renewal; you keep access until the period ends.
 
-**Still need help?** [Contact us](/contact) at info@codeforgeai.io.`,
+**Still need help?** [Contact us](/contact) at info@setups.works.`,
   },
 ];
 

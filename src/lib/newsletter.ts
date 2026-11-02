@@ -55,7 +55,7 @@ export function sanitizeNewsletterHtml(html: string): string {
 }
 
 function unsubscribeSecret(): string {
-  return process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET ?? "codeforge-newsletter";
+  return process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET ?? "setups-works-newsletter";
 }
 
 /** Deterministic, unguessable token that authorizes unsubscribing `email`. */

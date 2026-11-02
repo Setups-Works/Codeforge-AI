@@ -6,7 +6,7 @@ import { CheckCircle2, Flame } from "@/components/icons";
 import { APP_NAME } from "@/lib/constants";
 
 // Auth pages (sign in / sign up / password reset) must never be indexed —
-// they were ranking as "Sign in | CodeForge AI" for the brand query.
+// they were ranking as "Sign in | Setups Works Lab" for the brand query.
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };

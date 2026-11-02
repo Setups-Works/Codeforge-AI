@@ -15,14 +15,14 @@ import {
   Target,
 } from "@/components/icons";
 
-const SITE = "https://codeforgeai.io";
+const SITE = "https://labs.setups.works";
 
 export const metadata: Metadata = {
   title: `About Us — ${APP_NAME}`,
   description: `${APP_NAME} is an AI-powered coding interview preparation platform founded by ${FOUNDER.name}, a product of Setups Works.`,
 };
 
-/** ProfilePage + Person so Google ties the founder's entity to CodeForge AI. */
+/** ProfilePage + Person so Google ties the founder's entity to Setups Works Lab. */
 const founderLd = {
   "@context": "https://schema.org",
   "@type": "ProfilePage",
@@ -31,7 +31,7 @@ const founderLd = {
     "@id": `${SITE}/#founder`,
     name: FOUNDER.name,
     jobTitle: FOUNDER.role,
-    description: `Founder and developer of ${APP_NAME} (codeforgeai.io).`,
+    description: `Founder and developer of ${APP_NAME} (labs.setups.works).`,
     url: `${SITE}/about`,
     worksFor: {
       "@type": "Organization",
@@ -120,7 +120,7 @@ export default function AboutPage() {
           <h2 className="text-lg font-bold">The company</h2>
         </div>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          {APP_NAME} (codeforgeai.io) was{" "}
+          {APP_NAME} (labs.setups.works) was{" "}
           <strong className="text-foreground">founded by {FOUNDER.name}</strong>{" "}
           and is a product of{" "}
           <strong className="text-foreground">Setups Works</strong>, an
@@ -168,10 +168,10 @@ export default function AboutPage() {
               </dt>
               <dd className="text-sm font-medium">
                 <a
-                  href="mailto:info@codeforgeai.io"
+                  href="mailto:info@setups.works"
                   className="hover:text-primary"
                 >
-                  info@codeforgeai.io
+                  info@setups.works
                 </a>
               </dd>
             </div>

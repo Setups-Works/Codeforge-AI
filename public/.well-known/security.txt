@@ -1,6 +1,6 @@
-Contact: mailto:security@codeforgeai.io
-Contact: https://codeforgeai.io/feedback
+Contact: mailto:security@setups.works
+Contact: https://labs.setups.works/feedback
 Expires: 2027-06-25T00:00:00.000Z
 Preferred-Languages: en
-Canonical: https://codeforgeai.io/.well-known/security.txt
-Policy: https://codeforgeai.io/terms
+Canonical: https://labs.setups.works/.well-known/security.txt
+Policy: https://labs.setups.works/terms

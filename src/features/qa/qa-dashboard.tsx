@@ -321,7 +321,7 @@ function BugForm() {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Page URL</Label>
-          <Input value={form.url} onChange={set("url")} placeholder="https://codeforgeai.io/…" maxLength={500} />
+          <Input value={form.url} onChange={set("url")} placeholder="https://labs.setups.works/…" maxLength={500} />
         </div>
         <div className="space-y-1.5 sm:col-span-2">
           <Label className="text-xs">Screenshot URL <span className="font-normal text-muted-foreground">(optional)</span></Label>

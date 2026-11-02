@@ -55,5 +55,5 @@ export function xmlResponse(body: string): Response {
 /** The configured site origin, without a trailing slash. */
 export async function siteBase(): Promise<string> {
   const cfg = await getEffectiveConfig();
-  return (cfg.siteUrl || "https://codeforgeai.io").replace(/\/$/, "");
+  return (cfg.siteUrl || "https://labs.setups.works").replace(/\/$/, "");
 }

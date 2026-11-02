@@ -11,7 +11,7 @@ export interface GeneratedBlog {
   seoKeywords: string;
 }
 
-const SYSTEM = `You are the content marketer for ${APP_NAME} (codeforgeai.io), an AI-powered
+const SYSTEM = `You are the content marketer for ${APP_NAME} (labs.setups.works), an AI-powered
 coding-interview preparation platform. You write clear, helpful, SEO-friendly
 feature blog posts. You are shown a screenshot of a product feature and must
 describe it accurately based ONLY on what is visible, never inventing details.`;

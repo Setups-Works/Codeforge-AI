@@ -9,7 +9,7 @@ import { APP_NAME } from "@/lib/constants";
 export const metadata: Metadata = {
   title: `Blog — ${APP_NAME}`,
   description:
-    "Product updates, feature deep-dives and tips from the CodeForge AI team.",
+    "Product updates, feature deep-dives and tips from the Setups Works Lab team.",
 };
 export const dynamic = "force-dynamic";
 
@@ -27,7 +27,7 @@ export default async function BlogIndexPage() {
             <span className="size-1.5 rounded-full bg-[#006bff]" /> Blog
           </span>
           <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-            From the CodeForge AI team
+            From the Setups Works Lab team
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
             Feature deep-dives, product updates and tips to help you prep

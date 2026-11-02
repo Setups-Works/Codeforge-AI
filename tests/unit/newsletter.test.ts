@@ -32,8 +32,8 @@ describe("sanitizeNewsletterHtml", () => {
   });
 
   it("keeps only safe hrefs on links, with rel/target added", () => {
-    const ok = sanitizeNewsletterHtml('<a href="https://codeforgeai.io">go</a>');
-    expect(ok).toContain('href="https://codeforgeai.io"');
+    const ok = sanitizeNewsletterHtml('<a href="https://labs.setups.works">go</a>');
+    expect(ok).toContain('href="https://labs.setups.works"');
     expect(ok).toContain('rel="noopener noreferrer"');
     const bad = sanitizeNewsletterHtml('<a href="data:text/html,evil">x</a>');
     expect(bad).toBe("<a>x</a>");
@@ -54,7 +54,7 @@ describe("unsubscribe tokens", () => {
   });
 
   it("builds a URL carrying the email and token", () => {
-    const url = unsubscribeUrl("https://codeforgeai.io", "user@example.com");
+    const url = unsubscribeUrl("https://labs.setups.works", "user@example.com");
     expect(url).toContain("/api/newsletter/unsubscribe?e=user%40example.com&t=");
   });
 });
@@ -66,8 +66,8 @@ describe("newsletterEmailHtml", () => {
       bodyHtml: "<p>Body copy</p>",
       imageUrl: "https://cdn.example/x.png",
       ctaLabel: "Open app",
-      ctaUrl: "https://codeforgeai.io",
-      unsubscribeUrl: "https://codeforgeai.io/api/newsletter/unsubscribe?e=a&t=b",
+      ctaUrl: "https://labs.setups.works",
+      unsubscribeUrl: "https://labs.setups.works/api/newsletter/unsubscribe?e=a&t=b",
     });
     expect(html).toContain("<!DOCTYPE html>");
     expect(html).toContain("https://cdn.example/x.png");

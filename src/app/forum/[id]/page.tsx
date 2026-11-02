@@ -10,7 +10,7 @@ import { ForumDetail } from "@/features/discussions/forum-detail";
 import { JsonLd } from "@/components/json-ld";
 import { APP_NAME } from "@/lib/constants";
 
-const SITE = "https://codeforgeai.io";
+const SITE = "https://labs.setups.works";
 
 export const dynamic = "force-dynamic";
 

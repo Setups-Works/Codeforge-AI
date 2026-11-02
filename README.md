@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="src/app/icon.svg" alt="CodeForge AI" width="88" height="88">
+<img src="src/app/icon.svg" alt="Setups Works Lab" width="88" height="88">
 
-# CodeForge AI
+# Setups Works Lab
 
 ### Your AI-powered coding interview prep workspace
 
@@ -10,7 +10,7 @@ LeetCode-style DSA problems · An **instant online compiler** · Frontend sandbo
 
 <br/>
 
-[![Version](https://img.shields.io/badge/version-3.3.0-006bff?style=flat-square)](https://codeforgeai.io/changelog)
+[![Version](https://img.shields.io/badge/version-3.3.0-006bff?style=flat-square)](https://labs.setups.works/changelog)
 [![Next.js](https://img.shields.io/badge/Next.js-15.5-000000?style=flat-square&logo=nextdotjs)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-149ECA?style=flat-square&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
@@ -35,7 +35,7 @@ LeetCode-style DSA problems · An **instant online compiler** · Frontend sandbo
 <a href="#-changelog"><b>Changelog</b></a> ·
 <a href="#-deployment"><b>Deployment</b></a>
 
-<sub><a href="https://codeforgeai.io/about">About</a> · <a href="https://codeforgeai.io/contact">Contact</a> · <a href="https://codeforgeai.io/changelog">Changelog</a> · <a href="https://codeforgeai.io/privacy">Privacy</a> · <a href="https://codeforgeai.io/terms">Terms</a></sub>
+<sub><a href="https://labs.setups.works/about">About</a> · <a href="https://labs.setups.works/contact">Contact</a> · <a href="https://labs.setups.works/changelog">Changelog</a> · <a href="https://labs.setups.works/privacy">Privacy</a> · <a href="https://labs.setups.works/terms">Terms</a></sub>
 
 </div>
 
@@ -43,7 +43,7 @@ LeetCode-style DSA problems · An **instant online compiler** · Frontend sandbo
 
 ## System Architecture
 
-CodeForge AI is a **single Next.js 15 (App Router) application** that serves the UI, the API, and background work from one codebase. It follows a layered design — **route handlers → service layer → data/integration layer** — so that providers (code runners, AI, payments) are swappable behind interfaces and the app degrades gracefully when any optional integration is absent.
+Setups Works Lab is a **single Next.js 15 (App Router) application** that serves the UI, the API, and background work from one codebase. It follows a layered design — **route handlers → service layer → data/integration layer** — so that providers (code runners, AI, payments) are swappable behind interfaces and the app degrades gracefully when any optional integration is absent.
 
 ### High-Level Topology
 
@@ -410,7 +410,7 @@ npm run typecheck # Type-check without emitting
 
 The complete, always-current release history lives in-app — currently **v3.3.0**:
 
-**[View the Changelog](https://codeforgeai.io/changelog)** (or `/changelog` on your deployment)
+**[View the Changelog](https://labs.setups.works/changelog)** (or `/changelog` on your deployment)
 
 Every release — new features, improvements and fixes — is documented there with version, date and tags. Recent highlights: the full **MongoDB → Supabase** migration (Postgres, Auth, Storage), **passwordless passkeys**, a redesigned auth experience, profile avatar + cover photos, and a 7-tab Settings hub.
 
@@ -428,14 +428,14 @@ Optimized for **Vercel** out of the box:
 
 ## 👤 Founder
 
-**CodeForge AI** is founded, designed and built by **Nitheesh Rajendran** — Founder & Developer — under **Setups Works**.
+**Setups Works Lab** is founded, designed and built by **Nitheesh Rajendran** — Founder & Developer — under **Setups Works**.
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Nitheesh%20Rajendran-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/nitheeshdr/)
 [![IMDb](https://img.shields.io/badge/IMDb-Nitheesh%20Rajendran-F5C518?style=flat-square&logo=imdb&logoColor=black)](https://www.imdb.com/name/nm16304237/)
 [![GitHub](https://img.shields.io/badge/GitHub-nitheeshdr-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/nitheeshdr)
-[![Email](https://img.shields.io/badge/Email-info@codeforgeai.io-006bff?style=flat-square&logo=gmail&logoColor=white)](mailto:info@codeforgeai.io)
+[![Email](https://img.shields.io/badge/Email-info@setups.works-006bff?style=flat-square&logo=gmail&logoColor=white)](mailto:info@setups.works)
 
-> Founder of **CodeForge AI** ([codeforgeai.io](https://codeforgeai.io)).
+> Founder of **Setups Works Lab** ([labs.setups.works](https://labs.setups.works)).
 
 > Founder of **Setups Works** ([setups.works](https://setups.works)).
 

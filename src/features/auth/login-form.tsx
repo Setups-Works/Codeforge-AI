@@ -171,7 +171,7 @@ export function LoginForm({
           </Button>
         </form>
         <p className="mt-4 text-center text-sm text-muted-foreground">
-          New to CodeForge?{" "}
+          New to Setups Works?{" "}
           <Link href="/register" className="text-primary hover:underline">
             Create an account
           </Link>

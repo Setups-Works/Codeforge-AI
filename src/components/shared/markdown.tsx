@@ -11,7 +11,7 @@ export function Markdown({
   className?: string;
 }) {
   return (
-    <div className={cn("prose-codeforge", className)}>
+    <div className={cn("prose-setups-works", className)}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
         {children}
       </ReactMarkdown>

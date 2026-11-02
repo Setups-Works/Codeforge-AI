@@ -14,7 +14,7 @@ import {
 export const runtime = "nodejs";
 
 const APP_URL =
-  process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://codeforgeai.io";
+  process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://labs.setups.works";
 
 export async function POST(req: NextRequest) {
   const { session, error } = await requireUser();

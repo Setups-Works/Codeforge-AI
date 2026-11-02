@@ -6,7 +6,7 @@ import type { NextRequest } from "next/server";
  * Supabase session in the authenticate/verify route.
  */
 
-export const RP_NAME = "CodeForge AI";
+export const RP_NAME = "Setups Works Lab";
 
 /** The single-use challenge is stashed in a short-lived httpOnly cookie. */
 export const CHALLENGE_COOKIE = "pk_challenge";
@@ -20,7 +20,7 @@ export function rpFromRequest(req: NextRequest): { rpID: string; origin: string 
   const raw =
     req.headers.get("origin") ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    "https://codeforgeai.io";
+    "https://labs.setups.works";
   const u = new URL(raw);
   return { rpID: u.hostname, origin: `${u.protocol}//${u.host}` };
 }

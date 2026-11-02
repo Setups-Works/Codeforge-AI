@@ -13,9 +13,9 @@ import {
 import { PageAura } from "@/components/shared/reactbits-kit";
 
 export const metadata: Metadata = {
-  title: "Documentation — CodeForge AI",
+  title: "Documentation — Setups Works Lab",
   description:
-    "Searchable docs for CodeForge AI — features, API, SDKs, tutorials, guides, FAQs and examples.",
+    "Searchable docs for Setups Works Lab — features, API, SDKs, tutorials, guides, FAQs and examples.",
 };
 export const dynamic = "force-dynamic";
 
@@ -39,7 +39,7 @@ export default async function HelpHomePage() {
             How can we help?
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            Everything you need to learn and use CodeForge AI — features, API,
+            Everything you need to learn and use Setups Works Lab — features, API,
             guides, tutorials and FAQs.
           </p>
           <div className="mx-auto mt-6 max-w-xl text-left">

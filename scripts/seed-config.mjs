@@ -26,7 +26,7 @@ await mongoose.connect(MONGODB_URI);
 const data = {
   // ── SEO ─────────────────────────────────────────────────────────────────
   siteUrl: process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "http://localhost:3000",
-  siteName: "CodeForge AI",
+  siteName: "Setups Works Lab",
   siteDescription:
     "AI-powered coding interview preparation platform. Master DSA, build frontend projects, and ace your next interview with personalised AI coaching.",
   siteKeywords:
@@ -44,7 +44,7 @@ const data = {
   smtpPort: Number(process.env.SMTP_PORT ?? 465),
   smtpUser: process.env.SMTP_USER ?? "info@setups.works",
   smtpPass: process.env.SMTP_PASS ?? "",
-  smtpFrom: process.env.SMTP_FROM ?? "CodeForge AI <info@setups.works>",
+  smtpFrom: process.env.SMTP_FROM ?? "Setups Works Lab <info@setups.works>",
 
   // ── AI ────────────────────────────────────────────────────────────────────
   groqApiKey: process.env.GROQ_API_KEY ?? "",

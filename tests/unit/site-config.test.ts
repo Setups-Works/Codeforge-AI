@@ -21,8 +21,8 @@ describe("maskConfig", () => {
   });
 
   it("passes non-sensitive fields through untouched", () => {
-    const masked = maskConfig({ siteName: "CodeForge", groqApiKey: "x" });
-    expect(masked.siteName).toBe("CodeForge");
+    const masked = maskConfig({ siteName: "Setups Works", groqApiKey: "x" });
+    expect(masked.siteName).toBe("Setups Works");
   });
 });
 

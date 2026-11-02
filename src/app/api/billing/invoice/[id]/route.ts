@@ -9,9 +9,9 @@ const BLUE = "#006bff";
 const BORDER = "#e6e9ef";
 // Absolute origin so the logo renders in the browser, in print, and when the
 // invoice HTML is saved/emailed.
-const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://codeforgeai.io")
+const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://labs.setups.works")
   .replace(/^http:/, "https:");
-const SUPPORT_EMAIL = "info@codeforgeai.io";
+const SUPPORT_EMAIL = "info@setups.works";
 
 function money(amount: number, currency: string) {
   try {
@@ -82,8 +82,8 @@ td.r,th.r{text-align:right}
   <div class="sheet">
     <div class="top">
       <div>
-        <div class="brand">CodeForge<span>AI</span></div>
-        <div class="tag">codeforgeai.io</div>
+        <div class="brand">Setups Works<span>AI</span></div>
+        <div class="tag">labs.setups.works</div>
       </div>
       <div class="inv">
         <h1>Invoice</h1>
@@ -98,7 +98,7 @@ td.r,th.r{text-align:right}
       </div>
       <div class="col">
         <div class="lbl">From</div>
-        <div class="v">${APP_NAME}<br/>codeforgeai.io<br/>${SUPPORT_EMAIL}</div>
+        <div class="v">${APP_NAME}<br/>labs.setups.works<br/>${SUPPORT_EMAIL}</div>
       </div>
       <div class="col">
         <div class="lbl">Period</div>

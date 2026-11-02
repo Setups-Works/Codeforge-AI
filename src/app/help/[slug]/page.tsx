@@ -28,9 +28,9 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const article = getArticle(slug);
-  if (!article) return { title: "Documentation — CodeForge AI" };
+  if (!article) return { title: "Documentation — Setups Works Lab" };
   return {
-    title: `${article.title} — CodeForge AI Docs`,
+    title: `${article.title} — Setups Works Lab Docs`,
     description: article.description,
   };
 }

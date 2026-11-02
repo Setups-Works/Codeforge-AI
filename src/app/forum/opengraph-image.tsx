@@ -8,7 +8,7 @@ export const contentType = OG_CONTENT_TYPE;
 export default function Image() {
   return renderOgCard({
     eyebrow: "Community",
-    title: "The CodeForge AI forum",
+    title: "The Setups Works Lab forum",
     subtitle: "Discuss problems, approaches and interview prep",
     tags: ["Ask","Share","Learn"],
   });

@@ -47,7 +47,7 @@ export default async function BlogPostPage({ params }: PageProps) {
 
   const session = await auth();
 
-  const SITE = "https://codeforgeai.io";
+  const SITE = "https://labs.setups.works";
   const articleLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",

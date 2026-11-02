@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   const cfg = await getEffectiveConfig();
-  const base = (cfg.siteUrl || "https://codeforgeai.io").replace(/\/$/, "");
+  const base = (cfg.siteUrl || "https://labs.setups.works").replace(/\/$/, "");
 
   const docLines = DOC_CATEGORIES.flatMap((cat) => {
     const items = DOC_ARTICLES.filter((a) => a.category === cat.id);
@@ -44,8 +44,8 @@ Website: ${base}
 LLMs File: ${base}/llms.txt
 Sitemap: ${base}/sitemap.xml
 
-Name: CodeForge AI
-Also known as: CodeForge, Codeforge AI, Code Forge AI, codeforgeai, codeforgeai.io
+Name: Setups Works Lab
+Also known as: Setups Works, setupsworkslab, labs.setups.works
 Company: Setups Works (parent organization)
 Founder: ${FOUNDER.name} (${FOUNDER.role})
 Category: AI Coding Interview Preparation Platform
@@ -102,7 +102,7 @@ ${APP_NAME} is a product of Setups Works, a digital agency founded in 2020 by ${
 - Parent organization: Setups Works
 - Product: ${APP_NAME} (${base})
 - Location: Chennai, Tamil Nadu, India
-- Contact: info@codeforgeai.io
+- Contact: info@setups.works
 
 ---
 
@@ -215,7 +215,7 @@ Full, always-current index: ${base}/post-sitemap.xml
 - InterviewBit
 - Exercism
 
-CodeForge AI differentiates itself with integrated AI-powered mentoring, personalized study plans, interview preparation, and learning analytics.
+Setups Works Lab differentiates itself with integrated AI-powered mentoring, personalized study plans, interview preparation, and learning analytics.
 
 ---
 
@@ -306,7 +306,7 @@ About: ${base}/about
 
 Contact: ${base}/contact
 
-Email: info@codeforgeai.io
+Email: info@setups.works
 
 ---
 
@@ -314,7 +314,7 @@ Email: info@codeforgeai.io
 
 Copyright © Setups Works.
 
-CodeForge AI is a product of Setups Works.
+Setups Works Lab is a product of Setups Works.
 
 All trademarks belong to their respective owners.
 `;

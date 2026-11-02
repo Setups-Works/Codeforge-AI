@@ -10,7 +10,7 @@ import { Clock, RefreshCw, HeadphonesIcon, Sparkles } from "@/components/icons";
 import { PageAura } from "@/components/shared/reactbits-kit";
 
 export const metadata: Metadata = {
-  title: "Pricing — CodeForge AI",
+  title: "Pricing — Setups Works Lab",
   description: "Simple, transparent pricing. Start free, upgrade anytime.",
 };
 export const dynamic = "force-dynamic";

@@ -111,7 +111,7 @@ export async function getOrCreatePlanId(
     period: cycle === "yearly" ? "yearly" : "monthly",
     interval: 1,
     item: {
-      name: `CodeForge AI ${def.name} (${cycle})`,
+      name: `Setups Works Lab ${def.name} (${cycle})`,
       amount,
       currency: "INR",
       description: `${def.name} plan — billed ${cycle}`,

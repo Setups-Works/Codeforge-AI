@@ -105,8 +105,8 @@ export const FOUNDER_PROFILE = {
       body: "He began professionally as a freelance web developer, building sites and digital products for businesses and startups, then expanded into full-stack engineering, mobile development, UI/UX design, cloud deployment and artificial intelligence. His work spans business websites, e-commerce platforms, AI applications, automation tools, custom dashboards and enterprise software.",
     },
     {
-      heading: "Building CodeForge AI",
-      body: "CodeForge AI grew out of a specific problem he kept seeing: strong engineers losing offers to interview format rather than ability. It pairs a deep problem bank and an instant multi-language compiler with AI mentoring, spaced repetition and skill analytics — practice that adapts to the person doing it. It is built and operated under Setups Works, the digital agency he founded and leads.",
+      heading: "Building Setups Works Lab",
+      body: "Setups Works Lab grew out of a specific problem he kept seeing: strong engineers losing offers to interview format rather than ability. It pairs a deep problem bank and an instant multi-language compiler with AI mentoring, spaced repetition and skill analytics — practice that adapts to the person doing it. It is built and operated under Setups Works, the digital agency he founded and leads.",
     },
     {
       heading: "Security research",

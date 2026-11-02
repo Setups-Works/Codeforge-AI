@@ -272,7 +272,7 @@ function StepWelcome({ name, onNext }: { name: string; onNext: () => void }) {
           Welcome, {name.split(" ")[0]}! 👋
         </h1>
         <p className="mt-3 text-muted-foreground text-base max-w-md mx-auto">
-          Let&apos;s take 2 minutes to personalise your CodeForge AI experience so you hit your goals faster.
+          Let&apos;s take 2 minutes to personalise your Setups Works Lab experience so you hit your goals faster.
         </p>
       </Pop>
       <Stagger className="flex flex-wrap justify-center gap-2 mt-1">

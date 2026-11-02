@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Design Guidelines",
-  description: `The ${APP_NAME} design system — logo, colors, typography, components and usage rules for building consistent CodeForge AI experiences.`,
+  description: `The ${APP_NAME} design system — logo, colors, typography, components and usage rules for building consistent Setups Works Lab experiences.`,
   alternates: { canonical: "/design-guidelines" },
 };
 

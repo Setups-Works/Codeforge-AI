@@ -219,14 +219,14 @@ export default function SettingsPage() {
         <TabsContent value="seo" className="mt-6 space-y-4">
           <p className="text-xs text-muted-foreground">Controls Open Graph, Twitter cards, and search engine metadata.</p>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="siteUrl" label="Site URL" value={s.siteUrl} onChange={set("siteUrl")} placeholder="https://codeforgeai.io" />
-            <Field id="siteName" label="Site Name" value={s.siteName} onChange={set("siteName")} placeholder="CodeForge AI" />
+            <Field id="siteUrl" label="Site URL" value={s.siteUrl} onChange={set("siteUrl")} placeholder="https://labs.setups.works" />
+            <Field id="siteName" label="Site Name" value={s.siteName} onChange={set("siteName")} placeholder="Setups Works Lab" />
           </div>
           <Field id="siteDescription" label="Meta Description" value={s.siteDescription} onChange={set("siteDescription")} placeholder="AI-powered coding interview prep…" />
           <Field id="siteKeywords" label="Keywords (comma-separated)" value={s.siteKeywords} onChange={set("siteKeywords")} placeholder="coding interview, DSA, LeetCode alternative" />
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="ogImage" label="OG Image URL" value={s.ogImage} onChange={set("ogImage")} placeholder="https://codeforgeai.io/og.png" />
-            <Field id="twitterHandle" label="Twitter Handle" value={s.twitterHandle} onChange={set("twitterHandle")} placeholder="codeforgeai" />
+            <Field id="ogImage" label="OG Image URL" value={s.ogImage} onChange={set("ogImage")} placeholder="https://labs.setups.works/og.png" />
+            <Field id="twitterHandle" label="Twitter Handle" value={s.twitterHandle} onChange={set("twitterHandle")} placeholder="setupsworkslab" />
           </div>
         </TabsContent>
 
@@ -253,7 +253,7 @@ export default function SettingsPage() {
             <Field id="smtpUser" label="SMTP Username / Email" value={s.smtpUser} onChange={set("smtpUser")} placeholder="info@setups.works" />
             <SecretInput id="smtpPass" label="SMTP Password" value={s.smtpPass} onChange={set("smtpPass")} />
           </div>
-          <Field id="smtpFrom" label='From Header (e.g. "CodeForge AI <info@setups.works>")' value={s.smtpFrom} onChange={set("smtpFrom")} placeholder="CodeForge AI <info@setups.works>" />
+          <Field id="smtpFrom" label='From Header (e.g. "Setups Works Lab <info@setups.works>")' value={s.smtpFrom} onChange={set("smtpFrom")} placeholder="Setups Works Lab <info@setups.works>" />
           <TestBtn
             status={tSmtp}
             label="Send test email"

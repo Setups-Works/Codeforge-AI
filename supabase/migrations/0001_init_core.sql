@@ -1,4 +1,4 @@
--- CodeForge AI — Supabase/Postgres schema, Phase 1 (core tables).
+-- Setups Works Lab — Supabase/Postgres schema, Phase 1 (core tables).
 -- Mapped from the Mongoose models. Embedded sub-documents become jsonb.
 -- Every table keeps `legacy_mongo_id` so the later data-copy can remap the old
 -- ObjectId references to the new uuid primary keys.

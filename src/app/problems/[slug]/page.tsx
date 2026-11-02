@@ -12,7 +12,7 @@ import { DifficultyBadge } from "@/components/shared/difficulty-badge";
 import { JsonLd } from "@/components/json-ld";
 import { APP_NAME } from "@/lib/constants";
 
-const SITE = "https://codeforgeai.io";
+const SITE = "https://labs.setups.works";
 
 interface PageProps {
   params: Promise<{ slug: string }>;

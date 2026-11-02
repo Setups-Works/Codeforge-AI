@@ -17,7 +17,7 @@ export async function GET() {
   return new NextResponse(JSON.stringify(payload, null, 2), {
     headers: {
       "Content-Type": "application/json",
-      "Content-Disposition": `attachment; filename="codeforge-questions-${new Date().toISOString().slice(0, 10)}.json"`,
+      "Content-Disposition": `attachment; filename="setups-works-questions-${new Date().toISOString().slice(0, 10)}.json"`,
     },
   });
 }

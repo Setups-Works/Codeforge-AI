@@ -13,14 +13,14 @@ export const FOUNDER = {
   jobTitle: "Founder",
 
   description:
-    "Founder of CodeForge AI and Setups Works. Passionate about Artificial Intelligence, software engineering, and building developer tools that help programmers prepare for coding interviews.",
+    "Founder of Setups Works Lab and Setups Works. Passionate about Artificial Intelligence, software engineering, and building developer tools that help programmers prepare for coding interviews.",
 
-  url: "https://codeforgeai.io/about",
+  url: "https://labs.setups.works/about",
 
-  image: "https://codeforgeai.io/nitheesh.jpg",
+  image: "https://labs.setups.works/nitheesh.jpg",
 
   organization: {
-    name: "CodeForge AI",
+    name: "Setups Works Lab",
     parentOrganization: "Setups Works",
   },
 

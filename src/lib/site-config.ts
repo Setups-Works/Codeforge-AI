@@ -39,7 +39,7 @@ export const getSiteConfig = unstable_cache(
 
 /** Canonical production domain — used when nothing better is configured and to
  *  override Vercel preview URLs that must never appear in canonical/sitemap/OG. */
-const CANONICAL_SITE_URL = "https://codeforgeai.io";
+const CANONICAL_SITE_URL = "https://labs.setups.works";
 
 /** Merged config with env fallbacks — used for SEO metadata and scripts. */
 export async function getEffectiveConfig() {

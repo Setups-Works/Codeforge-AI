@@ -1,4 +1,4 @@
-// CodeForge AI email templates — Vercel Geist design system (Light theme).
+// Setups Works Lab email templates — Vercel Geist design system (Light theme).
 // Primary action = solid gray-1000; blue-700 reserved for links/accent.
 const PRIMARY = "#171717"; // gray-1000 — primary text + primary button
 const SECONDARY = "#4d4d4d"; // gray-900 — secondary text
@@ -15,7 +15,7 @@ const DARK = "#0b1226"; // masthead / brand band
 const FONT =
   "'Geist','Geist Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 // White wordmark for the dark masthead (logo-dark.png is the light-on-dark variant).
-const LOGO_WHITE = "https://codeforgeai.io/logo-dark.png";
+const LOGO_WHITE = "https://labs.setups.works/logo-dark.png";
 
 function base(content: string, footerExtra = ""): string {
   return `<!DOCTYPE html>
@@ -24,7 +24,7 @@ function base(content: string, footerExtra = ""): string {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>CodeForge AI</title>
+  <title>Setups Works Lab</title>
 </head>
 <body style="margin:0;padding:0;background:${PAGE};font-family:${FONT};-webkit-font-smoothing:antialiased;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAGE};padding:40px 16px;">
@@ -34,7 +34,7 @@ function base(content: string, footerExtra = ""): string {
           <!-- Masthead -->
           <tr>
             <td align="center" style="background:${DARK};background-image:linear-gradient(135deg,#0b3ea8 0%,#0b1226 60%);padding:30px 40px;border-bottom:3px solid ${BLUE};">
-              <img src="${LOGO_WHITE}" alt="CodeForge AI" height="26" style="height:26px;width:auto;display:block;" />
+              <img src="${LOGO_WHITE}" alt="Setups Works Lab" height="26" style="height:26px;width:auto;display:block;" />
             </td>
           </tr>
 
@@ -51,16 +51,16 @@ function base(content: string, footerExtra = ""): string {
           <tr>
             <td align="center" style="padding:22px 16px 0;">
               <p style="margin:0 0 10px;font-size:13px;color:${MUTED};line-height:18px;">
-                <a href="https://codeforgeai.io/dashboard" style="color:${SECONDARY};text-decoration:none;">Dashboard</a>
+                <a href="https://labs.setups.works/dashboard" style="color:${SECONDARY};text-decoration:none;">Dashboard</a>
                 &nbsp;&middot;&nbsp;
-                <a href="https://codeforgeai.io/help" style="color:${SECONDARY};text-decoration:none;">Help</a>
+                <a href="https://labs.setups.works/help" style="color:${SECONDARY};text-decoration:none;">Help</a>
                 &nbsp;&middot;&nbsp;
-                <a href="https://codeforgeai.io/privacy" style="color:${SECONDARY};text-decoration:none;">Privacy</a>
+                <a href="https://labs.setups.works/privacy" style="color:${SECONDARY};text-decoration:none;">Privacy</a>
               </p>
               ${footerExtra}
               <p style="margin:0;font-size:12px;color:${MUTED};line-height:18px;">
-                <a href="https://codeforgeai.io" style="color:${BLUE};text-decoration:none;">codeforgeai.io</a>
-                &nbsp;&middot;&nbsp; &copy; ${new Date().getFullYear()} CodeForge AI
+                <a href="https://labs.setups.works" style="color:${BLUE};text-decoration:none;">labs.setups.works</a>
+                &nbsp;&middot;&nbsp; &copy; ${new Date().getFullYear()} Setups Works Lab
               </p>
             </td>
           </tr>
@@ -124,7 +124,7 @@ export function welcomeEmailHtml({
   loginUrl: string;
 }): string {
   return base(`
-    <h1 style="${H1}">Welcome to CodeForge AI, ${name}</h1>
+    <h1 style="${H1}">Welcome to Setups Works Lab, ${name}</h1>
     <p style="${COPY}">
       Your account is ready. You're now part of a community of developers
       sharpening their skills and acing technical interviews.
@@ -154,7 +154,7 @@ export function welcomeEmailHtml({
 }
 
 export function welcomeEmailSubject(name: string): string {
-  return `Welcome to CodeForge AI, ${name}`;
+  return `Welcome to Setups Works Lab, ${name}`;
 }
 
 // ─── Beta Welcome ─────────────────────────────────────────────────────────────
@@ -175,7 +175,7 @@ export function betaWelcomeEmailHtml({
 
     <h1 style="${H1}">You're in, ${name}</h1>
     <p style="${COPY}">
-      You've secured early access to CodeForge AI. As a beta member you get the
+      You've secured early access to Setups Works Lab. As a beta member you get the
       <strong style="color:${PRIMARY};font-weight:600;">Go Plan free for 30 days</strong> — no credit card needed.
     </p>
 
@@ -229,7 +229,7 @@ export function resetPasswordEmailHtml({
   return base(`
     <h1 style="${H1}">Reset your password</h1>
     <p style="margin:0;color:${SECONDARY};font-size:16px;line-height:24px;">
-      Hi ${name}, we received a request to reset your CodeForge AI password.
+      Hi ${name}, we received a request to reset your Setups Works Lab password.
       Click the button below to choose a new one.
     </p>
 
@@ -256,7 +256,7 @@ export function resetPasswordEmailHtml({
   `);
 }
 
-export const resetPasswordEmailSubject = "Reset your CodeForge AI password";
+export const resetPasswordEmailSubject = "Reset your Setups Works Lab password";
 
 // ─── Billing / Payments ───────────────────────────────────────────────────────
 
@@ -360,7 +360,7 @@ export function paymentReceiptEmailHtml({
 
 export function paymentReceiptEmailSubject(planName: string, renewal: boolean): string {
   return renewal
-    ? `Your CodeForge AI ${planName} plan renewed`
+    ? `Your Setups Works Lab ${planName} plan renewed`
     : `Payment received — ${planName} is active`;
 }
 
@@ -465,7 +465,7 @@ export function newsletterEmailHtml({
     ${cta}
     ${divider()}
     <p style="margin:0;color:${MUTED};font-size:12px;line-height:18px;text-align:center;">
-      You're receiving this because you have a CodeForge AI account.
+      You're receiving this because you have a Setups Works Lab account.
       <a href="${unsubscribeUrl}" style="color:${MUTED};text-decoration:underline;">Unsubscribe</a>
     </p>
   `);

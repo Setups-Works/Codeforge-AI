@@ -238,7 +238,7 @@ export function CheckoutForm({
       const rzp = new window.Razorpay({
         key: data.key,
         subscription_id: data.subscriptionId,
-        name: "CodeForge AI",
+        name: "Setups Works Lab",
         description: trial
           ? `${planName} — ${trialDays}-day free trial, then ${cycle}`
           : `${planName} — ${cycle} (auto-renews)`,

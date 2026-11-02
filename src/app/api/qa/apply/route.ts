@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
 
   // Notify the team (best-effort).
   sendEmail({
-    to: process.env.CAREERS_EMAIL ?? process.env.FEEDBACK_EMAIL ?? process.env.SMTP_USER ?? "info@codeforgeai.io",
+    to: process.env.CAREERS_EMAIL ?? process.env.FEEDBACK_EMAIL ?? process.env.SMTP_USER ?? "info@setups.works",
     subject: `[${APP_NAME} QA] New contributor application — ${name}`,
     html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#111827">
       <h2 style="color:#006bff">New QA contributor application</h2>

@@ -3,7 +3,7 @@ import { InfoLayout } from "@/components/shared/info-layout";
 
 export const metadata = {
   title: `Terms & Conditions — ${APP_NAME}`,
-  description: "Read the Terms and Conditions for using CodeForge AI.",
+  description: "Read the Terms and Conditions for using Setups Works Lab.",
 };
 
 const EFFECTIVE_DATE = "June 17, 2026";

@@ -1005,7 +1005,7 @@ export function Landing({ problems, totalProblems, featuresByPlan, paymentsEnabl
             <div>
               <Logo />
               <p className={cn("mt-4 max-w-xs text-sm leading-relaxed", inkSub)}>
-                CodeForge AI is the AI-powered coding-interview platform for mastering data structures, algorithms and frontend engineering — built by Setups Works for your next interview.
+                Setups Works Lab is the AI-powered coding-interview platform for mastering data structures, algorithms and frontend engineering — built by Setups Works for your next interview.
               </p>
               <div className="mt-6 flex items-center gap-2">
                 {SOCIALS.map(({ label, href, Icon }) => (

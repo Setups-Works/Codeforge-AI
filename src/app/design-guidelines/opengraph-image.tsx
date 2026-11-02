@@ -8,7 +8,7 @@ export const contentType = OG_CONTENT_TYPE;
 export default function Image() {
   return renderOgCard({
     eyebrow: "Brand & product",
-    title: "The CodeForge AI design system",
+    title: "The Setups Works Lab design system",
     subtitle: "Logo, typography, color, illustration and motion",
     tags: ["Design tokens","Components","Brand kit"],
   });

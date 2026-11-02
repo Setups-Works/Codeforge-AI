@@ -28,7 +28,7 @@ export function AppearanceSettings() {
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Theme</CardTitle>
-        <CardDescription>Choose how CodeForge AI looks on this device.</CardDescription>
+        <CardDescription>Choose how Setups Works Lab looks on this device.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-3 gap-3 sm:max-w-md">

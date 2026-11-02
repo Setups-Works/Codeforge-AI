@@ -18,7 +18,7 @@ import {
 } from "@/lib/email-templates";
 
 const APP_URL =
-  process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://codeforgeai.io";
+  process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://labs.setups.works";
 
 function fmtDate(d: Date): string {
   return new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });

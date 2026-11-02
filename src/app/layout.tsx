@@ -41,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const cfg = await getEffectiveConfig();
   const name = cfg.siteName || APP_NAME;
   const desc = cfg.siteDescription || APP_DESCRIPTION;
-  const url = cfg.siteUrl || "https://codeforgeai.io";
+  const url = cfg.siteUrl || "https://labs.setups.works";
   const ogImg = cfg.ogImage || undefined;
 
   return {
@@ -55,7 +55,7 @@ export async function generateMetadata(): Promise<Metadata> {
       ? cfg.siteKeywords.split(",").map((k) => k.trim()).filter(Boolean)
       : [
           // Brand
-          "CodeForge AI", "CodeForge", "codeforgeai", "codeforgeai.io", "codeforge ai",
+          "Setups Works Lab", "Setups Works", "setupsworkslab", "labs.setups.works", "setups works lab",
           // Primary
           "AI coding mentor", "coding interview preparation", "DSA practice",
           "online compiler", "LeetCode alternative", "algorithm practice",
@@ -112,7 +112,7 @@ export default async function RootLayout({
   const cfg = await getEffectiveConfig();
   const name = cfg.siteName || APP_NAME;
   const desc = cfg.siteDescription || APP_DESCRIPTION;
-  const url = cfg.siteUrl || "https://codeforgeai.io";
+  const url = cfg.siteUrl || "https://labs.setups.works";
 
   const ogImage = cfg.ogImage || `${url}/opengraph-image`;
   const twitter = cfg.twitterHandle ? cfg.twitterHandle.replace(/^@/, "") : "";
@@ -133,21 +133,17 @@ export default async function RootLayout({
         name,
         legalName: name,
         alternateName: [
-          "CodeForge",
-          "CodeForge AI",
-          "Codeforge AI",
-          "CodeforgeAI",
-          "Code Forge AI",
-          "Code Forge",
-          "codeforgeai",
-          "codeforgeai.io",
-          "codeforge ai",
+          "Setups Works Lab",
+          "Setups Works",
+          "setupsworkslab",
+          "labs.setups.works",
+          "setups works lab",
         ],
         url,
         description: desc,
         slogan: "Master coding interviews with AI.",
-        brand: { "@type": "Brand", name: "CodeForge AI" },
-        email: "info@codeforgeai.io",
+        brand: { "@type": "Brand", name: "Setups Works Lab" },
+        email: "info@setups.works",
         telephone: "+91-6383984698",
         foundingDate: "2026-06-17",
         founder: { "@id": `${url}/#founder` },
@@ -204,7 +200,7 @@ export default async function RootLayout({
         image: { "@id": `${url}/#logo` },
         contactPoint: {
           "@type": "ContactPoint",
-          email: "info@codeforgeai.io",
+          email: "info@setups.works",
           telephone: "+91-6383984698",
           contactType: "customer support",
           availableLanguage: "en",
@@ -241,7 +237,7 @@ export default async function RootLayout({
         "@id": `${url}/#website`,
         url,
         name,
-        alternateName: ["CodeForge AI", "CodeForge", "Codeforge AI", "codeforgeai"],
+        alternateName: ["Setups Works Lab", "Setups Works", "setupsworkslab"],
         description: desc,
         publisher: { "@id": `${url}/#org` },
         inLanguage: "en",
@@ -262,7 +258,7 @@ export default async function RootLayout({
         browserRequirements: "Requires JavaScript and a modern web browser.",
         inLanguage: "en",
         isAccessibleForFree: true,
-        brand: { "@type": "Brand", name: "CodeForge AI" },
+        brand: { "@type": "Brand", name: "Setups Works Lab" },
         keywords: [
           "coding interview",
           "leetcode",

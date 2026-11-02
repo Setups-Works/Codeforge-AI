@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { getOnboardingWithName } from "@/services/user-store";
 import { OnboardingWizard } from "@/features/onboarding/onboarding-wizard";
 
-export const metadata = { title: "Welcome — CodeForge AI" };
+export const metadata = { title: "Welcome — Setups Works Lab" };
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingPage() {

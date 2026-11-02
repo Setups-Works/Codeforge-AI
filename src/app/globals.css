@@ -441,58 +441,58 @@
 }
 
 /* Markdown prose for problem descriptions / AI chat */
-.prose-codeforge {
+.prose-setups-works {
   @apply text-sm leading-relaxed text-foreground/90;
 }
-.prose-codeforge h1,
-.prose-codeforge h2,
-.prose-codeforge h3 {
+.prose-setups-works h1,
+.prose-setups-works h2,
+.prose-setups-works h3 {
   @apply font-semibold text-foreground mt-5 mb-2;
 }
-.prose-codeforge h1 {
+.prose-setups-works h1 {
   @apply text-lg;
 }
-.prose-codeforge h2 {
+.prose-setups-works h2 {
   @apply text-base;
 }
-.prose-codeforge h3 {
+.prose-setups-works h3 {
   @apply text-sm;
 }
-.prose-codeforge p {
+.prose-setups-works p {
   @apply my-2.5;
 }
-.prose-codeforge img {
+.prose-setups-works img {
   @apply my-4 w-full rounded-xl border shadow-sm;
 }
-.prose-codeforge ul {
+.prose-setups-works ul {
   @apply list-disc pl-5 my-2.5 space-y-1;
 }
-.prose-codeforge ol {
+.prose-setups-works ol {
   @apply list-decimal pl-5 my-2.5 space-y-1;
 }
-.prose-codeforge code {
+.prose-setups-works code {
   @apply font-mono text-[0.8125rem] bg-muted px-1.5 py-0.5 rounded-md text-foreground;
 }
-.prose-codeforge pre {
+.prose-setups-works pre {
   @apply bg-muted/60 border rounded-lg p-3 my-3 overflow-x-auto;
 }
-.prose-codeforge pre code {
+.prose-setups-works pre code {
   @apply bg-transparent p-0;
 }
-.prose-codeforge strong {
+.prose-setups-works strong {
   @apply font-semibold text-foreground;
 }
-.prose-codeforge blockquote {
+.prose-setups-works blockquote {
   @apply border-l-2 border-primary/50 pl-3 my-3 text-muted-foreground;
 }
-.prose-codeforge a {
+.prose-setups-works a {
   @apply text-primary underline underline-offset-2;
 }
-.prose-codeforge table {
+.prose-setups-works table {
   @apply w-full text-left my-3 border-collapse;
 }
-.prose-codeforge th,
-.prose-codeforge td {
+.prose-setups-works th,
+.prose-setups-works td {
   @apply border px-2 py-1.5;
 }
 

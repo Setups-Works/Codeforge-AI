@@ -53,6 +53,6 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       setFontSize: (fontSize) => set({ fontSize }),
       setVimMode: (vimMode) => set({ vimMode }),
     }),
-    { name: "codeforge-workspace" },
+    { name: "setups-works-workspace" },
   ),
 );

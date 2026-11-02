@@ -1,6 +1,6 @@
 import { complete } from "@/services/ai/groq";
 
-const CLASSIFIER_SYSTEM = `You are a topic gate for "CodeForge AI", a coding-interview mentor chatbot.
+const CLASSIFIER_SYSTEM = `You are a topic gate for "Setups Works Lab", a coding-interview mentor chatbot.
 Classify the user's latest message and reply with EXACTLY one word: ALLOW or BLOCK.
 
 ALLOW when the message is about: programming, code, debugging, data structures, algorithms,
@@ -39,4 +39,4 @@ export async function isOnTopic(message: string): Promise<boolean> {
 }
 
 export const OFF_TOPIC_REPLY =
-  "I'm your coding mentor on CodeForge AI, so I can only help with programming, DSA and interview-prep questions. Try asking me about a problem, an algorithm, or your code!";
+  "I'm your coding mentor on Setups Works Lab, so I can only help with programming, DSA and interview-prep questions. Try asking me about a problem, an algorithm, or your code!";

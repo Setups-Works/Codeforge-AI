@@ -8,7 +8,7 @@
  * verify ownership. Override with the INDEXNOW_KEY env var if desired.
  */
 
-const HOST = "codeforgeai.io";
+const HOST = "labs.setups.works";
 const BASE = `https://${HOST}`;
 
 /** A stable, verifiable key (a–z, 0–9, 8–128 chars). */

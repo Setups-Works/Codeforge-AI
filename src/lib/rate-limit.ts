@@ -66,7 +66,7 @@ function getUpstashLimiter(name: LimitName): Ratelimit | null {
         config.requests,
         config.window as `${number} s`,
       ),
-      prefix: `codeforge:rl:${name}`,
+      prefix: `setups-works:rl:${name}`,
     });
     upstashLimiters.set(name, limiter);
   }

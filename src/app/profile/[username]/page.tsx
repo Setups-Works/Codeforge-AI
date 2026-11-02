@@ -15,7 +15,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { username } = await params;
-  return { title: `@${username} — CodeForge AI` };
+  return { title: `@${username} — Setups Works Lab` };
 }
 
 export default async function PublicProfilePage({ params }: PageProps) {

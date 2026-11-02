@@ -197,11 +197,11 @@ export function NewsletterManager() {
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="nl-cta-label">Button label <span className="text-muted-foreground">(optional)</span></Label>
-              <Input id="nl-cta-label" value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} placeholder="Open CodeForge AI" maxLength={40} />
+              <Input id="nl-cta-label" value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} placeholder="Open Setups Works Lab" maxLength={40} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="nl-cta-url">Button URL</Label>
-              <Input id="nl-cta-url" value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} placeholder="https://codeforgeai.io/…" />
+              <Input id="nl-cta-url" value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} placeholder="https://labs.setups.works/…" />
             </div>
           </div>
         </div>

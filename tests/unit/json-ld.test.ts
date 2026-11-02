@@ -30,6 +30,6 @@ describe("serializeJsonLd", () => {
   });
 
   it("leaves ordinary content untouched", () => {
-    expect(serializeJsonLd({ name: "CodeForge AI" })).toBe('{"name":"CodeForge AI"}');
+    expect(serializeJsonLd({ name: "Setups Works Lab" })).toBe('{"name":"Setups Works Lab"}');
   });
 });

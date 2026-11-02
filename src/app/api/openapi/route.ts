@@ -5,7 +5,7 @@ import { APP_NAME, APP_VERSION } from "@/lib/constants";
 export const runtime = "nodejs";
 
 /**
- * OpenAPI 3.1 description of CodeForge AI's public/applicant-facing API.
+ * OpenAPI 3.1 description of Setups Works Lab's public/applicant-facing API.
  * Rendered interactively at /api-docs (Swagger UI). Most endpoints require a
  * logged-in session cookie (NextAuth); admin endpoints require an admin role.
  */
@@ -19,10 +19,10 @@ export async function GET() {
       title: `${APP_NAME} API`,
       version: APP_VERSION,
       description:
-        "Public and member-facing endpoints for CodeForge AI. Authentication uses the NextAuth session cookie set on sign-in; there is no separate API key. Admin endpoints additionally require an admin account.",
-      contact: { name: "CodeForge AI", email: "info@codeforgeai.io", url: "https://codeforgeai.io" },
+        "Public and member-facing endpoints for Setups Works Lab. Authentication uses the NextAuth session cookie set on sign-in; there is no separate API key. Admin endpoints additionally require an admin account.",
+      contact: { name: "Setups Works Lab", email: "info@setups.works", url: "https://labs.setups.works" },
     },
-    servers: [{ url: "https://codeforgeai.io", description: "Production" }],
+    servers: [{ url: "https://labs.setups.works", description: "Production" }],
     tags: [
       { name: "Careers", description: "Job listings and applications" },
       { name: "QA", description: "QA contributor program and bug reports" },

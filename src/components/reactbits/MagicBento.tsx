@@ -24,7 +24,7 @@ export interface BentoProps {
   glowColor?: string;
   clickEffect?: boolean;
   enableMagnetism?: boolean;
-  /** Override the demo card content (CodeForge: pass real feature cards). */
+  /** Override the demo card content (Setups Works: pass real feature cards). */
   cards?: BentoCardProps[];
 }
 

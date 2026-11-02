@@ -12,7 +12,7 @@ import {
 
 export const metadata: Metadata = {
   title: `Contact Us — ${APP_NAME}`,
-  description: "Get in touch with the CodeForge AI team at Setups Works.",
+  description: "Get in touch with the Setups Works Lab team at Setups Works.",
 };
 
 export default function ContactPage() {
@@ -32,7 +32,7 @@ export default function ContactPage() {
       {/* contact methods */}
       <section className="mt-10 grid gap-4 sm:grid-cols-2">
         <a
-          href="mailto:info@codeforgeai.io"
+          href="mailto:info@setups.works"
           className="group flex items-start gap-4 rounded-2xl border bg-card p-6 transition-colors hover:border-primary/40"
         >
           <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10">
@@ -40,7 +40,7 @@ export default function ContactPage() {
           </span>
           <div>
             <h2 className="text-sm font-semibold">Email</h2>
-            <p className="text-sm text-primary">info@codeforgeai.io</p>
+            <p className="text-sm text-primary">info@setups.works</p>
             <p className="mt-1 text-xs text-muted-foreground">
               Best for support and detailed questions.
             </p>
@@ -106,10 +106,10 @@ export default function ContactPage() {
             <dt className="w-24 text-muted-foreground">Email</dt>
             <dd className="font-medium">
               <a
-                href="mailto:info@codeforgeai.io"
+                href="mailto:info@setups.works"
                 className="hover:text-primary"
               >
-                info@codeforgeai.io
+                info@setups.works
               </a>
             </dd>
           </div>

@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
           <p style="font-weight:600;margin:0 0 8px;">${safeTitle}</p>
           <div style="white-space:pre-wrap;font-size:14px;line-height:1.6;color:#374151;">${safeDesc}</div>
         </div>
-        <p style="font-size:13px;color:#6b7280;">— The ${APP_NAME} team · <a href="https://codeforgeai.io" style="color:#006bff;text-decoration:none;">codeforgeai.io</a></p>
+        <p style="font-size:13px;color:#6b7280;">— The ${APP_NAME} team · <a href="https://labs.setups.works" style="color:#006bff;text-decoration:none;">labs.setups.works</a></p>
       </div>
     `;
     try {

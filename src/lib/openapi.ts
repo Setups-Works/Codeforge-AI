@@ -27,11 +27,11 @@ const userRefSchema = {
 export const openApiSpec: Record<string, any> = {
   openapi: "3.0.3",
   info: {
-    title: "CodeForge AI API",
+    title: "Setups Works Lab API",
     version: "2.1.0",
     description:
-      "REST API for CodeForge AI — an AI-powered coding practice platform. All protected endpoints require an active session cookie obtained via `/api/auth/signin`.",
-    contact: { name: "CodeForge AI", email: "nitheeraj1@gmail.com" },
+      "REST API for Setups Works Lab — an AI-powered coding practice platform. All protected endpoints require an active session cookie obtained via `/api/auth/signin`.",
+    contact: { name: "Setups Works Lab", email: "nitheeraj1@gmail.com" },
     license: { name: "MIT" },
   },
   servers: [{ url: "/api", description: "Current server" }],

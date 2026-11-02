@@ -5,7 +5,7 @@ import { ChangelogView, type Release } from "./changelog-view";
 export const metadata = {
   title: `Changelog — ${APP_NAME}`,
   description:
-    "What's new in CodeForge AI — release notes and version history.",
+    "What's new in Setups Works Lab — release notes and version history.",
 };
 
 const RELEASES: Release[] = [
@@ -285,7 +285,7 @@ const RELEASES: Release[] = [
         "AI Mentor now stays on topic — it only answers coding, DSA and interview-prep questions and politely declines anything off-topic",
         "Pricing reimagined around monthly AI credits, and the feature list now reflects exactly what each plan unlocks (admin-controlled)",
         "Admin dashboard — real revenue analytics plus new Billing & Usage, Coupons and Feature Access managers",
-        "Invoices now include your billing address and Setups Works branding; support is info@codeforgeai.io",
+        "Invoices now include your billing address and Setups Works branding; support is info@setups.works",
         "Faster pages — analytics load lazily after first paint and sign-in/up ship ~68 kB less JavaScript",
         "Hardened payment security — constant-time signature checks, webhook verification with replay protection, request-size limits and login throttling",
       ],
@@ -304,7 +304,7 @@ const RELEASES: Release[] = [
       new: [
         "AI credit metering — every AI tool now counts against a monthly allowance based on your plan, with a clear 'out of credits' message when you hit the limit",
         "Billing & Usage in Settings — see AI credits used, remaining credits and your monthly limit at a glance, with a progress bar and a 'running low' warning",
-        "Subscription history — a full record of your past payments, each with a downloadable, printable invoice (CodeForge AI branded)",
+        "Subscription history — a full record of your past payments, each with a downloadable, printable invoice (Setups Works Lab branded)",
         "Upgrade prompt right where it matters — free-plan users get a one-tap upgrade CTA on the credits card",
       ],
       improved: [
@@ -323,7 +323,7 @@ const RELEASES: Release[] = [
     tagColor: "bg-blue-500/15 text-blue-500 border-blue-500/30",
     changes: {
       new: [
-        "CodeForge AI now lives on its own domain — codeforgeai.io",
+        "Setups Works Lab now lives on its own domain — labs.setups.works",
         "Sharper SEO — richer structured data (Organization, web-app and FAQ schema) plus a canonical sitemap for better search visibility",
         "Google Analytics and LangSmith AI tracing for product and AI observability",
       ],
@@ -333,7 +333,7 @@ const RELEASES: Release[] = [
         "Feedback now arrives straight to our inbox by email, with a simpler form",
       ],
       fixed: [
-        "Sitemap pointed at the preview deployment URL, which Google Search Console rejected — it now uses codeforgeai.io",
+        "Sitemap pointed at the preview deployment URL, which Google Search Console rejected — it now uses labs.setups.works",
         "Landing hero heading and CTA now match across the marketing pages and tests",
       ],
     },
@@ -407,7 +407,7 @@ const RELEASES: Release[] = [
     tagColor: "bg-blue-500/15 text-blue-500 border-blue-500/30",
     changes: {
       new: [
-        "Installable app (PWA) — add CodeForge AI to your desktop or mobile home screen, with app icons and an offline fallback page",
+        "Installable app (PWA) — add Setups Works Lab to your desktop or mobile home screen, with app icons and an offline fallback page",
         "PostHog product analytics — pageviews, events, and session insights",
         "PostHog error tracking — client and server-side exceptions are captured automatically",
         "PostHog server-side logs via OpenTelemetry",
@@ -515,7 +515,7 @@ const RELEASES: Release[] = [
     tagColor: "bg-blue-500/15 text-blue-500 border-blue-500/30",
     changes: {
       new: [
-        "Launched CodeForge AI — AI-powered coding interview prep platform",
+        "Launched Setups Works Lab — AI-powered coding interview prep platform",
         "VS Code-style Monaco editor with full 12-language support: JavaScript, TypeScript, Python, Java, C, C++, C#, Go, PHP, Rust, Kotlin, Swift",
         "AI Mentor with progressive hints and complexity analysis",
         "AI Pair Programmer with real-time streaming suggestions",

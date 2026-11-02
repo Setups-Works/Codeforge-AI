@@ -17,7 +17,7 @@ describe("payment email templates", () => {
       trialDays: 7,
       firstChargeDate: "18 Jul 2026",
       amountLabel: "₹49",
-      manageUrl: "https://codeforgeai.io/settings?tool=billing",
+      manageUrl: "https://labs.setups.works/settings?tool=billing",
     });
     expect(html).toContain("<!DOCTYPE html>");
     expect(html).toContain("Ada");

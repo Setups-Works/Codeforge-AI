@@ -20,7 +20,7 @@ const POSTHOG_HOST =
 
 export const loggerProvider = POSTHOG_KEY
   ? new LoggerProvider({
-      resource: resourceFromAttributes({ "service.name": "codeforge-ai" }),
+      resource: resourceFromAttributes({ "service.name": "setups-works-lab" }),
       processors: [
         new BatchLogRecordProcessor(
           new OTLPLogExporter({
@@ -44,7 +44,7 @@ export function serverLog(
   severityNumber: SeverityNumber = SeverityNumber.INFO,
 ): void {
   if (!loggerProvider) return;
-  loggerProvider.getLogger("codeforge-ai").emit({
+  loggerProvider.getLogger("setups-works-lab").emit({
     body,
     severityNumber,
     attributes,

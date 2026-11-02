@@ -1,5 +1,5 @@
-// CodeForge AI service worker — minimal, safe caching for installability + basic offline.
-const CACHE = "codeforge-v2";
+// Setups Works Lab service worker — minimal, safe caching for installability + basic offline.
+const CACHE = "setups-works-v2";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {

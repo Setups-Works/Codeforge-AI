@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       await t.sendMail({
         from: from || user,
         to,
-        subject: "CodeForge AI — SMTP Test",
+        subject: "Setups Works Lab — SMTP Test",
         html: "<p>SMTP connection test from the admin panel. If you see this, it works!</p>",
       });
       return ok(`SMTP connected and test email sent to ${to}.`);

@@ -3,7 +3,7 @@ import { InfoLayout } from "@/components/shared/info-layout";
 
 export const metadata = {
   title: `Privacy Policy — ${APP_NAME}`,
-  description: "How CodeForge AI collects, uses, and protects your data.",
+  description: "How Setups Works Lab collects, uses, and protects your data.",
 };
 
 const EFFECTIVE_DATE = "June 17, 2026";

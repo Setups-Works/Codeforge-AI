@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 /** Shared social-share card, rendered by every route's opengraph-image. */
 export const OG_SIZE = { width: 1200, height: 630 };
-export const OG_ALT = "CodeForge AI — Master coding interviews with AI";
+export const OG_ALT = "Setups Works Lab — Master coding interviews with AI";
 export const OG_CONTENT_TYPE = "image/png";
 
 // Font Awesome "fire" glyph (faFire) on the brand-blue rounded square — matches the favicon/PWA icon.
@@ -66,7 +66,7 @@ export function renderOgCard(opts: OgCardOptions = {}) {
         <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={MARK} width={64} height={64} alt="" />
-          <div style={{ fontSize: 30, fontWeight: 600, color: "#171717" }}>CodeForge AI</div>
+          <div style={{ fontSize: 30, fontWeight: 600, color: "#171717" }}>Setups Works Lab</div>
         </div>
 
         {/* headline */}

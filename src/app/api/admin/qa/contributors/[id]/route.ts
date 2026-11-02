@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   // Email the contributor when they're approved (best-effort).
   if (body.status === "approved" && doc.email) {
-    const appUrl = process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://codeforgeai.io";
+    const appUrl = process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://labs.setups.works";
     sendEmail({
       to: doc.email,
       subject: `You're in — ${APP_NAME} QA program`,

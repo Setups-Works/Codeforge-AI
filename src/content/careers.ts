@@ -22,9 +22,9 @@ export const CAREERS: Career[] = [
     type: "Open Source",
     location: "Remote",
     icon: "Code2",
-    summary: "Help build CodeForge AI in the open — ship features, fix bugs and grow your portfolio.",
+    summary: "Help build Setups Works Lab in the open — ship features, fix bugs and grow your portfolio.",
     about:
-      "Join the CodeForge AI Open Source Contributor Program and work on a real, production product used by developers preparing for interviews. You will collaborate with the team on GitHub, pick up issues that match your level, and get your contributions credited.",
+      "Join the Setups Works Lab Open Source Contributor Program and work on a real, production product used by developers preparing for interviews. You will collaborate with the team on GitHub, pick up issues that match your level, and get your contributions credited.",
     responsibilities: [
       "Contribute features and bug fixes to the platform",
       "Open clear pull requests and respond to review feedback",
@@ -44,9 +44,9 @@ export const CAREERS: Career[] = [
     type: "Internship",
     location: "Remote",
     icon: "TrendingUp",
-    summary: "Drive growth, partnerships and go-to-market for CodeForge AI.",
+    summary: "Drive growth, partnerships and go-to-market for Setups Works Lab.",
     about:
-      "We are looking for a Business Development Intern to help CodeForge AI reach more learners. You will work directly with the founder on outreach, partnerships and growth experiments — a high-ownership role with real impact.",
+      "We are looking for a Business Development Intern to help Setups Works Lab reach more learners. You will work directly with the founder on outreach, partnerships and growth experiments — a high-ownership role with real impact.",
     responsibilities: [
       "Identify and reach out to potential partners and communities",
       "Run outreach and growth experiments",
@@ -66,7 +66,7 @@ export const CAREERS: Career[] = [
     type: "Internship",
     location: "Remote",
     icon: "ShieldCheck",
-    summary: "Keep CodeForge AI rock-solid by finding bugs before users do.",
+    summary: "Keep Setups Works Lab rock-solid by finding bugs before users do.",
     about:
       "As a QA Testing Intern you will help us ship a polished, reliable product. You will write and run test cases across the platform, report issues clearly, and help raise the quality bar on every release.",
     responsibilities: [

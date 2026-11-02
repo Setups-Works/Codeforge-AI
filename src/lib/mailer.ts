@@ -20,7 +20,7 @@ export async function sendEmail({
   html: string;
 }) {
   await transporter.sendMail({
-    from: process.env.SMTP_FROM ?? `"CodeForge AI" <${process.env.SMTP_USER}>`,
+    from: process.env.SMTP_FROM ?? `"Setups Works Lab" <${process.env.SMTP_USER}>`,
     to,
     subject,
     html,

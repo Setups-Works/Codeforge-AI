@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
   // Notify the team (best-effort).
   const esc = (s: string) => s.replace(/</g, "&lt;").replace(/>/g, "&gt;");
   sendEmail({
-    to: process.env.FEEDBACK_EMAIL ?? process.env.SMTP_USER ?? "info@codeforgeai.io",
+    to: process.env.FEEDBACK_EMAIL ?? process.env.SMTP_USER ?? "info@setups.works",
     subject: `[${APP_NAME} QA] ${d.severity.toUpperCase()} bug — ${d.title}`,
     html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#111827">
       <h2 style="color:#006bff">New bug report — ${esc(d.area)}</h2>

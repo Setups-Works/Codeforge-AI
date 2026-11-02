@@ -5,8 +5,8 @@ import { auth } from "@/lib/auth";
 import { SwaggerUI } from "./swagger-ui";
 
 export const metadata: Metadata = {
-  title: "API Documentation — CodeForge AI",
-  description: "Interactive OpenAPI 3.0 documentation for the CodeForge AI REST API",
+  title: "API Documentation — Setups Works Lab",
+  description: "Interactive OpenAPI 3.0 documentation for the Setups Works Lab REST API",
 };
 
 export default async function DocsPage() {
@@ -18,7 +18,7 @@ export default async function DocsPage() {
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <span className="font-mono text-sm font-bold text-primary">CodeForge AI</span>
+            <span className="font-mono text-sm font-bold text-primary">Setups Works Lab</span>
             <span className="rounded bg-primary/10 px-2 py-0.5 font-mono text-xs font-semibold text-primary">API v1.0</span>
           </div>
           <nav className="flex items-center gap-4 text-sm text-muted-foreground">

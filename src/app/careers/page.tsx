@@ -11,7 +11,7 @@ import { PageAura } from "@/components/shared/reactbits-kit";
 
 export const metadata: Metadata = {
   title: `Careers — ${APP_NAME}`,
-  description: "Join the CodeForge AI team. Open internship and open-source roles, remote-friendly.",
+  description: "Join the Setups Works Lab team. Open internship and open-source roles, remote-friendly.",
 };
 export const dynamic = "force-dynamic";
 
@@ -29,7 +29,7 @@ export default async function CareersPage() {
             <span className="inline-flex items-center gap-1.5 text-[13px] font-medium tracking-tight text-primary">
               <span className="size-1.5 rounded-full bg-primary" /> Careers
             </span>
-            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Build CodeForge AI with us</h1>
+            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Build Setups Works Lab with us</h1>
             <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
               We&rsquo;re a small, fast-moving team. These roles are open now — remote-friendly, high-ownership.
             </p>
@@ -62,7 +62,7 @@ export default async function CareersPage() {
 
           <p className="mx-auto mt-10 max-w-3xl text-center text-sm text-muted-foreground">
             Don&rsquo;t see a fit? Email us at{" "}
-            <a href="mailto:info@codeforgeai.io" className="font-medium text-primary hover:underline">info@codeforgeai.io</a>.
+            <a href="mailto:info@setups.works" className="font-medium text-primary hover:underline">info@setups.works</a>.
           </p>
         </div>
       </main>

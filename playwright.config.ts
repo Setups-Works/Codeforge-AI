@@ -19,7 +19,7 @@ export default defineConfig({
       // Smoke tests only exercise public pages; a dummy secret is enough
       AUTH_SECRET: process.env.AUTH_SECRET ?? "playwright-test-secret",
       MONGODB_URI:
-        process.env.MONGODB_URI ?? "mongodb://127.0.0.1:27017/codeforge-e2e",
+        process.env.MONGODB_URI ?? "mongodb://127.0.0.1:27017/setups-works-e2e",
     },
   },
 });

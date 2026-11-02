@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
   const link = (label: string, url?: string) => (url ? `<br/><b>${label}:</b> <a href="${esc(url)}">${esc(url)}</a>` : "");
   try {
     await sendEmail({
-      to: process.env.CAREERS_EMAIL ?? process.env.FEEDBACK_EMAIL ?? process.env.SMTP_USER ?? "info@codeforgeai.io",
+      to: process.env.CAREERS_EMAIL ?? process.env.FEEDBACK_EMAIL ?? process.env.SMTP_USER ?? "info@setups.works",
       subject: `[${APP_NAME} Careers] ${role.title} — ${name}`,
       html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#111827">
         <h2 style="color:#006bff">New application — ${esc(role.title)}</h2>
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
       html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#111827">
         <h2 style="color:#006bff;margin:0 0 8px">Thanks for applying!</h2>
         <p style="font-size:14px;line-height:1.6;color:#374151">We received your application for <b>${esc(role.title)}</b> at ${APP_NAME}. Our team will review it and get back to you if it's a fit.</p>
-        <p style="font-size:13px;color:#6b7280">— The ${APP_NAME} team · <a href="https://codeforgeai.io" style="color:#006bff;text-decoration:none">codeforgeai.io</a></p>
+        <p style="font-size:13px;color:#6b7280">— The ${APP_NAME} team · <a href="https://labs.setups.works" style="color:#006bff;text-decoration:none">labs.setups.works</a></p>
       </div>`,
     });
   } catch (err) {
