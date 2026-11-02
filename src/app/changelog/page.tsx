@@ -10,10 +10,26 @@ export const metadata = {
 
 const RELEASES: Release[] = [
   {
-    version: "3.4.0",
-    date: "October 30, 2026",
+    version: "3.5.0",
+    date: "November 2, 2026",
     tag: "Latest",
     tagColor: "bg-green-500/15 text-green-500 border-green-500/30",
+    changes: {
+      new: [
+        "CodeForge AI is now Setups Works Lab — a new name, a new wordmark and a new home at labs.setups.works",
+      ],
+      improved: [
+        "Emails, invoices, the status page, the API docs and every page's search and sharing details now carry the Setups Works Lab name and address",
+        "Support and contact emails now go to info@setups.works",
+      ],
+      fixed: [],
+    },
+  },
+  {
+    version: "3.4.0",
+    date: "October 30, 2026",
+    tag: "Stable",
+    tagColor: "bg-blue-500/15 text-blue-500 border-blue-500/30",
     changes: {
       new: [],
       improved: [
