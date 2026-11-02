@@ -30,18 +30,6 @@ export function urlset(entries: SitemapEntry[]): string {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>`;
 }
 
-/** Build a `<sitemapindex>` referencing the per-type child sitemaps (Yoast-style). */
-export function sitemapIndex(children: { loc: string; lastmod?: Date }[]): string {
-  const body = children
-    .map((c) => {
-      const parts = [`    <loc>${esc(c.loc)}</loc>`];
-      if (c.lastmod) parts.push(`    <lastmod>${c.lastmod.toISOString()}</lastmod>`);
-      return `  <sitemap>\n${parts.join("\n")}\n  </sitemap>`;
-    })
-    .join("\n");
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</sitemapindex>`;
-}
-
 /** XML response with sensible edge caching (1h fresh, 1d stale-while-revalidate). */
 export function xmlResponse(body: string): Response {
   return new Response(body, {

@@ -191,7 +191,7 @@ ${docLines.join("\n")}
 
 ${blogLines.length ? blogLines.join("\n") : `See all posts at ${base}/blog`}
 
-Full, always-current index: ${base}/post-sitemap.xml
+Full, always-current index: ${base}/sitemap.xml
 
 ---
 
@@ -279,20 +279,12 @@ ${base}/sitemap.xml
 
 ## Sitemaps
 
-Sitemap index (auto-updating, references every child sitemap below):
+Sitemap (auto-updating, every public URL):
 ${base}/sitemap.xml
 
-Per-content-type sitemaps:
-- Pages: ${base}/page-sitemap.xml
-- Problems (all published DSA problems): ${base}/problem-sitemap.xml
-- Blog posts: ${base}/post-sitemap.xml
-- Forum discussions: ${base}/discussion-sitemap.xml
-- Help / documentation: ${base}/help-sitemap.xml
-- Careers: ${base}/careers-sitemap.xml
-
-These sitemaps contain canonical URLs for all public content and auto-update as
+This sitemap contains canonical URLs for all public content and updates as
 problems, blog posts and forum threads are added. AI assistants and search
-engines may use them to discover and re-crawl updated content.
+engines may use it to discover and re-crawl updated content.
 
 ---
 

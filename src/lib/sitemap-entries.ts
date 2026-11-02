@@ -1,13 +1,16 @@
 import { CAREERS } from "@/content/careers";
-import { siteBase, urlset, xmlResponse, type SitemapEntry } from "@/lib/sitemap-xml";
+import { DOC_ARTICLES } from "@/content/docs";
+import { listPublishedQuestionSlugs } from "@/services/questions";
+import { listPublishedSlugs } from "@/services/blog-store";
+import { listDiscussionsForSitemap } from "@/services/discussions-store";
+import type { SitemapEntry } from "@/lib/sitemap-xml";
 
-export const dynamic = "force-dynamic";
-
-/** Static marketing / info pages. */
-export async function GET() {
-  const base = await siteBase();
+/** Every public URL, in one list: static pages, help, careers, then DB-backed
+ *  problems, blog posts and forum threads. DB failures drop just that section
+ *  so the sitemap never errors. */
+export async function allSitemapEntries(base: string): Promise<SitemapEntry[]> {
   const now = new Date();
-  const entries: SitemapEntry[] = [
+  const pages: SitemapEntry[] = [
     { loc: base, lastmod: now, changefreq: "daily", priority: 1 },
     { loc: `${base}/problems`, lastmod: now, changefreq: "daily", priority: 0.9 },
     { loc: `${base}/compiler`, lastmod: now, changefreq: "monthly", priority: 0.7 },
@@ -32,5 +35,37 @@ export async function GET() {
     // Note: /login and /register are intentionally excluded — auth pages should
     // not be indexed and only hurt the site's indexed-page ratio.
   ];
-  return xmlResponse(urlset(entries));
+
+  const help: SitemapEntry[] = DOC_ARTICLES.map((a) => ({
+    loc: `${base}/help/${a.slug}`,
+    lastmod: now,
+    changefreq: "monthly",
+    priority: 0.5,
+  }));
+  const careers: SitemapEntry[] = CAREERS.map((c) => ({
+    loc: `${base}/careers/${c.slug}`,
+    lastmod: now,
+    changefreq: "monthly",
+    priority: 0.5,
+  }));
+
+  const [problems, posts, threads] = await Promise.all([
+    listPublishedQuestionSlugs()
+      .then((rows) =>
+        rows.map((p): SitemapEntry => ({ loc: `${base}/problems/${p.slug}`, lastmod: p.updatedAt ?? now, changefreq: "weekly", priority: 0.7 })),
+      )
+      .catch(() => [] as SitemapEntry[]),
+    listPublishedSlugs()
+      .then((rows) =>
+        rows.map((p): SitemapEntry => ({ loc: `${base}/blog/${p.slug}`, lastmod: p.updatedAt ?? now, changefreq: "monthly", priority: 0.6 })),
+      )
+      .catch(() => [] as SitemapEntry[]),
+    listDiscussionsForSitemap()
+      .then((rows) =>
+        rows.map((t): SitemapEntry => ({ loc: `${base}/forum/${t.id}`, lastmod: t.updatedAt ?? now, changefreq: "weekly", priority: 0.5 })),
+      )
+      .catch(() => [] as SitemapEntry[]),
+  ]);
+
+  return [...pages, ...problems, ...posts, ...threads, ...help, ...careers];
 }
