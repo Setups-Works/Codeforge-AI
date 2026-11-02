@@ -117,7 +117,7 @@ export default async function RootLayout({
   const ogImage = cfg.ogImage || `${url}/opengraph-image`;
   const twitter = cfg.twitterHandle ? cfg.twitterHandle.replace(/^@/, "") : "";
   const sameAs = [
-    "https://github.com/CodeForgeAI-io/Codeforge-AI",
+    "https://github.com/Setups-Works/setups-works-lab",
     "https://www.linkedin.com/company/codeforge-ai/",
     "https://www.instagram.com/codeforgeai.io/",
     "https://dev.to/codeforgeai-io",

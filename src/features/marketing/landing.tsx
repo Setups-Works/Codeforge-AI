@@ -126,7 +126,7 @@ const lineCls = "border-black/[0.06] dark:border-white/[0.07]";
 const hoverRow = "hover:bg-black/[0.03] dark:hover:bg-white/[0.05]";
 
 const SOCIALS = [
-  { label: "GitHub", href: "https://github.com/CodeForgeAI-io/Codeforge-AI", Icon: null },
+  { label: "GitHub", href: "https://github.com/Setups-Works/setups-works-lab", Icon: null },
   { label: "LinkedIn", href: "https://www.linkedin.com/company/codeforge-ai/", Icon: FaLinkedin },
   { label: "Instagram", href: "https://www.instagram.com/codeforgeai.io/", Icon: FaInstagram },
 ] as const;

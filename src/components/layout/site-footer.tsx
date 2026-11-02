@@ -16,7 +16,7 @@ export function SiteFooter() {
           <Link href="/terms" className="transition-colors hover:text-foreground">Terms</Link>
           <Link href="/privacy" className="transition-colors hover:text-foreground">Privacy</Link>
           <Link href="/changelog" className="transition-colors hover:text-foreground">Changelog</Link>
-          <a href="https://github.com/CodeForgeAI-io/Codeforge-AI" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">GitHub</a>
+          <a href="https://github.com/Setups-Works/setups-works-lab" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">GitHub</a>
           <a href="https://www.linkedin.com/company/codeforge-ai/" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">LinkedIn</a>
           <a href="https://www.instagram.com/codeforgeai.io/" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-foreground">Instagram</a>
         </nav>

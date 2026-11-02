@@ -30,7 +30,7 @@ const primaryBtn =
   "h-9 rounded-xl bg-neutral-900 px-4 text-white hover:bg-neutral-700 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200";
 
 const SOCIALS = [
-  { label: "GitHub", href: "https://github.com/CodeForgeAI-io/Codeforge-AI", Icon: null },
+  { label: "GitHub", href: "https://github.com/Setups-Works/setups-works-lab", Icon: null },
   { label: "LinkedIn", href: "https://www.linkedin.com/company/codeforge-ai/", Icon: FaLinkedin },
   { label: "Instagram", href: "https://www.instagram.com/codeforgeai.io/", Icon: FaInstagram },
 ] as const;
