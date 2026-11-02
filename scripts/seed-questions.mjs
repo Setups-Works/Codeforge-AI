@@ -12,8 +12,9 @@ import mongoose from "mongoose";
 import { JS_SPECS } from "./seed/js-specs.mjs";
 import { REACT_SPECS_1 } from "./seed/react-specs-1.mjs";
 import { REACT_SPECS_2 } from "./seed/react-specs-2.mjs";
+import { DSA_SPECS } from "./seed/dsa-specs.mjs";
 
-const SPECS = [...JS_SPECS, ...REACT_SPECS_1, ...REACT_SPECS_2];
+const SPECS = [...JS_SPECS, ...REACT_SPECS_1, ...REACT_SPECS_2, ...DSA_SPECS];
 
 function loadMongoUri() {
   if (process.env.MONGODB_URI) return process.env.MONGODB_URI;
