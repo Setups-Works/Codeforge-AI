@@ -73,8 +73,8 @@ const NAV = [
 ] as const;
 
 const ASSETS = [
-  { name: "Wordmark · light", file: "/logo.png", download: "setups-works-lab-logo-light.png", meta: "PNG · 774×186", dark: false },
-  { name: "Wordmark · dark", file: "/logo-dark.png", download: "setups-works-lab-logo-dark.png", meta: "PNG · 774×186", dark: true },
+  { name: "Wordmark · light", file: "/logo.png", download: "setups-works-lab-logo-light.png", meta: "PNG · 956×223", dark: false },
+  { name: "Wordmark · dark", file: "/logo-dark.png", download: "setups-works-lab-logo-dark.png", meta: "PNG · 956×223", dark: true },
   { name: "App icon · vector", file: "/icon.svg", download: "setups-works-lab-icon.svg", meta: "SVG", dark: false },
   { name: "App icon · 512", file: "/icon-512.png", download: "setups-works-lab-icon-512.png", meta: "PNG · 512×512", dark: false },
 ];

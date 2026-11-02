@@ -28,16 +28,16 @@ export function Logo({
           <img
             src="/logo.png"
             alt={APP_NAME}
-            width={257}
-            height={62}
+            width={956}
+            height={223}
             className="h-7 w-auto dark:hidden"
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo-dark.png"
             alt={APP_NAME}
-            width={257}
-            height={62}
+            width={956}
+            height={223}
             className="hidden h-7 w-auto dark:inline-block"
           />
         </>
