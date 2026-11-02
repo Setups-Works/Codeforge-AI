@@ -11,7 +11,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:e2e": "playwright test",
-    "seed": "node scripts/seed-questions.mjs"
+    "seed": "node scripts/seed-questions.mjs",
+    "seed:supabase": "node scripts/seed-questions-supabase.mjs"
   },
   "dependencies": {
     "@codesandbox/sandpack-react": "^2.20.0",
