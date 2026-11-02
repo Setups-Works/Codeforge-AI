@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/shared/logo";
-import { CheckCircle2, Flame } from "@/components/icons";
+import { CheckCircle2 } from "@/components/icons";
 import { APP_NAME } from "@/lib/constants";
 
 // Auth pages (sign in / sign up / password reset) must never be indexed —
@@ -63,11 +63,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
         <div className="relative z-10 flex h-full flex-col justify-between p-12 text-white xl:p-16">
           {/* brand */}
-          <div className="flex items-center gap-2.5">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-[#006bff] shadow-lg shadow-[#006bff]/30">
-              <Flame className="size-5 text-white" />
-            </span>
-            <span className="text-lg font-semibold tracking-tight">{APP_NAME}</span>
+          <div className="flex items-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-dark.png" alt={APP_NAME} width={956} height={223} className="h-10 w-auto" />
           </div>
 
           {/* headline + highlights */}
