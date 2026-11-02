@@ -133,6 +133,8 @@ const SOCIALS = [
 
 /* ── data ─────────────────────────────────────────────────────────── */
 
+const REBRAND_BAR_KEY = "swl-rebrand-bar-dismissed";
+
 const NAV = [
   ["Features", "#features"],
   ["Workflow", "#workflow"],
@@ -441,6 +443,18 @@ export function Landing({ problems, totalProblems, featuresByPlan, paymentsEnabl
   const ctaHref = signedIn ? "/dashboard" : "/register";
   const [mobileMenu, setMobileMenu] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [showRebrand, setShowRebrand] = useState(true);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(REBRAND_BAR_KEY)) setShowRebrand(false);
+    } catch {}
+  }, []);
+  const dismissRebrand = useCallback(() => {
+    setShowRebrand(false);
+    try {
+      localStorage.setItem(REBRAND_BAR_KEY, "1");
+    } catch {}
+  }, []);
   const webgl = useWebGL();
   const isLight = useIsLight();
 
@@ -481,8 +495,30 @@ export function Landing({ problems, totalProblems, featuresByPlan, paymentsEnabl
     <ClickSpark sparkColor={isLight ? ACCENT : ACCENT_L} sparkSize={9} sparkRadius={18} sparkCount={8} duration={450}>
     <div className={cn("min-h-screen antialiased selection:bg-[#006bff]/30", pageCls)}>
 
+      {/* ── REBRAND ANNOUNCEMENT ───────────────────────────────────── */}
+      {showRebrand && (
+        <div className="fixed inset-x-0 top-0 z-[60] flex h-9 items-center justify-center gap-2 bg-[#006bff] px-10 text-xs font-medium text-white sm:text-[13px]">
+          <Sparkles className="hidden size-3.5 shrink-0 sm:block" aria-hidden />
+          <p className="truncate">
+            CodeForge AI is now <strong className="font-semibold">Setups Works Lab</strong>
+            <span className="hidden sm:inline"> — same platform, new name and home at labs.setups.works</span>
+          </p>
+          <Link href="/changelog" className="hidden shrink-0 underline underline-offset-2 hover:no-underline min-[420px]:inline">
+            Learn more
+          </Link>
+          <button
+            type="button"
+            onClick={dismissRebrand}
+            aria-label="Dismiss announcement"
+            className="absolute right-2 inline-flex size-7 items-center justify-center rounded-md hover:bg-white/15"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* ── FLOATING GLASS NAV ─────────────────────────────────────── */}
-      <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-4">
+      <header className={cn("fixed inset-x-0 z-50 px-3 pt-3 sm:px-4", showRebrand ? "top-9" : "top-0")}>
         <div className={cn("mx-auto flex h-14 max-w-5xl items-center justify-between rounded-2xl px-3 sm:px-5", glass, "bg-white/80 dark:bg-[#0a0e1a]/70")}>
           <Logo />
           <nav className={cn("hidden items-center gap-6 text-sm md:flex", inkSub)}>
