@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Flame } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
 
@@ -19,9 +18,8 @@ export function Logo({
       className={cn("inline-flex items-center", className)}
     >
       {compact ? (
-        <span className="flex size-7 items-center justify-center rounded-lg bg-[#006bff] text-white">
-          <Flame className="size-4" />
-        </span>
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src="/logo-mark.png" alt={APP_NAME} width={28} height={28} className="size-7 rounded-lg" />
       ) : (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -4,10 +4,9 @@ import { updateFeedbackStatus, deleteFeedback } from "@/services/feedback-store"
 
 export const runtime = "nodejs";
 
-// Accept a Mongo ObjectId (24 hex) or a Postgres uuid (36 chars) — the backend
-// is chosen by DATA_BACKEND_FEEDBACK, so both id shapes are valid.
+// Feedback ids are Postgres uuids.
 function isValidId(id: string): boolean {
-  return /^[0-9a-fA-F]{24}$/.test(id) || /^[0-9a-fA-F-]{36}$/.test(id);
+  return /^[0-9a-fA-F-]{36}$/.test(id);
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

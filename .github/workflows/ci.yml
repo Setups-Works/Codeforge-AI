@@ -34,7 +34,6 @@ jobs:
         run: npm run build
         env:
           # Build-time placeholders; real values are set on the host platform
-          MONGODB_URI: mongodb://127.0.0.1:27017/ci-build
           AUTH_SECRET: ci-build-secret
 
   e2e:
@@ -60,4 +59,3 @@ jobs:
         run: npm run test:e2e
         env:
           AUTH_SECRET: ci-e2e-secret
-          MONGODB_URI: mongodb://127.0.0.1:27017/ci-e2e

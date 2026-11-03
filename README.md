@@ -93,7 +93,7 @@ graph TD
 
 1. **Edge middleware** ([src/middleware.ts](src/middleware.ts)) runs first on every request. It validates the **Supabase Auth** session (`getClaims`) against a public-route allowlist, enforces same-origin/CORS on mutating requests, and attaches security headers (CSP, HSTS, `X-Frame-Options: DENY`).
 2. **Route handlers** under `src/app/api/*` validate input with **Zod**, resolve the session, and apply **rate limiting** (Upstash sliding window, with an in-memory fallback) before doing work.
-3. **Service layer** (`src/services/*`) holds the business logic — question/contest queries, the execution-provider router, AI prompt orchestration, gamification, and stats — keeping handlers thin. Each data module reads/writes through a `backendFor()` flag, a legacy of the MongoDB→Supabase migration that still allows an instant rollback.
+3. **Service layer** (`src/services/*`) holds the business logic — question/contest queries, the execution-provider router, AI prompt orchestration, gamification, and stats — keeping handlers thin.
 4. **Data & integrations** — **Supabase Postgres** persists state (33 tables, row-level security, service-role backend) and **Supabase Storage** holds uploads; Redis caches hot reads (leaderboards) and rate-limit counters; external providers (Groq, Razorpay, SMTP, GitHub, code runners) are called through small adapter modules in `src/lib` and `src/services`.
 
 ### Layer Responsibilities
@@ -136,7 +136,7 @@ The AI panels post the **problem, code buffer, and runtime output** to streaming
 
 ### Resilience by Design
 
-Every external dependency is optional and isolated, so a missing key degrades one feature rather than breaking the app: **no Redis** → in-memory rate-limit + on-demand leaderboard from Mongo; **no Groq** → AI panels show setup help; **no Razorpay** → billing hidden; **no SMTP/GitHub** → feedback and emails fall back or no-op; **DB unreachable at build** → `robots.txt`/`sitemap.xml` render dynamically rather than crashing the build.
+Every external dependency is optional and isolated, so a missing key degrades one feature rather than breaking the app: **no Redis** → in-memory rate-limit + on-demand leaderboard from Postgres; **no Groq** → AI panels show setup help; **no Razorpay** → billing hidden; **no SMTP/GitHub** → feedback and emails fall back or no-op; **DB unreachable at build** → `robots.txt`/`sitemap.xml` render dynamically rather than crashing the build.
 
 ---
 

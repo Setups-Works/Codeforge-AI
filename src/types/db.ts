@@ -1,4 +1,4 @@
-// Plain TypeScript row/document shapes (formerly declared next to the Mongoose schemas).
+// Plain TypeScript row/document shapes.
 import type { Difficulty, RoadmapTrack } from "@/lib/constants";
 
 export interface RoadmapTopic {

@@ -11,7 +11,7 @@ interface SbUserMini {
   stats: { xp?: number; level?: number } | null;
 }
 
-/** Fetch users by id and shape like a populated Mongo user subdoc. */
+/** Fetch users by id and shape like a populated Mongo user. */
 async function fetchUsers(ids: string[]) {
   if (!ids.length) return [];
   const { data } = await supabaseAdmin()

@@ -1,4 +1,4 @@
-/** Shared by the Mongo and Supabase seeders: turns a spec into a question document. */
+/** Shared by the Supabase seeder: turns a spec into a question document. */
 import { JS_SPECS } from "./js-specs.mjs";
 import { REACT_SPECS_1 } from "./react-specs-1.mjs";
 import { REACT_SPECS_2 } from "./react-specs-2.mjs";
