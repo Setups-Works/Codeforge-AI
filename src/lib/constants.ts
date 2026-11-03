@@ -1,5 +1,5 @@
 export const APP_NAME = "Setups Works Lab";
-export const APP_VERSION = "3.3.0";
+export const APP_VERSION = "3.4.0";
 export const APP_DESCRIPTION =
   "Setups Works Lab is an AI-powered coding interview prep platform — practice DSA, run code in an online compiler for 12 languages, get an AI mentor and pair programmer, and ace your next technical interview.";
 
