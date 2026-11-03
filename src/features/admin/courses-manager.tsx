@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { GraduationCap, Loader2, Plus } from "@/components/icons";
+import { CreditCard, GraduationCap, Loader2, Plus } from "@/components/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,9 +51,16 @@ export function CoursesManager() {
           <h1 className="text-xl font-semibold tracking-tight">Courses</h1>
           <p className="text-sm text-muted-foreground">Create and manage the courses you sell.</p>
         </div>
-        <Button onClick={() => setOpen(true)}>
-          <Plus className="size-4" /> New course
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href="/admin/orders">
+              <CreditCard className="size-4" /> Orders
+            </Link>
+          </Button>
+          <Button onClick={() => setOpen(true)}>
+            <Plus className="size-4" /> New course
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-xl border bg-card">

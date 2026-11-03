@@ -9,14 +9,14 @@ decisions). We build **one phase at a time**; each phase ships behind
 | 0 | Decisions & foundation | Flag + schema + video abstraction + access rules | ✅ done |
 | 1 | Admin course CMS | Admin can create, structure and publish a course | ✅ deployed (flag off) |
 | 2 | Learn mode shell | Toggle, LMS sidebar, catalogue, product detail | ✅ committed |
-| 3 | Player & progress | Watch lessons, continue watching, resume | 🟡 built, UI not yet clicked through |
-| 4 | Purchase & entitlement | Buy a course with Razorpay, get access | ⬜ |
+| 3 | Player & progress | Watch lessons, continue watching, resume | ✅ committed |
+| 4 | Purchase & entitlement | Buy a course with Razorpay, get access | 🟡 built, migration applied, live-DB verified; UI not yet clicked through |
 | 5 | Unified billing | One Billing & Usage ledger in Settings | ⬜ |
 | 6 | Public SEO pages | `/courses` indexed with rich schema | ⬜ |
 | 7 | Engagement | Reviews, Q&A, notes, certificates | ⬜ |
 | 8 | Practice integration | Problem lessons, quizzes, AI mentor, XP | ⬜ |
 | 9 | Growth & commerce | Course coupons, bundles, referrals, emails | ⬜ |
-| 10 | Analytics & hardening | Admin analytics, refunds, GST, video host upgrade, tests | ⬜ |
+| 10 | Analytics & hardening | Admin analytics, refunds, invoices, video host upgrade, tests | ⬜ |
 | 11 | Landing page | Home page showcases the full LMS (after all phases) | ⬜ |
 
 ---
@@ -127,11 +127,25 @@ completes lessons, leaves, and resumes from Continue watching.
 
 - `course_orders`; `POST …/checkout` (server-priced Razorpay order),
   `POST …/verify` (signature), enrolment + receipt email.
-- Free course / 100% coupon direct enrolment.
+- Free course direct enrolment. (Coupon-based discounts, including 100% off, move to Phase 9.)
 - Webhook extension for `payment.captured` with `notes.type="course"`,
   idempotent via `webhook_events`.
 - Buy button, checkout popup, success page that drops into the first lesson.
 - Admin: manual access grant/revoke, orders list.
+
+**Decisions (answered):** no GST/tax on any purchase (price is final); refund window is
+**14 days** (`COURSE_REFUND_DAYS`, shown on the course page and in the receipt). The refund
+*action* itself stays in Phase 10; Phase 4 only stores `paid_at` and exposes `isRefundable`.
+
+**Delivered:** `0017_lms_orders.sql` (`course_orders`), `services/lms-orders.ts` (server-priced
+checkout, idempotent `fulfil` shared by the browser callback and webhook, amount check,
+receipt email), `POST /api/learn/courses/[id]/{checkout,verify}` (rate-limited),
+`payment.captured`/`payment.failed` branch in the existing webhook (handled before the
+idempotency record because fulfilment is itself idempotent), `BuyCourseButton`
+(Razorpay popup, free-course enrol, lands in lesson one), `/admin/orders`, receipt email.
+Courses with orders can no longer be deleted (archive instead).
+**Needs from you:** enable the `payment.captured` and `payment.failed` events on the
+Razorpay webhook (the verify route works without it; the webhook is the safety net).
 
 **Done when:** a Razorpay **test-mode** purchase grants access exactly once, even
 if both the browser callback and the webhook fire; failed/abandoned orders grant
@@ -197,7 +211,7 @@ attribution.
 **Goal:** production-grade.
 
 - Admin analytics: revenue, enrolments, completion and drop-off per lesson.
-- Refund flow + access revocation; GST invoice fields.
+- Refund flow + access revocation (14-day window); downloadable invoice per order.
 - **Video host upgrade** (Bunny/Cloudflare/Mux) behind the provider interface,
   adding real watch-time events and signed URLs if Drive limits bite.
 - Playwright E2E (browse → buy → watch), load/quota checks, rate limits,

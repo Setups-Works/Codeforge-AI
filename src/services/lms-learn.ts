@@ -420,7 +420,7 @@ export async function revokeEnrollment(courseId: string, userId: string): Promis
   return Boolean(data?.length);
 }
 
-async function refreshStudentCount(courseId: string): Promise<void> {
+export async function refreshStudentCount(courseId: string): Promise<void> {
   const client = sb();
   const [{ count }, { data: course }] = await Promise.all([
     client.from("course_enrollments").select("id", { count: "exact", head: true }).eq("course_id", courseId),

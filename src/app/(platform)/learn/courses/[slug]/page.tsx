@@ -5,7 +5,10 @@ import { ArrowLeft, BookOpen, Check, Clock, GraduationCap, Globe, Layers, Star, 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/shared/markdown";
+import { BuyCourseButton } from "@/features/lms/buy-course-button";
 import { Curriculum } from "@/features/lms/curriculum";
+import { paymentsEnabled } from "@/lib/razorpay";
+import { COURSE_REFUND_DAYS } from "@/lib/lms/constants";
 import { getSession } from "@/lib/session";
 import { formatPrice } from "@/lib/plans";
 import { discountPercent, formatDuration } from "@/lib/lms/format";
@@ -169,11 +172,19 @@ export default async function LearnCoursePage({ params }: Props) {
                 )
               ) : (
                 <>
-                  {/* Purchase is wired in Phase 4. */}
-                  <Button className="w-full" disabled>
-                    {course.isFree ? "Enrol for free" : "Buy course"}
-                  </Button>
-                  <p className="text-center text-xs text-muted-foreground">Checkout opens in an upcoming release.</p>
+                  <BuyCourseButton
+                    courseId={course.id}
+                    courseSlug={course.slug}
+                    isFree={course.isFree}
+                    priceLabel={formatPrice(course.priceInr)}
+                    paymentsAvailable={paymentsEnabled()}
+                    prefill={{ name: session.user.name ?? "", email: session.user.email ?? "" }}
+                  />
+                  {!course.isFree && (
+                    <p className="text-center text-xs text-muted-foreground">
+                      {COURSE_REFUND_DAYS}-day refund policy · No extra taxes or fees
+                    </p>
+                  )}
                 </>
               )}
 

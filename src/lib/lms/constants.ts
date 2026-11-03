@@ -16,3 +16,6 @@ export const COURSE_LIMITS = {
   tags: 12,
   bulkLessons: 100,
 } as const;
+
+/** Days after payment during which a course can be refunded. */
+export const COURSE_REFUND_DAYS = 14;

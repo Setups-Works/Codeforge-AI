@@ -318,6 +318,8 @@ export async function deleteCourse(id: string): Promise<ServiceResult> {
   const client = sb();
   const { count } = await client.from("course_enrollments").select("id", { count: "exact", head: true }).eq("course_id", id);
   if (count) return fail(409, "This course has enrolled learners. Archive it instead of deleting.");
+  const { count: orders } = await client.from("course_orders").select("id", { count: "exact", head: true }).eq("course_id", id);
+  if (orders) return fail(409, "This course has orders on record. Archive it instead of deleting.");
   const { error } = await client.from("courses").delete().eq("id", id);
   if (error) return fail(500, error.message);
   return { ok: true, data: undefined };

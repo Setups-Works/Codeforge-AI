@@ -364,6 +364,39 @@ export function paymentReceiptEmailSubject(planName: string, renewal: boolean): 
     : `Payment received — ${planName} is active`;
 }
 
+/** Receipt for a one-time course purchase. */
+export function courseReceiptEmailHtml({
+  name,
+  courseTitle,
+  amountLabel,
+  refundDays,
+  courseUrl,
+}: {
+  name: string;
+  courseTitle: string;
+  amountLabel: string;
+  refundDays: number;
+  courseUrl: string;
+}): string {
+  return base(`
+    ${eyebrow("Payment successful")}
+    <h1 style="${H1}">You're in, ${name}</h1>
+    <p style="${COPY}">
+      Your payment went through and you now have access to <strong>${courseTitle}</strong>.
+    </p>
+    ${summaryCard(summaryRow("Course", courseTitle) + summaryRow("Amount paid", amountLabel, true))}
+    ${btn("Start learning", courseUrl)}
+    ${divider()}
+    <p style="margin:0;color:${MUTED};font-size:13px;line-height:18px;text-align:center;">
+      Not what you expected? You can request a refund within ${refundDays} days of purchase.
+    </p>
+  `);
+}
+
+export function courseReceiptEmailSubject(courseTitle: string): string {
+  return `You're enrolled in ${courseTitle}`;
+}
+
 /** A recurring charge failed / the subscription was halted. */
 export function paymentFailedEmailHtml({
   name,

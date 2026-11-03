@@ -7,6 +7,8 @@ import {
   updateUserPlan,
   upsertInvoiceByPaymentId,
 } from "@/services/billing-store";
+import { handleCapturedPayment, handleFailedPayment } from "@/services/lms-orders";
+import { lmsEnabled } from "@/lib/lms/flag";
 import { getPostHogServer } from "@/lib/posthog-server";
 import { PLANS, type PlanId } from "@/lib/plans";
 import { sendEmail } from "@/lib/mailer";
@@ -67,6 +69,22 @@ export async function POST(req: NextRequest) {
 
   const eventType = payload.event ?? "unknown";
   const eventId = req.headers.get("x-razorpay-event-id") ?? `${eventType}:${Date.now()}`;
+
+  // Course purchases are handled before the idempotency record: their fulfilment
+  // is itself idempotent, so a retry after a failure must be allowed to run again.
+  if (lmsEnabled() && (eventType === "payment.captured" || eventType === "payment.failed")) {
+    const pay = (payload.payload?.payment?.entity ?? {}) as RzpEntity & { order_id?: string };
+    try {
+      const handled =
+        eventType === "payment.captured"
+          ? await handleCapturedPayment({ orderId: pay.order_id, paymentId: pay.id, amountPaise: pay.amount, currency: pay.currency })
+          : await handleFailedPayment(pay.order_id);
+      if (handled) return NextResponse.json({ ok: true, course: true });
+    } catch (e) {
+      console.error("[razorpay-webhook] course", eventType, e);
+      return NextResponse.json({ error: "Handler error" }, { status: 500 });
+    }
+  }
 
   // 2) Idempotency — a duplicate delivery is a no-op.
   const isNew = await recordWebhookEvent(eventId, eventType);

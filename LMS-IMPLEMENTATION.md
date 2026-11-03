@@ -214,8 +214,8 @@ Refund (admin) → Razorpay refund → order=refunded → enrollment revoked
   and optional coupon.
 - Coupons: extend `coupons` with `applies_to ('plan'|'course'|'all')` and an
   optional `course_id`; redemption recorded in `coupon_redemptions`.
-- GST/invoice number generated at `paid`; PDF through the existing invoice route
-  pattern.
+- No GST or other tax: the listed price is the amount charged. Refund window is 14
+  days (`COURSE_REFUND_DAYS`).
 
 ## 8. Billing consolidated into Settings
 
@@ -248,7 +248,7 @@ for learning activity; spaced-repetition cards from lesson notes.
 lesson Q&A threads (reusing `discussions`), timestamped notes, wishlist.
 
 **Commerce**: coupons per course, bundles, "included in Plus" access source,
-referral/affiliate links, abandoned-checkout and drip emails, GST invoices,
+referral/affiliate links, abandoned-checkout and drip emails, payment invoices,
 refunds and revocation.
 
 **Admin**: curriculum builder with drag-reorder, bulk Drive-link import (paste a
@@ -275,10 +275,10 @@ real reviews exist, `ItemList` for the catalogue, breadcrumbs, sitemap entries.
 
 ## 11. Assumptions to confirm before Phase 1
 
-1. Currency is INR, prices GST-inclusive or exclusive? (affects invoices)
+1. ✅ Answered: no GST on any purchase.
 2. Do Plus/Go subscribers get any courses included, or is every course sold
    separately?
-3. Refund window (e.g. 7 days) and whether refunds revoke access.
+3. ✅ Refund window: 14 days (whether a refund revokes access is still open; default: yes).
 4. Free courses allowed (lead magnets)?
 5. Accept Drive as launch host with the limits in §6?
 6. Single instructor (the admin) for v1, or per-course instructor profiles?
