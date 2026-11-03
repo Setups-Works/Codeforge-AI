@@ -148,6 +148,13 @@ export async function listPublishedCourses(
   };
 }
 
+/** Published course slugs + last-modified, for the sitemap. */
+export async function listPublishedCourseSlugs(): Promise<{ slug: string; updatedAt: Date }[]> {
+  const { data, error } = await supabaseAdmin().from("courses").select("slug,updated_at").eq("status", "published");
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as { slug: string; updated_at: string }[]).map((r) => ({ slug: r.slug, updatedAt: new Date(r.updated_at) }));
+}
+
 /** Distinct categories across published courses, for the filter control. */
 export async function listCourseCategories(): Promise<string[]> {
   const { data, error } = await supabaseAdmin().from("courses").select("category").eq("status", "published").not("category", "is", null);

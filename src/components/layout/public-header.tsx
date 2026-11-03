@@ -3,9 +3,11 @@ import { ArrowRight, LayoutDashboard } from "@/components/icons";
 import { Logo } from "@/components/shared/logo";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { lmsEnabled } from "@/lib/lms/flag";
 
 const NAV_LINKS = [
   { label: "Problems", href: "/problems" },
+  ...(lmsEnabled() ? [{ label: "Courses", href: "/courses" }] : []),
   { label: "Forum", href: "/forum" },
   { label: "Pricing", href: "/pricing" },
   { label: "Docs", href: "/help" },

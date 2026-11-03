@@ -4,6 +4,8 @@ import { listPublishedQuestionSlugs } from "@/services/questions";
 import { listPublishedSlugs } from "@/services/blog-store";
 import { listDiscussionsForSitemap } from "@/services/discussions-store";
 import type { SitemapEntry } from "@/lib/sitemap-xml";
+import { lmsEnabled } from "@/lib/lms/flag";
+import { listPublishedCourseSlugs } from "@/services/lms-catalog";
 
 /** Every public URL, in one list: static pages, help, careers, then DB-backed
  *  problems, blog posts and forum threads. DB failures drop just that section
@@ -13,6 +15,7 @@ export async function allSitemapEntries(base: string): Promise<SitemapEntry[]> {
   const pages: SitemapEntry[] = [
     { loc: base, lastmod: now, changefreq: "daily", priority: 1 },
     { loc: `${base}/problems`, lastmod: now, changefreq: "daily", priority: 0.9 },
+    ...(lmsEnabled() ? [{ loc: `${base}/courses`, lastmod: now, changefreq: "daily" as const, priority: 0.8 }] : []),
     { loc: `${base}/compiler`, lastmod: now, changefreq: "monthly", priority: 0.7 },
     { loc: `${base}/pricing`, lastmod: now, changefreq: "weekly", priority: 0.8 },
     { loc: `${base}/join`, lastmod: now, changefreq: "weekly", priority: 0.7 },
@@ -49,7 +52,7 @@ export async function allSitemapEntries(base: string): Promise<SitemapEntry[]> {
     priority: 0.5,
   }));
 
-  const [problems, posts, threads] = await Promise.all([
+  const [problems, posts, threads, courses] = await Promise.all([
     listPublishedQuestionSlugs()
       .then((rows) =>
         rows.map((p): SitemapEntry => ({ loc: `${base}/problems/${p.slug}`, lastmod: p.updatedAt ?? now, changefreq: "weekly", priority: 0.7 })),
@@ -65,7 +68,14 @@ export async function allSitemapEntries(base: string): Promise<SitemapEntry[]> {
         rows.map((t): SitemapEntry => ({ loc: `${base}/forum/${t.id}`, lastmod: t.updatedAt ?? now, changefreq: "weekly", priority: 0.5 })),
       )
       .catch(() => [] as SitemapEntry[]),
+    lmsEnabled()
+      ? listPublishedCourseSlugs()
+          .then((rows) =>
+            rows.map((c): SitemapEntry => ({ loc: `${base}/courses/${c.slug}`, lastmod: c.updatedAt, changefreq: "weekly", priority: 0.8 })),
+          )
+          .catch(() => [] as SitemapEntry[])
+      : Promise.resolve([] as SitemapEntry[]),
   ]);
 
-  return [...pages, ...problems, ...posts, ...threads, ...help, ...careers];
+  return [...pages, ...problems, ...courses, ...posts, ...threads, ...help, ...careers];
 }

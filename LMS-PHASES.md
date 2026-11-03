@@ -11,8 +11,8 @@ decisions). We build **one phase at a time**; each phase ships behind
 | 2 | Learn mode shell | Toggle, LMS sidebar, catalogue, product detail | ✅ committed |
 | 3 | Player & progress | Watch lessons, continue watching, resume | ✅ committed |
 | 4 | Purchase & entitlement | Buy a course with Razorpay, get access | ✅ committed (UI/Razorpay popup not yet clicked through) |
-| 5 | Unified billing | One Billing & Usage ledger in Settings | 🟡 built, live-DB verified; UI not yet clicked through |
-| 6 | Public SEO pages | `/courses` indexed with rich schema | ⬜ |
+| 5 | Unified billing | One Billing & Usage ledger in Settings | ✅ committed (UI not yet clicked through) |
+| 6 | Public SEO pages | `/courses` indexed with rich schema | 🟡 built and render-checked; not committed |
 | 7 | Engagement | Reviews, Q&A, notes, certificates | ⬜ |
 | 8 | Practice integration | Problem lessons, quizzes, AI mentor, XP | ⬜ |
 | 9 | Growth & commerce | Course coupons, bundles, referrals, emails | ⬜ |
@@ -167,8 +167,8 @@ renderer; the subscription invoice route now uses it), `GET /api/billing/course-
 reorganised: Plan · My courses · Orders & payments (plan + course rows, invoice buttons,
 refundable-until, refunded badge) · AI credits. Only paid/refunded orders appear (abandoned
 and failed checkouts are hidden). `/settings#billing` deep-links to it.
-Not done: a coupon-history section (no user-facing coupon redemption exists until Phase 9)
-and a link from `/pricing` to billing.
+Also added after review: a "Coupons used" section (existing plan-coupon redemptions) and a
+"Manage billing & invoices" link on `/pricing` for signed-in users.
 **Verified:** full jest suite, typecheck, lint, and a live-DB run of the ledger and invoice
 lookup (ownership, status filtering, refund window).
 
@@ -184,6 +184,22 @@ working invoices, and no other billing page exists.
   breadcrumbs, `VideoObject` for the preview only — never private ids),
   per-course keywords, OG images.
 - `AggregateRating` only when real reviews exist (after Phase 7).
+
+**Delivered:** public `/courses` (catalogue with filters + `CollectionPage`/`ItemList` schema) and
+`/courses/[slug]` (shared `CourseDetailView`; canonical, OG/Twitter with thumbnail, keywords;
+signed-out visitors get "Sign in to buy", signed-in go to the in-app page), `courseGraph`
+(`Course` + priced `Offer` + `CourseInstance` + syllabus + breadcrumb), `courseKeywords`,
+`/courses` added to middleware public prefixes, sitemap, `primaryNav()` (sitelinks) and the
+public header, all gated by the LMS flag. `AggregateRating` is emitted only when reviews
+exist (Phase 7). Decisions: no separate `Product` node (a `Course` carries its `Offer`;
+two types would conflict), and no `VideoObject` (Drive embeds aren't indexable and would
+expose the file id).
+**Verified:** unit tests, a live-DB sitemap check (draft excluded, published included), and a
+real dev-server render: both pages return 200 with title, canonical, description, a
+`Course` JSON-LD graph, the curriculum and CTA, and no Drive id anywhere in the HTML.
+Unknown slugs render the not-found page with `noindex` but return HTTP 200, the same as
+every other page in the app (the root loading UI streams first).
+**Not yet done:** Google Rich Results Test (needs the deployed URL).
 
 **Done when:** pages validate in Rich Results Test and appear in `sitemap.xml`.
 

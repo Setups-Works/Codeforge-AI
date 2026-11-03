@@ -1,6 +1,8 @@
 import { APP_NAME } from "@/lib/constants";
 import { PLANS } from "@/lib/plans";
 import type { QuestionDetail } from "@/services/questions";
+import type { CourseCard, CourseDetail } from "@/services/lms-catalog";
+import { lmsEnabled } from "@/lib/lms/flag";
 
 /**
  * Central SEO helpers: keyword banks and schema.org (JSON-LD) builders.
@@ -245,6 +247,14 @@ export const PRIMARY_NAV: NavLink[] = [
   { name: "About", url: "/about", description: "About Setups Works Lab and its founder." },
   { name: "Contact", url: "/contact", description: "Get in touch with the Setups Works Lab team." },
 ];
+
+/** Primary navigation including the LMS entry when it is switched on. */
+export function primaryNav(): NavLink[] {
+  if (!lmsEnabled()) return PRIMARY_NAV;
+  const courses: NavLink = { name: "Courses", url: "/courses", description: "Video courses with lessons, progress tracking and certificates." };
+  const at = PRIMARY_NAV.findIndex((l) => l.url === "/pricing");
+  return [...PRIMARY_NAV.slice(0, at), courses, ...PRIMARY_NAV.slice(at)];
+}
 
 export function faqLd(faqs: { q: string; a: string }[], id?: string) {
   return {
@@ -495,5 +505,149 @@ export function pricingGraph() {
       itemListElement: products.map((p) => ({ "@id": p["@id"] })),
     },
     ...products,
+  );
+}
+
+// ── Courses (LMS) ──────────────────────────────────────────────────────
+
+/** Seconds -> ISO 8601 duration ("PT1H20M"); null when there is no duration. */
+export function isoDuration(totalSeconds: number): string | null {
+  const s = Math.round(totalSeconds);
+  if (!(s > 0)) return null;
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `PT${h ? `${h}H` : ""}${m ? `${m}M` : ""}${!h && !m ? `${sec}S` : ""}`;
+}
+
+/** Keywords for a course page: title variants, topic, level, tags, instructor. */
+export function courseKeywords(c: Pick<CourseDetail, "title" | "category" | "level" | "tags" | "instructorName" | "seoKeywords">): string[] {
+  return mergeKeywords(
+    c.seoKeywords?.split(","),
+    [
+      c.title,
+      `${c.title} course`,
+      `${c.title} online course`,
+      `${c.title} tutorial`,
+      c.category ? `${c.category} course` : null,
+      c.category ? `learn ${c.category}` : null,
+      c.level ? `${c.level} ${c.category ?? ""} course`.replace(/\s+/g, " ").trim() : null,
+      c.instructorName ? `${c.instructorName} course` : null,
+    ],
+    c.tags,
+    c.tags.map((t) => `${t} course`),
+    BRAND_KEYWORDS,
+    ["online course", "video course", "coding course"],
+  );
+}
+
+/**
+ * One public course page: WebPage + breadcrumb, a schema.org Course with a
+ * priced Offer, an online CourseInstance, the syllabus and (only when real
+ * reviews exist) an AggregateRating. Video refs never appear here: lessons
+ * are listed by title only.
+ */
+export function courseGraph(c: CourseDetail) {
+  const url = `${SITE_URL}/courses/${c.slug}`;
+  const summary = plainText(c.description, 300) || c.subtitle || c.title;
+  const keywords = courseKeywords(c);
+  const workload = isoDuration(c.durationS);
+  const orgRef = { "@id": ids.org };
+
+  const offer = {
+    "@type": "Offer",
+    "@id": `${url}#offer`,
+    url,
+    price: String(c.priceInr),
+    priceCurrency: "INR",
+    availability: "https://schema.org/InStock",
+    category: c.isFree ? "Free" : "Paid",
+    seller: orgRef,
+  };
+
+  const instructor = c.instructorName
+    ? {
+        "@type": "Person",
+        name: c.instructorName,
+        ...(c.instructorBio ? { description: c.instructorBio } : {}),
+        ...(c.instructorImage ? { image: c.instructorImage } : {}),
+      }
+    : null;
+
+  const course = {
+    "@type": "Course",
+    "@id": `${url}#course`,
+    name: c.title,
+    description: summary,
+    url,
+    provider: orgRef,
+    inLanguage: c.language,
+    isAccessibleForFree: c.isFree,
+    keywords: keywords.join(", "),
+    ...(c.thumbnailUrl ? { image: c.thumbnailUrl } : {}),
+    ...(c.level ? { educationalLevel: c.level } : {}),
+    ...(c.category ? { about: [c.category, ...c.tags].map((t) => ({ "@type": "Thing", name: t })) } : {}),
+    ...(c.outcomes.length ? { teaches: c.outcomes } : {}),
+    ...(c.requirements.length ? { coursePrerequisites: c.requirements } : {}),
+    ...(workload ? { timeRequired: workload } : {}),
+    syllabusSections: c.sections.map((s) => ({
+      "@type": "Syllabus",
+      name: s.title,
+      description: s.lessons.map((l) => l.title).join("; "),
+    })),
+    hasCourseInstance: {
+      "@type": "CourseInstance",
+      courseMode: "online",
+      courseWorkload: workload ?? undefined,
+      ...(instructor ? { instructor } : {}),
+    },
+    offers: offer,
+    dateModified: c.updatedAt,
+    ...(c.ratingCount > 0 && c.ratingAvg != null
+      ? { aggregateRating: { "@type": "AggregateRating", ratingValue: c.ratingAvg, ratingCount: c.ratingCount, bestRating: 5, worstRating: 1 } }
+      : {}),
+  };
+
+  return graph(
+    ...pageNodes({
+      url,
+      name: c.seoTitle || c.title,
+      description: c.seoDescription || summary,
+      keywords,
+      mainEntity: { "@id": `${url}#course` },
+      dateModified: c.updatedAt,
+      breadcrumb: [
+        { name: "Home", url: SITE_URL },
+        { name: "Courses", url: "/courses" },
+        { name: c.title, url },
+      ],
+    }),
+    course,
+  );
+}
+
+/** The public catalogue as a CollectionPage + ItemList. */
+export function courseListGraph(items: CourseCard[], total: number) {
+  return graph(
+    ...pageNodes({
+      url: "/courses",
+      name: `Courses — ${APP_NAME}`,
+      description: "Video courses on coding interviews, data structures and algorithms, and more.",
+      type: "CollectionPage",
+      breadcrumb: [
+        { name: "Home", url: SITE_URL },
+        { name: "Courses", url: "/courses" },
+      ],
+    }),
+    items.length
+      ? {
+          ...itemListLd(
+            "Courses",
+            items.map((i) => ({ name: i.title, url: `/courses/${i.slug}`, description: i.subtitle ?? undefined, image: i.thumbnailUrl ?? undefined })),
+            `${SITE_URL}/courses#list`,
+          ),
+          numberOfItems: total,
+        }
+      : null,
   );
 }

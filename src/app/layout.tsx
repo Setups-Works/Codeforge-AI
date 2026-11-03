@@ -15,7 +15,7 @@ import { config } from "@fortawesome/fontawesome-svg-core";
 import "@fortawesome/fontawesome-svg-core/styles.css";
 import "./globals.css";
 import { JsonLd } from "@/components/json-ld";
-import { BRAND_KEYWORDS, CORE_KEYWORDS, PRIMARY_NAV, mergeKeywords, siteNavigationLd } from "@/lib/seo";
+import { BRAND_KEYWORDS, CORE_KEYWORDS, mergeKeywords, primaryNav, siteNavigationLd } from "@/lib/seo";
 
 // Font Awesome inserts its own CSS at runtime by default; we import the
 // stylesheet above and disable auto-insertion to avoid a flash of oversized
@@ -239,7 +239,7 @@ export default async function RootLayout({
         description: desc,
         publisher: { "@id": `${url}/#org` },
         inLanguage: "en",
-        hasPart: siteNavigationLd(PRIMARY_NAV).map((n) => ({ "@id": n["@id"] })),
+        hasPart: siteNavigationLd(primaryNav()).map((n) => ({ "@id": n["@id"] })),
         potentialAction: {
           "@type": "SearchAction",
           target: { "@type": "EntryPoint", urlTemplate: `${url}/problems?q={search_term_string}` },
@@ -248,7 +248,7 @@ export default async function RootLayout({
       },
       // Primary navigation as named entities — the clearest signal for which
       // destinations Google should offer as sitelinks under the homepage result.
-      ...siteNavigationLd(PRIMARY_NAV),
+      ...siteNavigationLd(primaryNav()),
       {
         "@type": ["WebApplication", "SoftwareApplication"],
         "@id": `${url}/#app`,
