@@ -158,10 +158,10 @@ export function BillingPanel({ billing, paymentsEnabled = false }: { billing: Bi
         </div>
       )}
 
-      {/* invoice note */}
-      {!isFree && !isOnTrial && paymentsEnabled && (
+      {/* payment note */}
+      {paymentsEnabled && (
         <p className="text-xs text-muted-foreground text-center">
-          Payments processed securely via Razorpay. Contact support for invoice copies.
+          Payments processed securely via Razorpay. Download invoices from Orders &amp; payments above.
         </p>
       )}
     </div>

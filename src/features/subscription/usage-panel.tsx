@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { Sparkles, Download, Crown, Loader2, CreditCard } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { LedgerRow } from "@/lib/billing-ledger";
 
 interface Usage {
   period: string;
@@ -14,17 +15,6 @@ interface Usage {
   remaining: number | null;
   unlimited: boolean;
 }
-interface HistoryRow {
-  id: string;
-  plan: string;
-  billingCycle: string;
-  amount: number;
-  currency: string;
-  periodStart: string | null;
-  periodEnd: string | null;
-  createdAt: string;
-}
-
 function money(amount: number, currency: string) {
   try {
     return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount);
@@ -35,7 +25,7 @@ function money(amount: number, currency: string) {
 
 export function UsagePanel({ plan }: { plan: string }) {
   const [usage, setUsage] = useState<Usage | null>(null);
-  const [history, setHistory] = useState<HistoryRow[]>([]);
+  const [ledger, setLedger] = useState<LedgerRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,7 +34,7 @@ export function UsagePanel({ plan }: { plan: string }) {
       .then((d) => {
         if (d) {
           setUsage(d.usage);
-          setHistory(d.history ?? []);
+          setLedger(d.ledger ?? []);
         }
       })
       .finally(() => setLoading(false));
@@ -125,15 +115,15 @@ export function UsagePanel({ plan }: { plan: string }) {
         ) : null}
       </section>
 
-      {/* Subscription history + invoices */}
+      {/* Orders & payments: plan payments and course purchases in one list */}
       <section className="rounded-xl border bg-card p-5">
         <div className="flex items-center gap-2.5">
           <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
             <CreditCard className="size-4.5 text-primary" />
           </span>
           <div>
-            <h3 className="text-sm font-semibold">Subscription history</h3>
-            <p className="text-xs text-muted-foreground">Your past payments and invoices</p>
+            <h3 className="text-sm font-semibold">Orders &amp; payments</h3>
+            <p className="text-xs text-muted-foreground">Plan payments and course purchases, with invoices</p>
           </div>
         </div>
 
@@ -141,28 +131,36 @@ export function UsagePanel({ plan }: { plan: string }) {
           <div className="mt-5 flex justify-center py-4">
             <Loader2 className="size-5 animate-spin text-muted-foreground" />
           </div>
-        ) : history.length === 0 ? (
+        ) : ledger.length === 0 ? (
           <p className="mt-5 rounded-lg border border-dashed py-8 text-center text-sm text-muted-foreground">
             No payments yet. {plan === "free" && "You're on the Free plan."}
           </p>
         ) : (
           <div className="mt-4 overflow-hidden rounded-lg border">
-            {history.map((h, i) => (
-              <div
-                key={h.id}
-                className={cn("flex items-center gap-3 px-4 py-3", i !== 0 && "border-t")}
-              >
+            {ledger.map((row, i) => (
+              <div key={`${row.kind}-${row.id}`} className={cn("flex flex-wrap items-center gap-3 px-4 py-3", i !== 0 && "border-t")}>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium capitalize">
-                    {h.plan} plan · <span className="text-muted-foreground">{h.billingCycle}</span>
+                  <p className="text-sm font-medium">
+                    {row.kind === "course" && row.courseSlug ? (
+                      <Link href={`/learn/courses/${row.courseSlug}`} className="hover:underline">{row.description}</Link>
+                    ) : (
+                      row.description
+                    )}{" "}
+                    <span className="font-normal capitalize text-muted-foreground">· {row.detail}</span>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {format(new Date(h.createdAt), "MMM d, yyyy")}
+                    {format(new Date(row.date), "MMM d, yyyy")}
+                    {row.refundableUntil && ` · refundable until ${format(new Date(row.refundableUntil), "MMM d")}`}
                   </p>
                 </div>
-                <span className="text-sm font-semibold tabular-nums">{money(h.amount, h.currency)}</span>
+                {row.status === "refunded" && (
+                  <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">Refunded</span>
+                )}
+                <span className={cn("text-sm font-semibold tabular-nums", row.status === "refunded" && "text-muted-foreground line-through")}>
+                  {money(row.amount, row.currency)}
+                </span>
                 <Button asChild variant="outline" size="sm">
-                  <a href={`/api/billing/invoice/${h.id}`} target="_blank" rel="noopener noreferrer">
+                  <a href={row.invoiceHref} target="_blank" rel="noopener noreferrer">
                     <Download className="size-3.5" /> Invoice
                   </a>
                 </Button>

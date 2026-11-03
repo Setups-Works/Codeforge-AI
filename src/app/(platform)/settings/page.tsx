@@ -16,6 +16,9 @@ import { PasskeyManager } from "@/features/settings/passkey-manager";
 import { DeleteAccount } from "@/features/settings/delete-account";
 import { BillingPanel } from "@/features/subscription/billing-panel";
 import { UsagePanel } from "@/features/subscription/usage-panel";
+import { MyPurchases } from "@/features/subscription/my-purchases";
+import { lmsEnabled } from "@/lib/lms/flag";
+import { listMyCourses } from "@/services/lms-learn";
 
 export const metadata: Metadata = { title: "Settings" };
 export const dynamic = "force-dynamic";
@@ -28,6 +31,7 @@ export default async function SettingsPage() {
   if (!user) redirect("/login");
 
   const plan = user.plan;
+  const purchases = lmsEnabled() ? await listMyCourses(session.user.id).catch(() => []) : null;
   const paymentsEnabled = !!(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
 
   const sections: SettingsSection[] = [
@@ -106,10 +110,9 @@ export default async function SettingsPage() {
       id: "billing",
       label: "Billing & Usage",
       icon: <CreditCard className="size-4 shrink-0" />,
-      desc: "Plan, AI credits and invoices.",
+      desc: "Plan, courses, payments, invoices and AI credits.",
       node: (
         <>
-          <UsagePanel plan={plan} />
           <BillingPanel
             paymentsEnabled={paymentsEnabled}
             billing={{
@@ -119,6 +122,8 @@ export default async function SettingsPage() {
               billingCycle: user.billingCycle ?? null,
             }}
           />
+          {purchases && <MyPurchases courses={purchases} />}
+          <UsagePanel plan={plan} />
         </>
       ),
     },

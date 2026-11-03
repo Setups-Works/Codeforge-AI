@@ -10,8 +10,8 @@ decisions). We build **one phase at a time**; each phase ships behind
 | 1 | Admin course CMS | Admin can create, structure and publish a course | ✅ deployed (flag off) |
 | 2 | Learn mode shell | Toggle, LMS sidebar, catalogue, product detail | ✅ committed |
 | 3 | Player & progress | Watch lessons, continue watching, resume | ✅ committed |
-| 4 | Purchase & entitlement | Buy a course with Razorpay, get access | 🟡 built, migration applied, live-DB verified; UI not yet clicked through |
-| 5 | Unified billing | One Billing & Usage ledger in Settings | ⬜ |
+| 4 | Purchase & entitlement | Buy a course with Razorpay, get access | ✅ committed (UI/Razorpay popup not yet clicked through) |
+| 5 | Unified billing | One Billing & Usage ledger in Settings | 🟡 built, live-DB verified; UI not yet clicked through |
 | 6 | Public SEO pages | `/courses` indexed with rich schema | ⬜ |
 | 7 | Engagement | Reviews, Q&A, notes, certificates | ⬜ |
 | 8 | Practice integration | Problem lessons, quizzes, AI mentor, XP | ⬜ |
@@ -159,6 +159,18 @@ nothing.
 - Settings → Billing & Usage restructured: Plan · Orders & payments · My
   purchases · Coupons · Usage. Invoice download for course orders.
 - LMS sidebar "Billing & orders" and `/pricing` deep-link to `#billing`.
+
+**Delivered:** `lib/billing-ledger.ts` (pure merge/totals), `services/billing-ledger.ts`
+(`getBillingLedger`, `getCourseInvoice`), `lib/invoice-html.ts` (shared, HTML-escaped invoice
+renderer; the subscription invoice route now uses it), `GET /api/billing/course-invoice/[id]`
+(owner only, no tax), `ledger` added to `/api/billing/usage`, Settings → Billing & Usage
+reorganised: Plan · My courses · Orders & payments (plan + course rows, invoice buttons,
+refundable-until, refunded badge) · AI credits. Only paid/refunded orders appear (abandoned
+and failed checkouts are hidden). `/settings#billing` deep-links to it.
+Not done: a coupon-history section (no user-facing coupon redemption exists until Phase 9)
+and a link from `/pricing` to billing.
+**Verified:** full jest suite, typecheck, lint, and a live-DB run of the ledger and invoice
+lookup (ownership, status filtering, refund window).
 
 **Done when:** a user with a plan and two courses sees all three in one table with
 working invoices, and no other billing page exists.
