@@ -16,11 +16,14 @@ export function CourseDetailView({
   course,
   action,
   hrefFor,
+  extra,
 }: {
   course: CourseDetail;
   /** Buy / Continue / Sign-in control for the price card. */
   action: ReactNode;
   hrefFor?: (lesson: CatalogLesson) => string | null;
+  /** Extra sections rendered after the instructor, e.g. reviews. */
+  extra?: ReactNode;
 }) {
   const off = discountPercent(course.priceInr, course.compareAtInr);
   const duration = formatDuration(course.durationS);
@@ -105,6 +108,8 @@ export function CourseDetailView({
               </div>
             </section>
           )}
+
+          {extra}
         </div>
 
         <aside className="lg:sticky lg:top-20 lg:self-start">

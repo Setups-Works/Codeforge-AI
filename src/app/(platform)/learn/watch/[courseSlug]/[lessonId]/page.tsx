@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/shared/markdown";
 import { LessonActions } from "@/features/lms/lesson-actions";
 import { LessonRail } from "@/features/lms/lesson-rail";
+import { LessonNotes } from "@/features/lms/lesson-notes";
+import { LessonQuestions } from "@/features/lms/lesson-questions";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { canAccessLesson, type AccessReason } from "@/lib/lms/access";
 import { isUuid } from "@/lib/lms/guard";
 import { toEmbed } from "@/lib/lms/video";
@@ -125,6 +128,17 @@ export default async function WatchPage({ params }: Props) {
             <p className="text-xs text-muted-foreground">
               {isAdmin ? "Admin view — progress isn't tracked." : "Preview lesson — enrol to track your progress."}
             </p>
+          )}
+
+          {decision.allowed && (enrollment || isAdmin) && (
+            <Tabs defaultValue="notes">
+              <TabsList>
+                <TabsTrigger value="notes">My notes</TabsTrigger>
+                <TabsTrigger value="qa">Q&amp;A</TabsTrigger>
+              </TabsList>
+              <TabsContent value="notes" className="mt-4"><LessonNotes lessonId={lesson.id} /></TabsContent>
+              <TabsContent value="qa" className="mt-4"><LessonQuestions lessonId={lesson.id} /></TabsContent>
+            </Tabs>
           )}
 
           {decision.allowed && lesson.bodyMd && (

@@ -97,14 +97,14 @@ export const LEARN_NAV_ITEMS: NavItem[] = [
   { title: "Home", href: "/learn", icon: GraduationCap, group: "Learn", exact: true },
   { title: "Browse courses", href: "/learn/courses", icon: BookOpen, group: "Learn" },
   { title: "My courses", href: "/learn/my-courses", icon: ListChecks, group: "Learn" },
+  { title: "Wishlist", href: "/learn/wishlist", icon: Bookmark, group: "Learn" },
+  { title: "Course notes", href: "/learn/notes", icon: StickyNote, group: "Progress" },
+  { title: "Certificates", href: "/learn/certificates", icon: Medal, group: "Progress" },
   { title: "Billing & orders", href: "/settings#billing", icon: CreditCard, group: "Account" },
   { title: "Back to Practice", href: "/dashboard", icon: LayoutDashboard, group: "Account" },
 ];
 
 /** Mobile bottom-bar items in Learn mode (no "More" sheet needed yet). */
-export const LEARN_MOBILE_NAV_ITEMS: NavItem[] = [
-  LEARN_NAV_ITEMS[0],
-  LEARN_NAV_ITEMS[1],
-  LEARN_NAV_ITEMS[2],
-  LEARN_NAV_ITEMS[4],
-];
+export const LEARN_MOBILE_NAV_ITEMS: NavItem[] = ["/learn", "/learn/courses", "/learn/my-courses", "/dashboard"].map(
+  (href) => LEARN_NAV_ITEMS.find((i) => i.href === href)!,
+);

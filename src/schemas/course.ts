@@ -88,3 +88,30 @@ export const verifyPurchaseSchema = z
     razorpay_signature: z.string().min(1).max(200),
   })
   .strict();
+
+export const reviewSchema = z
+  .object({
+    rating: z.number().int().min(1).max(5),
+    body: z.string().trim().max(2000).nullable().optional(),
+  })
+  .strict();
+
+export const reviewModerationSchema = z.object({ status: z.enum(["visible", "hidden"]) }).strict();
+
+export const wishlistSchema = z.object({ courseId: z.uuid() }).strict();
+
+export const noteSchema = z
+  .object({
+    lessonId: z.uuid(),
+    atSeconds: z.number().int().min(0).max(86_400).nullable().optional(),
+    body: z.string().trim().min(1).max(2000),
+  })
+  .strict();
+
+export const questionSchema = z
+  .object({
+    lessonId: z.uuid(),
+    parentId: z.uuid().optional(),
+    body: z.string().trim().min(1).max(2000),
+  })
+  .strict();

@@ -547,7 +547,7 @@ export function courseKeywords(c: Pick<CourseDetail, "title" | "category" | "lev
  * reviews exist) an AggregateRating. Video refs never appear here: lessons
  * are listed by title only.
  */
-export function courseGraph(c: CourseDetail) {
+export function courseGraph(c: CourseDetail, reviews: { authorName: string; rating: number; body: string | null; createdAt: Date }[] = []) {
   const url = `${SITE_URL}/courses/${c.slug}`;
   const summary = plainText(c.description, 300) || c.subtitle || c.title;
   const keywords = courseKeywords(c);
@@ -603,6 +603,17 @@ export function courseGraph(c: CourseDetail) {
     },
     offers: offer,
     dateModified: c.updatedAt,
+    ...(c.ratingCount > 0 && reviews.length
+      ? {
+          review: reviews.slice(0, 5).map((r) => ({
+            "@type": "Review",
+            author: { "@type": "Person", name: r.authorName },
+            datePublished: r.createdAt.toISOString(),
+            reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: 5, worstRating: 1 },
+            ...(r.body ? { reviewBody: r.body } : {}),
+          })),
+        }
+      : {}),
     ...(c.ratingCount > 0 && c.ratingAvg != null
       ? { aggregateRating: { "@type": "AggregateRating", ratingValue: c.ratingAvg, ratingCount: c.ratingCount, bestRating: 5, worstRating: 1 } }
       : {}),

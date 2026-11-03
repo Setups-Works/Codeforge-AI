@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { LessonKind } from "@/lib/lms/constants";
 import type { VideoRef } from "@/lib/lms/video";
+import { issueCertificate } from "@/services/lms-certificates";
 import { canAccessLesson, type AccessDecision } from "@/lib/lms/access";
 import type { CourseCard } from "@/services/lms-catalog";
 
@@ -192,6 +193,10 @@ export async function setLessonStatus(
     .update({ completed_at: courseCompleted ? now : null, last_lesson_id: lessonId, last_accessed_at: now })
     .eq("user_id", userId)
     .eq("course_id", courseId);
+  if (courseCompleted) {
+    // Certificates are earned, not revoked: undoing a lesson later keeps this one.
+    await issueCertificate(userId, courseId).catch((e) => console.error("[certificate]", e));
+  }
   return { ...progress, courseCompleted };
 }
 
@@ -229,6 +234,24 @@ export async function resolveLessonAccess(
     enrollment: enrollment ? { enrolledAt: enrollment.enrolledAt, expiresAt: enrollment.expiresAt } : null,
   });
   return { decision, lesson, enrollment, courseStatus };
+}
+
+/**
+ * Gate for lesson-scoped community features (notes, Q&A): the viewer must be
+ * able to watch the lesson and be a real learner or an admin, so free-preview
+ * visitors can't post.
+ */
+export async function authorizeLessonParticipation(
+  user: { id: string; role?: string | null },
+  lessonId: string,
+): Promise<{ ok: true; courseId: string } | { ok: false; status: number; error: string }> {
+  const found = await getLessonCourse(lessonId);
+  if (!found) return { ok: false, status: 404, error: "Lesson not found" };
+  const { decision, enrollment } = await resolveLessonAccess(user, found.courseId, lessonId);
+  if (!decision.allowed || (!enrollment && user.role !== "admin")) {
+    return { ok: false, status: 403, error: "Enrol in this course to use this" };
+  }
+  return { ok: true, courseId: found.courseId };
 }
 
 // ── My courses / continue watching ──────────────────────────────────────

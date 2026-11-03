@@ -12,8 +12,8 @@ decisions). We build **one phase at a time**; each phase ships behind
 | 3 | Player & progress | Watch lessons, continue watching, resume | ✅ committed |
 | 4 | Purchase & entitlement | Buy a course with Razorpay, get access | ✅ committed (UI/Razorpay popup not yet clicked through) |
 | 5 | Unified billing | One Billing & Usage ledger in Settings | ✅ committed (UI not yet clicked through) |
-| 6 | Public SEO pages | `/courses` indexed with rich schema | 🟡 built and render-checked; not committed |
-| 7 | Engagement | Reviews, Q&A, notes, certificates | ⬜ |
+| 6 | Public SEO pages | `/courses` indexed with rich schema | ✅ committed |
+| 7 | Engagement | Reviews, Q&A, notes, certificates | 🟡 built, migration applied, live-DB verified; not committed |
 | 8 | Practice integration | Problem lessons, quizzes, AI mentor, XP | ⬜ |
 | 9 | Growth & commerce | Course coupons, bundles, referrals, emails | ⬜ |
 | 10 | Analytics & hardening | Admin analytics, refunds, invoices, video host upgrade, tests | ⬜ |
@@ -210,6 +210,24 @@ every other page in the app (the root loading UI streams first).
 - Lesson Q&A on top of `discussions`; timestamped lesson notes.
 - Wishlist; certificates on completion with public `/certificate/[code]` verify
   page and PDF.
+
+**Delivered:** `0018_lms_engagement.sql`
+(reviews, wishlist, lesson notes, lesson questions, certificates), services
+`lms-engagement.ts` / `lms-certificates.ts`, learner APIs (review, wishlist, notes, Q&A),
+admin review moderation, UI: reviews + star form on course pages, wishlist button,
+**My notes** and **Q&A** tabs on the watch page, `/learn/wishlist`, `/learn/notes`,
+`/learn/certificates`, public printable `/certificate/[code]` (noindex), certificate issued
+automatically on course completion and kept if a lesson is later un-completed, `Review`
+nodes in the public Course schema once real ratings exist.
+**Verified:** full jest suite (207), typecheck, lint, a live-DB run of every flow (review gate
+and rating math, hide/restore, wishlist, notes ownership, threaded Q&A rules, preview
+visitors blocked, certificate issue/idempotency/snapshot/undo, delete guards), and a real
+render of `/certificate/[code]` (noindex, escaped title, code shown). Not yet clicked
+through as a logged-in user.
+Deviations: Q&A uses its own `lesson_questions` table instead of the forum's
+`discussions` (that store is split across two backends); certificates are a printable page
+(browser print → PDF) rather than a generated PDF file; timestamps on notes are typed
+because Drive cannot report the playhead; a "My questions" page was skipped.
 
 **Done when:** a finisher receives a verifiable certificate; reviews update the
 course rating counters.

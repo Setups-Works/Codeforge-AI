@@ -12,6 +12,8 @@ import { lmsEnabled } from "@/lib/lms/flag";
 import { SITE_URL, courseGraph, courseKeywords, plainText } from "@/lib/seo";
 import { formatPrice } from "@/lib/plans";
 import { getCourseBySlug } from "@/services/lms-catalog";
+import { listVisibleReviews } from "@/services/lms-engagement";
+import { ReviewsSection } from "@/features/lms/reviews-section";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +52,7 @@ export default async function PublicCoursePage({ params }: Props) {
 
   const session = await auth();
   const signedIn = !!session?.user;
+  const reviews = await listVisibleReviews(course.id).catch(() => []);
   const inApp = `/learn/courses/${course.slug}`;
   const watchHref = (lessonId: string) => `/learn/watch/${course.slug}/${lessonId}`;
 
@@ -65,7 +68,7 @@ export default async function PublicCoursePage({ params }: Props) {
 
   return (
     <div className="min-h-svh bg-background">
-      <JsonLd data={courseGraph(course)} />
+      <JsonLd data={courseGraph(course, reviews)} />
       <PublicHeader signedIn={signedIn} />
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         <Link href="/courses" className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
@@ -82,6 +85,7 @@ export default async function PublicCoursePage({ params }: Props) {
             </>
           }
           hrefFor={(l) => (signedIn && l.isFreePreview ? watchHref(l.id) : null)}
+          extra={<ReviewsSection courseId={course.id} reviews={reviews} average={course.ratingAvg} count={course.ratingCount} canReview={false} myReview={null} />}
         />
       </div>
     </div>

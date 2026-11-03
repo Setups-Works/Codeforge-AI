@@ -39,6 +39,13 @@ describe("courseGraph", () => {
     expect(rated.aggregateRating).toMatchObject({ ratingValue: 4.6, ratingCount: 20 });
   });
 
+  it("adds Review nodes only alongside real ratings", () => {
+    const reviews = [{ authorName: "Asha R.", rating: 5, body: "Great", createdAt: new Date("2026-10-01T00:00:00Z") }];
+    expect(find(courseGraph(course(), reviews), "Course").review).toBeUndefined(); // no ratingCount yet
+    const rated = find(courseGraph(course({ ratingAvg: 5, ratingCount: 1 }), reviews), "Course");
+    expect(rated.review[0]).toMatchObject({ author: { name: "Asha R." }, reviewRating: { ratingValue: 5 }, reviewBody: "Great" });
+  });
+
   it("marks free courses as free", () => {
     const c = find(courseGraph(course({ isFree: true, priceInr: 0, compareAtInr: null })), "Course");
     expect(c.isAccessibleForFree).toBe(true);

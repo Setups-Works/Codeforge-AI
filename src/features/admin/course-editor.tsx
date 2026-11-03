@@ -40,6 +40,8 @@ import { COURSE_LEVELS, COURSE_LIMITS, LESSON_KINDS, type CourseStatus, type Les
 import { STATUS_VARIANT } from "@/features/admin/courses-manager";
 import type { AdminCourse, AdminCourseDetail, AdminLesson, AdminSection } from "@/services/lms-courses";
 import type { AdminEnrollment } from "@/services/lms-learn";
+import type { Review } from "@/services/lms-engagement";
+import { Stars } from "@/features/lms/stars";
 import { format } from "date-fns";
 
 const queryKey = (id: string) => ["admin-course", id] as const;
@@ -135,6 +137,7 @@ export function CourseEditor({ courseId }: { courseId: string }) {
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="pricing">Pricing & SEO</TabsTrigger>
           <TabsTrigger value="learners">Learners</TabsTrigger>
+          <TabsTrigger value="reviews">Reviews</TabsTrigger>
         </TabsList>
         <TabsContent value="curriculum" className="mt-4">
           <Curriculum courseId={courseId} sections={sections} onChange={refresh} />
@@ -147,6 +150,9 @@ export function CourseEditor({ courseId }: { courseId: string }) {
         </TabsContent>
         <TabsContent value="learners" className="mt-4">
           <LearnersPanel courseId={courseId} />
+        </TabsContent>
+        <TabsContent value="reviews" className="mt-4">
+          <ReviewsPanel courseId={courseId} onChanged={refresh} />
         </TabsContent>
       </Tabs>
     </div>
@@ -894,5 +900,60 @@ function LearnersPanel({ courseId }: { courseId: string }) {
         )}
       </section>
     </div>
+  );
+}
+
+// ── Reviews (moderation) ────────────────────────────────────────────────
+
+function ReviewsPanel({ courseId, onChanged }: { courseId: string; onChanged: () => void }) {
+  const qc = useQueryClient();
+  const key = ["admin-course-reviews", courseId] as const;
+  const { data, isLoading } = useQuery({
+    queryKey: key,
+    queryFn: () => api<{ reviews: (Omit<Review, "createdAt"> & { createdAt: string })[] }>(`/api/admin/courses/${courseId}/reviews`),
+  });
+  const toggle = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: "visible" | "hidden" }) =>
+      api(`/api/admin/reviews/${id}`, { method: "PATCH", json: { status } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: key });
+      onChanged();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const reviews = data?.reviews ?? [];
+  return (
+    <section className="rounded-xl border bg-card">
+      <h2 className="border-b p-4 text-sm font-semibold">Reviews ({reviews.length})</h2>
+      {isLoading ? (
+        <div className="flex justify-center py-8"><Loader2 className="size-5 animate-spin text-muted-foreground" /></div>
+      ) : reviews.length === 0 ? (
+        <p className="p-4 text-sm text-muted-foreground">No reviews yet.</p>
+      ) : (
+        <ul className="divide-y">
+          {reviews.map((r) => (
+            <li key={r.id} className="flex items-start gap-3 p-4 text-sm">
+              <div className="min-w-0 flex-1 space-y-1">
+                <p className="flex items-center gap-2">
+                  <Stars value={r.rating} /> <span className="font-medium">{r.authorName}</span>
+                  <span className="text-xs text-muted-foreground">{format(new Date(r.createdAt), "MMM d, yyyy")}</span>
+                  {r.status === "hidden" && <Badge variant="secondary">Hidden</Badge>}
+                </p>
+                {r.body && <p className="whitespace-pre-line text-muted-foreground">{r.body}</p>}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={toggle.isPending}
+                onClick={() => toggle.mutate({ id: r.id, status: r.status === "visible" ? "hidden" : "visible" })}
+              >
+                {r.status === "visible" ? "Hide" : "Show"}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
