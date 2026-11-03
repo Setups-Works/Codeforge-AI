@@ -8,6 +8,7 @@ import {
   Briefcase,
   CreditCard,
   FileQuestion,
+  GraduationCap,
   ListChecks,
   Lock,
   Mail,
@@ -23,6 +24,7 @@ import {
   type LucideIcon,
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
+import { lmsEnabled } from "@/lib/lms/flag";
 
 interface AdminNavItem {
   href: string;
@@ -50,6 +52,7 @@ const SECTIONS: AdminNavSection[] = [
       { href: "/admin/challenges", label: "Challenges", icon: Paintbrush },
       { href: "/admin/contests", label: "Contests", icon: Trophy },
       { href: "/admin/blog", label: "Blog", icon: Newspaper },
+      ...(lmsEnabled() ? [{ href: "/admin/courses", label: "Courses", icon: GraduationCap }] : []),
     ],
   },
   {

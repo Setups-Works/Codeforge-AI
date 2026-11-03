@@ -27,6 +27,8 @@ interface VideoProvider {
   /** Extract a ref from a pasted URL or bare id; null if it is not valid. */
   parse(input: string): string | null;
   embed(ref: string): VideoEmbed;
+  /** A link an admin can open or paste back (not a playback URL for learners). */
+  shareUrl(ref: string): string;
 }
 
 const DRIVE_HOSTS = new Set([
@@ -67,6 +69,7 @@ const PROVIDERS: Record<VideoProviderId, VideoProvider> = {
       src: `https://drive.google.com/file/d/${encodeURIComponent(ref)}/preview`,
       allow: "autoplay; fullscreen",
     }),
+    shareUrl: (ref) => `https://drive.google.com/file/d/${encodeURIComponent(ref)}/view`,
   },
 };
 
@@ -82,4 +85,9 @@ export const parseDriveLink = (input: string): VideoRef | null => parseVideoInpu
 /** Build the player descriptor. Only call this after an access check. */
 export function toEmbed(video: VideoRef): VideoEmbed {
   return PROVIDERS[video.provider].embed(video.ref);
+}
+
+/** Admin-facing link for a stored ref, so the editor can show/re-edit it. */
+export function toShareUrl(video: VideoRef): string {
+  return PROVIDERS[video.provider].shareUrl(video.ref);
 }

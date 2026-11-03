@@ -7,7 +7,7 @@ decisions). We build **one phase at a time**; each phase ships behind
 | Phase | Theme | Outcome | State |
 |---|---|---|---|
 | 0 | Decisions & foundation | Flag + schema + video abstraction + access rules | ✅ done |
-| 1 | Admin course CMS | Admin can create, structure and publish a course | ⬜ |
+| 1 | Admin course CMS | Admin can create, structure and publish a course | 🟡 built, UI not yet clicked through |
 | 2 | Learn mode shell | Toggle, LMS sidebar, catalogue, product detail | ⬜ |
 | 3 | Player & progress | Watch lessons, continue watching, resume | ⬜ |
 | 4 | Purchase & entitlement | Buy a course with Razorpay, get access | ⬜ |
@@ -53,6 +53,16 @@ The six open questions are still unanswered; Phase 0 code does not depend on the
 
 **Done when:** an admin builds and publishes a course end to end; a non-admin gets
 403/404 on every admin route.
+
+**Delivered:** `src/services/lms-courses.ts`, `src/schemas/course.ts`,
+`/api/admin/courses/**` (CRUD, sections, lessons, bulk import `PUT …/lessons`, reorder,
+thumbnail upload), `/admin/courses` list + editor (`courses-manager.tsx`,
+`course-editor.tsx`), admin-nav entry (only when `NEXT_PUBLIC_LMS_ENABLED=true`).
+Verified: 40 unit tests; a throwaway-course run of the whole service flow against the
+live Supabase DB (create → sections → lessons → bulk → reorder → publish rules → slug
+conflict → delete); unauthenticated requests get 401 / login redirect.
+**Not yet verified:** clicking through the editor as a logged-in admin.
+Reordering uses up/down buttons (no drag-and-drop library in the codebase).
 
 ## Phase 2 — Learn mode shell
 **Goal:** the experience users see before they pay.
