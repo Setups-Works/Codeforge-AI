@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import { connectDB } from "@/lib/mongodb";
-import { User } from "@/models";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { ensureProfile } from "@/lib/user-provision";
 import { sendEmail } from "@/lib/mailer";
 import { betaWelcomeEmailHtml, betaWelcomeEmailSubject } from "@/lib/email-templates";
 import { enforceRateLimit } from "@/lib/rate-limit";
@@ -26,9 +25,16 @@ const betaSchema = z.object({
     ),
 });
 
+async function betaUserCount(): Promise<number> {
+  const { count } = await supabaseAdmin()
+    .from("users")
+    .select("id", { count: "exact", head: true })
+    .eq("beta_user", true);
+  return count ?? 0;
+}
+
 export async function GET() {
-  await connectDB();
-  const count = await User.countDocuments({ betaUser: true });
+  const count = await betaUserCount();
   return NextResponse.json({ count, limit: BETA_LIMIT, spotsLeft: Math.max(0, BETA_LIMIT - count) });
 }
 
@@ -51,34 +57,45 @@ export async function POST(req: NextRequest) {
   const cleanUsername = cap(username.toLowerCase(), 30);
   const cleanEmail = email.toLowerCase();
 
-  await connectDB();
-
-  const betaCount = await User.countDocuments({ betaUser: true });
+  const betaCount = await betaUserCount();
   if (betaCount >= BETA_LIMIT) {
     return NextResponse.json({ error: "Sorry, all 50 beta spots have been claimed." }, { status: 409 });
   }
 
+  const admin = supabaseAdmin();
   const [emailTaken, usernameTaken] = await Promise.all([
-    User.exists({ email: cleanEmail }),
-    User.exists({ username: cleanUsername }),
+    admin.from("users").select("id").eq("email", cleanEmail).maybeSingle(),
+    admin.from("users").select("id").eq("username", cleanUsername).maybeSingle(),
   ]);
 
-  if (emailTaken) return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
-  if (usernameTaken) return NextResponse.json({ error: "This username is already taken" }, { status: 409 });
+  if (emailTaken.data) return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
+  if (usernameTaken.data) return NextResponse.json({ error: "This username is already taken" }, { status: 409 });
 
   const planExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-  const hashed = await bcrypt.hash(password, 12);
 
-  await User.create({
+  const created = await admin.auth.admin.createUser({
+    email: cleanEmail,
+    password,
+    email_confirm: true,
+    user_metadata: { name: cleanName, username: cleanUsername },
+  });
+  if (created.error || !created.data.user) {
+    return NextResponse.json({ error: created.error?.message ?? "Could not create your account" }, { status: 400 });
+  }
+  await ensureProfile({
+    id: created.data.user.id,
+    email: cleanEmail,
     name: cleanName,
     username: cleanUsername,
-    email: cleanEmail,
-    password: hashed,
-    providers: ["credentials"],
-    plan: "go",
-    planExpiresAt,
-    betaUser: true,
+    provider: "credentials",
   });
+  const { error: planError } = await admin
+    .from("users")
+    .update({ plan: "go", plan_expires_at: planExpiresAt.toISOString(), beta_user: true })
+    .eq("id", created.data.user.id);
+  if (planError) {
+    return NextResponse.json({ error: "Account created but beta plan could not be applied" }, { status: 500 });
+  }
 
   const spotsLeft = Math.max(0, BETA_LIMIT - betaCount - 1);
   const appUrl = process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";

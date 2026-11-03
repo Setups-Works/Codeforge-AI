@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireAdmin } from "@/lib/api-auth";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { aiGenerateRequestSchema } from "@/schemas/question";
@@ -41,7 +40,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  await connectDB();
   try {
     const outcome = await generateQuestionsFromPrompt(
       parsed.data.prompt,

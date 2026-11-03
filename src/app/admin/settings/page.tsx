@@ -128,7 +128,7 @@ export default function SettingsPage() {
   // Per-service test status
   const [tSmtp, setTSmtp] = useState<TestStatus>(IDLE);
   const [tGroq, setTGroq] = useState<TestStatus>(IDLE);
-  const [tMongo, setTMongo] = useState<TestStatus>(IDLE);
+  const [tDb, setTDb] = useState<TestStatus>(IDLE);
   const [tRedis, setTRedis] = useState<TestStatus>(IDLE);
   const [tJudge0, setTJudge0] = useState<TestStatus>(IDLE);
   const [tPiston, setTPiston] = useState<TestStatus>(IDLE);
@@ -322,12 +322,12 @@ export default function SettingsPage() {
         {/* ── Database ────────────────────────────────────────────────────── */}
         <TabsContent value="database" className="mt-6 space-y-4">
           <p className="text-xs text-muted-foreground">
-            MongoDB URI is loaded from your server environment (<code className="rounded bg-muted px-1">MONGODB_URI</code> env var) and cannot be changed here for security. Use this to verify the connection is healthy.
+            Supabase credentials are loaded from your server environment (<code className="rounded bg-muted px-1">NEXT_PUBLIC_SUPABASE_URL</code> and <code className="rounded bg-muted px-1">SUPABASE_SERVICE_ROLE_KEY</code> env vars) and cannot be changed here for security. Use this to verify the connection is healthy.
           </p>
           <div className="rounded-lg border bg-muted/30 p-4 font-mono text-xs text-muted-foreground">
-            MONGODB_URI = <span className="text-foreground">{"*".repeat(24)} (set via .env)</span>
+            SUPABASE_SERVICE_ROLE_KEY = <span className="text-foreground">{"*".repeat(24)} (set via .env)</span>
           </div>
-          <TestBtn status={tMongo} label="Test MongoDB connection" onClick={() => test("mongodb", {}, setTMongo)} />
+          <TestBtn status={tDb} label="Test Supabase connection" onClick={() => test("supabase", {}, setTDb)} />
         </TabsContent>
 
         {/* ── Cache / Redis ────────────────────────────────────────────────── */}

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { connectDB } from "@/lib/mongodb";
-import { CrawlerHit } from "@/models/CrawlerHit";
+import { crawlerSummary } from "@/lib/crawler-hits";
 import { crawlerKind } from "@/lib/crawlers";
 
 export const metadata: Metadata = { title: "Admin · Crawlers" };
@@ -9,31 +8,13 @@ export const dynamic = "force-dynamic";
 /**
  * Crawler activity — search engines and AI answer engines.
  *
- * Reads the collection directly rather than going through /api/crawler-log:
+ * Reads the table directly rather than going through /api/crawler-log:
  * this is a server component inside the admin area, so a round-trip through
  * HTTP (and the shared secret) would buy nothing.
  */
 export default async function AdminCrawlersPage() {
   const days = 7;
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-  const match = { createdAt: { $gte: since } };
-
-  await connectDB();
-  const [items, byCrawler, topPaths, total] = await Promise.all([
-    CrawlerHit.find(match).sort({ createdAt: -1 }).limit(50).lean(),
-    CrawlerHit.aggregate<{ _id: string; hits: number; verified: number }>([
-      { $match: match },
-      { $group: { _id: "$crawler", hits: { $sum: 1 }, verified: { $sum: { $cond: ["$verified", 1, 0] } } } },
-      { $sort: { hits: -1 } },
-    ]),
-    CrawlerHit.aggregate<{ _id: string; hits: number }>([
-      { $match: match },
-      { $group: { _id: "$path", hits: { $sum: 1 } } },
-      { $sort: { hits: -1 } },
-      { $limit: 10 },
-    ]),
-    CrawlerHit.countDocuments(match),
-  ]);
+  const { items, byCrawler, topPaths, total } = await crawlerSummary(days);
 
   const aiHits = byCrawler
     .filter((c) => crawlerKind(c._id).startsWith("ai"))
@@ -131,7 +112,7 @@ export default async function AdminCrawlersPage() {
                 </thead>
                 <tbody className="divide-y">
                   {items.map((h) => (
-                    <tr key={String(h._id)}>
+                    <tr key={h.id}>
                       <td className="py-2.5 pr-4 text-muted-foreground">
                         {new Date(h.createdAt).toLocaleString()}
                       </td>

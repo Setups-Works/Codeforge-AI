@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/api-auth";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import {
@@ -49,7 +48,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  await connectDB();
   const created: Awaited<ReturnType<typeof saveQuestionDraft>>[] = [];
   const failed: { title: string; reason: string }[] = [];
 

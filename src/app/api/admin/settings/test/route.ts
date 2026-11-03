@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { connectDB } from "@/lib/mongodb";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getSiteConfig, MASKED } from "@/lib/site-config";
 
 async function requireAdmin() {
@@ -38,16 +38,14 @@ export async function POST(req: NextRequest) {
   const { service } = body;
   const cfg = await getSiteConfig();
 
-  // ── MongoDB ───────────────────────────────────────────────────────────────
-  if (service === "mongodb") {
+  // ── Supabase ──────────────────────────────────────────────────────────────
+  if (service === "supabase") {
     try {
-      await connectDB();
-      const mongoose = (await import("mongoose")).default;
-      const state = mongoose.connection.readyState;
-      if (state === 1) return ok("MongoDB connected successfully.");
-      return fail("MongoDB is not connected (state: " + state + ").");
+      const { error } = await supabaseAdmin().from("users").select("id", { head: true, count: "exact" }).limit(1);
+      if (error) return fail("Supabase error: " + error.message);
+      return ok("Supabase connected successfully.");
     } catch (e) {
-      return fail("MongoDB error: " + (e instanceof Error ? e.message : "unknown"));
+      return fail("Supabase error: " + (e instanceof Error ? e.message : "unknown"));
     }
   }
 

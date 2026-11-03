@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/api-auth";
 import { enforceAiCredit } from "@/services/ai-credits";
 import { enforceGenQuota } from "@/services/gen-quota";
@@ -69,7 +68,6 @@ export async function POST(req: NextRequest) {
     .filter(Boolean)
     .join(" ");
 
-  await connectDB();
   try {
     const outcome = await generateQuestionsFromPrompt(
       `${parsed.data.prompt}. ${constraints}`.trim(),

@@ -1,5 +1,4 @@
-import { connectDB } from "@/lib/mongodb";
-import { CrawlerHit } from "@/models/CrawlerHit";
+import { recordCrawlerHit, crawlerSummary } from "@/lib/crawler-hits";
 import { crawlerName } from "@/lib/crawlers";
 import { verifyGoogleRequest } from "@/lib/verify-google";
 import { isVerifiableCrawler, verifyAiCrawler } from "@/lib/verify-crawler";
@@ -53,8 +52,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    await connectDB();
-    await CrawlerHit.create({ path, userAgent, ip, crawler, verified, method });
+    await recordCrawlerHit({ path, userAgent, ip, crawler, verified, method });
     return Response.json({ success: true });
   } catch (err) {
     console.error("[crawler-log]", err);
@@ -74,25 +72,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    await connectDB();
-    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const match = { createdAt: { $gte: since } };
-
-    const [items, byCrawler, topPaths, total] = await Promise.all([
-      CrawlerHit.find(match).sort({ createdAt: -1 }).limit(50).lean(),
-      CrawlerHit.aggregate([
-        { $match: match },
-        { $group: { _id: "$crawler", hits: { $sum: 1 }, verified: { $sum: { $cond: ["$verified", 1, 0] } } } },
-        { $sort: { hits: -1 } },
-      ]),
-      CrawlerHit.aggregate([
-        { $match: match },
-        { $group: { _id: "$path", hits: { $sum: 1 } } },
-        { $sort: { hits: -1 } },
-        { $limit: 10 },
-      ]),
-      CrawlerHit.countDocuments(match),
-    ]);
+    const { total, items, byCrawler, topPaths } = await crawlerSummary(days);
 
     return Response.json({ days, total, items, byCrawler, topPaths });
   } catch (err) {
