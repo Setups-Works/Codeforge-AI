@@ -17,6 +17,8 @@ import { DeleteAccount } from "@/features/settings/delete-account";
 import { BillingPanel } from "@/features/subscription/billing-panel";
 import { UsagePanel } from "@/features/subscription/usage-panel";
 import { MyPurchases } from "@/features/subscription/my-purchases";
+import { CouponHistory } from "@/features/subscription/coupon-history";
+import { listCouponRedemptions } from "@/services/billing-ledger";
 import { lmsEnabled } from "@/lib/lms/flag";
 import { listMyCourses } from "@/services/lms-learn";
 
@@ -31,6 +33,7 @@ export default async function SettingsPage() {
   if (!user) redirect("/login");
 
   const plan = user.plan;
+  const redemptions = await listCouponRedemptions(session.user.id).catch(() => []);
   const purchases = lmsEnabled() ? await listMyCourses(session.user.id).catch(() => []) : null;
   const paymentsEnabled = !!(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
 
@@ -124,6 +127,7 @@ export default async function SettingsPage() {
           />
           {purchases && <MyPurchases courses={purchases} />}
           <UsagePanel plan={plan} />
+          <CouponHistory redemptions={redemptions} />
         </>
       ),
     },

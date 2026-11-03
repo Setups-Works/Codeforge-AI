@@ -56,6 +56,31 @@ export async function getBillingLedger(userId: string, limit = 50): Promise<Ledg
   return mergeLedger(subRows, courseRows);
 }
 
+export interface CouponRedemption {
+  id: string;
+  code: string;
+  /** Amount taken off, in whole currency units. */
+  discount: number;
+  redeemedAt: Date;
+}
+
+/** Coupons the user has redeemed, newest first. */
+export async function listCouponRedemptions(userId: string, limit = 50): Promise<CouponRedemption[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("coupon_redemptions")
+    .select("id,code,discount,created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as { id: string; code: string | null; discount: number | null; created_at: string }[]).map((r) => ({
+    id: r.id,
+    code: r.code ?? "—",
+    discount: Number(r.discount ?? 0),
+    redeemedAt: new Date(r.created_at),
+  }));
+}
+
 export interface CourseInvoice {
   id: string;
   amount: number;

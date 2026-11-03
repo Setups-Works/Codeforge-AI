@@ -53,6 +53,11 @@ export default async function PricingPage() {
           <p className="mt-3 text-muted-foreground max-w-lg mx-auto">
             Every plan includes a 7-day free trial on paid tiers. No credit card required to start.
           </p>
+          {signedIn && (
+            <Link href="/settings#billing" className="mt-3 inline-block text-sm font-medium text-primary hover:underline">
+              Manage billing &amp; invoices →
+            </Link>
+          )}
         </div>
 
         {/* Beta banner — shown only when payments are not yet live */}
