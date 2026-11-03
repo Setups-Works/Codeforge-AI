@@ -1,6 +1,3 @@
-import { connectDB } from "@/lib/mongodb";
-import { Discussion } from "@/models";
-import { backendFor } from "@/lib/data-backend";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 /** Embedded reply as stored in the discussions.replies jsonb. */
@@ -97,7 +94,6 @@ export function detailShape(row: SbDiscussionRow, authors: Map<string, AuthorRef
 
 export type DiscussionDetailView = ReturnType<typeof detailShape>;
 
-const be = () => backendFor("discussions");
 
 interface PopulatedAuthor {
   _id: { toString(): string };
@@ -134,37 +130,8 @@ function authorRef(a: PopulatedAuthor | null | undefined): AuthorRef | null {
   return a ? { _id: a._id.toString(), username: a.username ?? "", name: a.name ?? "", image: a.image ?? null } : null;
 }
 
-/** Map a populated Mongo discussion doc into the shared detail view shape. */
-function mongoToDetail(doc: MongoDiscussionDoc): DiscussionDetailView {
-  return {
-    _id: doc._id.toString(),
-    question: doc.question ? doc.question.toString() : null,
-    author: authorRef(doc.author),
-    title: doc.title,
-    content: doc.content,
-    tags: doc.tags ?? [],
-    kind: doc.kind,
-    language: doc.language ?? null,
-    upvotes: (doc.upvotes ?? []).map((u) => u.toString()),
-    downvotes: (doc.downvotes ?? []).map((u) => u.toString()),
-    isPinned: Boolean(doc.isPinned),
-    aiSummary: doc.aiSummary ?? null,
-    aiSummaryAt: doc.aiSummaryAt ? doc.aiSummaryAt.toISOString() : null,
-    views: doc.views ?? 0,
-    createdAt: doc.createdAt.toISOString(),
-    replies: (doc.replies ?? []).map((r) => ({
-      _id: r._id.toString(),
-      author: authorRef(r.author),
-      content: r.content,
-      parentReply: r.parentReply ? r.parentReply.toString() : null,
-      createdAt: r.createdAt.toISOString(),
-    })),
-  };
-}
-
 /** Increment views and return the full discussion detail (thread pages). */
 export async function getDiscussionForView(id: string): Promise<DiscussionDetailView | null> {
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const { data } = await sb.from("discussions").select(DISCUSSION_FULL_COLS).eq("id", id).maybeSingle();
     if (!data) return null;
@@ -173,24 +140,12 @@ export async function getDiscussionForView(id: string): Promise<DiscussionDetail
     row.views = (row.views ?? 0) + 1;
     const authors = await fetchAuthors([row.author_id ?? "", ...(row.replies ?? []).map((r) => r.author)].filter(Boolean));
     return detailShape(row, authors);
-  }
-  await connectDB();
-  const doc = await Discussion.findByIdAndUpdate(id, { $inc: { views: 1 } }, { returnDocument: "after" })
-    .populate("author", "username name image")
-    .populate("replies.author", "username name image")
-    .lean();
-  return doc ? mongoToDetail(doc as unknown as MongoDiscussionDoc) : null;
 }
 
 /** A discussion's title (thread metadata). */
 export async function getDiscussionTitle(id: string): Promise<string | null> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin().from("discussions").select("title").eq("id", id).maybeSingle();
     return (data as { title: string } | null)?.title ?? null;
-  }
-  await connectDB();
-  const d = await Discussion.findById(id).select("title").lean();
-  return d?.title ?? null;
 }
 
 export interface RecentDiscussion {
@@ -204,7 +159,6 @@ export interface RecentDiscussion {
 
 /** Most recent discussions with authors (community page). */
 export async function getRecentDiscussions(limit: number): Promise<RecentDiscussion[]> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("discussions")
       .select("id,title,kind,author_id,created_at,upvotes")
@@ -217,24 +171,10 @@ export async function getRecentDiscussions(limit: number): Promise<RecentDiscuss
       author: r.author_id ? authors.get(r.author_id) ?? null : null,
       createdAt: r.created_at, upvotes: r.upvotes ?? [],
     }));
-  }
-  await connectDB();
-  const docs = await Discussion.find({})
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .populate("author", "username name image")
-    .select("title kind author createdAt upvotes")
-    .lean();
-  return (docs as unknown as MongoDiscussionDoc[]).map((d) => ({
-    _id: d._id.toString(), title: d.title, kind: d.kind,
-    author: authorRef(d.author),
-    createdAt: d.createdAt, upvotes: (d.upvotes ?? []).map((u) => u.toString()),
-  }));
 }
 
 /** Public forum threads (id + last-modified) for the sitemap. */
 export async function listDiscussionsForSitemap(limit = 5000): Promise<{ id: string; updatedAt: Date }[]> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("discussions")
       .select("id,created_at")
@@ -244,18 +184,10 @@ export async function listDiscussionsForSitemap(limit = 5000): Promise<{ id: str
       id: r.id,
       updatedAt: new Date(r.created_at),
     }));
-  }
-  await connectDB();
-  const docs = await Discussion.find({}).sort({ createdAt: -1 }).limit(limit).select("createdAt").lean();
-  return (docs as unknown as { _id: { toString(): string }; createdAt: Date }[]).map((d) => ({
-    id: d._id.toString(),
-    updatedAt: new Date(d.createdAt),
-  }));
 }
 
 /** Count discussions (optionally only those created today). */
 export async function countDiscussions(opts: { sinceToday?: boolean } = {}): Promise<number> {
-  if (be() === "supabase") {
     let q = supabaseAdmin().from("discussions").select("id", { count: "exact", head: true });
     if (opts.sinceToday) {
       const start = new Date(); start.setHours(0, 0, 0, 0);
@@ -263,9 +195,4 @@ export async function countDiscussions(opts: { sinceToday?: boolean } = {}): Pro
     }
     const { count } = await q;
     return count ?? 0;
-  }
-  await connectDB();
-  const filter: Record<string, unknown> = {};
-  if (opts.sinceToday) filter.createdAt = { $gte: new Date(new Date().setHours(0, 0, 0, 0)) };
-  return Discussion.countDocuments(filter);
 }

@@ -1,21 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
+import { NextRequest,NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-auth";
-import { Note } from "@/models";
-import { sanitizeUserContent, cap } from "@/lib/sanitize";
+import { sanitizeUserContent,cap } from "@/lib/sanitize";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
-import { attachQuestions, type SbNoteRow } from "@/services/notes-store";
+import { attachQuestions,type SbNoteRow } from "@/services/notes-store";
 
-const be = () => backendFor("notes");
 
 export async function GET(req: NextRequest) {
   const { session, error } = await requireUser();
   if (error) return error;
 
   const questionId = req.nextUrl.searchParams.get("question") ?? undefined;
-
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     let q = sb
       .from("notes")
@@ -27,18 +21,6 @@ export async function GET(req: NextRequest) {
     if (qErr) return NextResponse.json({ error: qErr.message }, { status: 500 });
     const notes = await attachQuestions((data ?? []) as SbNoteRow[]);
     return NextResponse.json({ notes });
-  }
-
-  await connectDB();
-  const filter: Record<string, unknown> = { user: session.user.id };
-  if (questionId) filter.question = questionId;
-
-  const notes = await Note.find(filter)
-    .sort({ updatedAt: -1 })
-    .populate("question", "slug title")
-    .lean();
-
-  return NextResponse.json({ notes });
 }
 
 export async function POST(req: NextRequest) {
@@ -57,8 +39,6 @@ export async function POST(req: NextRequest) {
   const cleanTitle = sanitizeUserContent(title) || "Untitled Note";
   const cleanContent = sanitizeUserContent(content);
   const cleanTags = tags.map(sanitizeUserContent);
-
-  if (be() === "supabase") {
     const { data, error: insErr } = await supabaseAdmin()
       .from("notes")
       .insert({
@@ -75,19 +55,4 @@ export async function POST(req: NextRequest) {
     if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
     const [note] = await attachQuestions([data as SbNoteRow]);
     return NextResponse.json({ note }, { status: 201 });
-  }
-
-  await connectDB();
-
-  const note = await Note.create({
-    user: session.user.id,
-    question: questionId,
-    challenge: challengeId,
-    title: cleanTitle,
-    content: cleanContent,
-    isPrivate,
-    tags: cleanTags,
-  });
-
-  return NextResponse.json({ note }, { status: 201 });
 }

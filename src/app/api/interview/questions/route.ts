@@ -1,11 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
+import { NextRequest,NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-auth";
 import { requireFeature } from "@/services/feature-access";
-import { Question } from "@/models";
-import { DIFFICULTIES, type Difficulty } from "@/lib/constants";
+import { DIFFICULTIES,type Difficulty } from "@/lib/constants";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
 /** Random question set for a mock interview session */
 export async function GET(req: NextRequest) {
@@ -33,8 +30,7 @@ export async function GET(req: NextRequest) {
   }
 
   let docs: InterviewQ[];
-  if (backendFor("questions") === "supabase") {
-    const sb = supabaseAdmin();
+  {    const sb = supabaseAdmin();
     let q = sb.from("questions")
       .select("id,slug,title,difficulty,category,description,examples,constraints,starter_code,test_cases")
       .eq("is_published", true);
@@ -54,16 +50,7 @@ export async function GET(req: NextRequest) {
       slug: r.slug, title: r.title, difficulty: r.difficulty, category: r.category,
       description: r.description, examples: r.examples ?? [], constraints: r.constraints ?? [],
       starterCode: r.starter_code ?? {}, testCases: r.test_cases ?? [],
-    }));
-  } else {
-    await connectDB();
-    const match: Record<string, unknown> = { isPublished: true };
-    if (category && category !== "any") match.category = category;
-    if (difficulty && DIFFICULTIES.includes(difficulty as Difficulty)) {
-      match.difficulty = difficulty;
-    }
-    docs = await Question.aggregate<InterviewQ>([{ $match: match }, { $sample: { size: count } }]);
-  }
+    }));}
 
   if (docs.length === 0) {
     return NextResponse.json(

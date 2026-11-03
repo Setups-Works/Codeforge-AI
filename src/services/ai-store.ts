@@ -1,10 +1,5 @@
-import { Types } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
-import { AiChat, AiToolRun } from "@/models";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
-const be = () => backendFor("ai");
 
 export interface StoredChatMessage {
   role: "system" | "user" | "assistant";
@@ -26,7 +21,6 @@ interface ChatKey {
 
 /** Find (or create) the AiChat row for a context and return id + messages. */
 export async function findOrCreateAiChat(key: ChatKey): Promise<AiChatRecord> {
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     let q = sb
       .from("ai_chats")
@@ -53,20 +47,6 @@ export async function findOrCreateAiChat(key: ChatKey): Promise<AiChatRecord> {
       .single();
     if (error) throw new Error(error.message);
     return { id: (created as { id: string }).id, messages: [] };
-  }
-
-  await connectDB();
-  const query: Record<string, unknown> = {
-    user: new Types.ObjectId(key.userId),
-    context: key.context,
-  };
-  if (key.questionId) query.question = new Types.ObjectId(key.questionId);
-  if (key.challengeId) query.challenge = new Types.ObjectId(key.challengeId);
-  const chat = (await AiChat.findOne(query)) ?? (await AiChat.create(query));
-  return {
-    id: chat._id.toString(),
-    messages: chat.messages as unknown as StoredChatMessage[],
-  };
 }
 
 /** Persist the full message list for a chat (already trimmed by the caller). */
@@ -74,21 +54,16 @@ export async function saveAiChatMessages(
   id: string,
   messages: StoredChatMessage[],
 ): Promise<void> {
-  if (be() === "supabase") {
     const { error } = await supabaseAdmin()
       .from("ai_chats")
       .update({ messages })
       .eq("id", id);
     if (error) throw new Error(error.message);
     return;
-  }
-  await connectDB();
-  await AiChat.updateOne({ _id: id }, { $set: { messages } });
 }
 
 /** Read a chat's messages for panel hydration (role + content only). */
 export async function getAiChatMessages(key: ChatKey): Promise<{ role: string; content: string }[]> {
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     let q = sb
       .from("ai_chats")
@@ -100,16 +75,6 @@ export async function getAiChatMessages(key: ChatKey): Promise<{ role: string; c
     const { data } = await q.maybeSingle();
     const messages = (data as { messages: StoredChatMessage[] | null } | null)?.messages ?? [];
     return messages.map((m) => ({ role: m.role, content: m.content }));
-  }
-  await connectDB();
-  const query: Record<string, unknown> = {
-    user: new Types.ObjectId(key.userId),
-    context: key.context,
-  };
-  if (key.questionId) query.question = new Types.ObjectId(key.questionId);
-  if (key.challengeId) query.challenge = new Types.ObjectId(key.challengeId);
-  const chat = await AiChat.findOne(query).lean();
-  return (chat?.messages ?? []).map((m) => ({ role: m.role, content: m.content }));
 }
 
 export interface ToolRunItem {
@@ -125,7 +90,6 @@ export async function listToolRuns(
   tool: string,
   limit: number,
 ): Promise<ToolRunItem[]> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("ai_tool_runs")
       .select("id,title,result,created_at")
@@ -139,19 +103,6 @@ export async function listToolRuns(
       result: r.result,
       createdAt: r.created_at,
     }));
-  }
-  await connectDB();
-  const runs = await AiToolRun.find({ user: new Types.ObjectId(userId), tool })
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .select("title result createdAt")
-    .lean();
-  return runs.map((r) => ({
-    id: r._id.toString(),
-    title: r.title,
-    result: r.result,
-    createdAt: r.createdAt,
-  }));
 }
 
 /** Insert or update a tool run, then trim to keep only the newest `keep`. */
@@ -164,7 +115,6 @@ export async function upsertToolRun(opts: {
   result: unknown;
   keep: number;
 }): Promise<string> {
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     let savedId = opts.id;
     if (opts.id) {
@@ -201,32 +151,4 @@ export async function upsertToolRun(opts: {
     const stale = ((all ?? []) as { id: string }[]).slice(opts.keep).map((r) => r.id);
     if (stale.length) await sb.from("ai_tool_runs").delete().in("id", stale);
     return savedId!;
-  }
-
-  await connectDB();
-  const userId = new Types.ObjectId(opts.userId);
-  if (opts.id && Types.ObjectId.isValid(opts.id)) {
-    const updated = await AiToolRun.findOneAndUpdate(
-      { _id: opts.id, user: userId, tool: opts.tool },
-      { title: opts.title, input: opts.input, result: opts.result },
-      { new: true },
-    );
-    if (updated) return updated._id.toString();
-  }
-  const run = await AiToolRun.create({
-    user: userId,
-    tool: opts.tool,
-    title: opts.title,
-    input: opts.input,
-    result: opts.result,
-  });
-  const stale = await AiToolRun.find({ user: userId, tool: opts.tool })
-    .sort({ createdAt: -1 })
-    .skip(opts.keep)
-    .select("_id")
-    .lean();
-  if (stale.length) {
-    await AiToolRun.deleteMany({ _id: { $in: stale.map((s) => s._id) } });
-  }
-  return run._id.toString();
 }

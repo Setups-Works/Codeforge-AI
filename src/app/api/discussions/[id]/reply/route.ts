@@ -1,13 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest,NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/api-auth";
-import { Discussion } from "@/models";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
-import { fetchAuthors, type SbReply } from "@/services/discussions-store";
+import { fetchAuthors,type SbReply } from "@/services/discussions-store";
 
-const be = () => backendFor("discussions");
 
 export async function POST(
   req: NextRequest,
@@ -21,8 +17,6 @@ export async function POST(
   if (!content?.trim()) {
     return NextResponse.json({ error: "Content required" }, { status: 400 });
   }
-
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const { data } = await sb.from("discussions").select("replies").eq("id", id).maybeSingle();
     if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -46,20 +40,4 @@ export async function POST(
       createdAt: newReply.createdAt,
     };
     return NextResponse.json({ reply }, { status: 201 });
-  }
-
-  await connectDB();
-  const discussion = await Discussion.findById(id);
-  if (!discussion) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  discussion.replies.push({
-    author: session.user.id,
-    content: content.trim(),
-    ...(parentReplyId ? { parentReply: parentReplyId } : {}),
-  } as never);
-  await discussion.save();
-  await discussion.populate("replies.author", "username name image");
-
-  const reply = discussion.replies[discussion.replies.length - 1];
-  return NextResponse.json({ reply }, { status: 201 });
 }

@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
-import { BlogPost } from "@/models";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
 export const runtime = "nodejs";
 
@@ -11,19 +8,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   const { slug } = await params;
 
   let post: { coverData: string | null; coverMime: string | null } | null;
-  if (backendFor("blog") === "supabase") {
-    const { data } = await supabaseAdmin()
+  {    const { data } = await supabaseAdmin()
       .from("blog_posts")
       .select("cover_data,cover_mime")
       .eq("slug", slug)
       .maybeSingle();
     const p = data as { cover_data: string | null; cover_mime: string | null } | null;
-    post = p ? { coverData: p.cover_data, coverMime: p.cover_mime } : null;
-  } else {
-    await connectDB();
-    const p = await BlogPost.findOne({ slug }).select("coverData coverMime updatedAt").lean();
-    post = p ? { coverData: p.coverData ?? null, coverMime: p.coverMime ?? null } : null;
-  }
+    post = p ? { coverData: p.cover_data, coverMime: p.cover_mime } : null;}
   if (!post?.coverData) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

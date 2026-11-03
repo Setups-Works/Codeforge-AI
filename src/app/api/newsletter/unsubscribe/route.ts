@@ -1,9 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
-import { User } from "@/models";
+import { NextRequest,NextResponse } from "next/server";
 import { verifyUnsubscribeToken } from "@/lib/newsletter";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
 export const runtime = "nodejs";
 
@@ -29,12 +26,7 @@ export async function GET(req: NextRequest) {
     return page("Invalid link", "This unsubscribe link is invalid or has expired.", false);
   }
   try {
-    if (backendFor("account") === "supabase") {
-      await supabaseAdmin().from("users").update({ email_opt_out: true }).eq("email", email);
-    } else {
-      await connectDB();
-      await User.updateOne({ email }, { emailOptOut: true });
-    }
+    {      await supabaseAdmin().from("users").update({ email_opt_out: true }).eq("email", email);}
   } catch {
     return page("Something went wrong", "We couldn't update your preferences. Please try again later.", false);
   }

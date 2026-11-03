@@ -1,9 +1,5 @@
-import { Badge, UserBadge, type BadgeDoc } from "@/models";
-import type { Types } from "mongoose";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
-const be = () => backendFor("gamification");
 
 /** Stats fields badge criteria are evaluated against (backend-agnostic). */
 export interface BadgeStats {
@@ -59,7 +55,6 @@ let badgesEnsured = false;
 
 export async function ensureDefaultBadges(): Promise<void> {
   if (badgesEnsured) return;
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const { count } = await sb
       .from("badges")
@@ -72,14 +67,6 @@ export async function ensureDefaultBadges(): Promise<void> {
     }
     badgesEnsured = true;
     return;
-  }
-  const count = await Badge.estimatedDocumentCount();
-  if (count === 0) {
-    await Badge.insertMany(DEFAULT_BADGES, { ordered: false }).catch(() => {
-      // concurrent seeding race — unique index keeps data consistent
-    });
-  }
-  badgesEnsured = true;
 }
 
 function badgeMetric(stats: BadgeStats, type: string): number {
@@ -120,8 +107,6 @@ export async function checkAndAwardBadges(
   user: AwardUser,
 ): Promise<EarnedBadge[]> {
   await ensureDefaultBadges();
-
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const [badgesRes, ownedRes] = await Promise.all([
       sb.from("badges").select("id,key,name,description,icon,tier,criteria"),
@@ -150,36 +135,6 @@ export async function checkAndAwardBadges(
       icon: b.icon,
       tier: b.tier,
     }));
-  }
-
-  const [allBadges, owned] = await Promise.all([
-    Badge.find().lean(),
-    UserBadge.find({ user: user.id }).select("badge").lean(),
-  ]);
-  const ownedIds = new Set(owned.map((entry) => entry.badge.toString()));
-
-  const earned = allBadges.filter(
-    (badge) =>
-      !ownedIds.has(badge._id.toString()) &&
-      badge.criteria.type !== "contest_participation" &&
-      badgeMetric(user.stats, badge.criteria.type) >= badge.criteria.threshold,
-  );
-
-  if (earned.length > 0) {
-    await UserBadge.insertMany(
-      earned.map((badge) => ({ user: user.id, badge: badge._id })),
-      { ordered: false },
-    ).catch(() => {
-      // duplicate key from a concurrent award — safe to ignore
-    });
-  }
-  return earned.map((b: BadgeDoc) => ({
-    key: b.key,
-    name: b.name,
-    description: b.description,
-    icon: b.icon,
-    tier: b.tier,
-  }));
 }
 
 const CONTENDER_BADGE = {
@@ -192,10 +147,9 @@ const CONTENDER_BADGE = {
 };
 
 export async function awardContestBadge(
-  userId: Types.ObjectId | string,
+  userId: string,
 ): Promise<void> {
   await ensureDefaultBadges();
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     await sb
       .from("badges")
@@ -212,15 +166,4 @@ export async function awardContestBadge(
       );
     }
     return;
-  }
-  const badge = await Badge.findOneAndUpdate(
-    { key: "contender" },
-    { $setOnInsert: CONTENDER_BADGE },
-    { upsert: true, returnDocument: "after" },
-  );
-  await UserBadge.updateOne(
-    { user: userId, badge: badge._id },
-    { $setOnInsert: { user: userId, badge: badge._id } },
-    { upsert: true },
-  ).catch(() => {});
 }

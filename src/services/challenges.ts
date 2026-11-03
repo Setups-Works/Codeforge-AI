@@ -1,11 +1,7 @@
-import { Types } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
-import { FrontendChallenge, Submission } from "@/models";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor, toUuidOrNull } from "@/lib/data-backend";
+import { toUuidOrNull } from "@/lib/data-backend";
 import { uniqueSlug } from "@/lib/slug";
 
-const be = () => backendFor("challenges");
 
 /** Stored file array -> path->code record used by the sandbox/admin UIs */
 export function filesToRecord(
@@ -36,7 +32,6 @@ export async function listChallenges(
   filters: { tech?: string; difficulty?: string },
   userId?: string,
 ): Promise<ChallengeListItem[]> {
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     let q = sb
       .from("frontend_challenges")
@@ -72,39 +67,6 @@ export async function listChallenges(
       brief: doc.brief,
       completed: completed.has(doc.id),
     }));
-  }
-
-  await connectDB();
-
-  const query: Record<string, unknown> = { isPublished: true };
-  if (filters.tech) query.tech = filters.tech;
-  if (filters.difficulty) query.difficulty = filters.difficulty;
-
-  const [docs, completedIds] = await Promise.all([
-    FrontendChallenge.find(query)
-      .sort({ createdAt: 1 })
-      .select("slug title difficulty tech tags brief")
-      .lean(),
-    userId
-      ? Submission.distinct("challenge", {
-          user: new Types.ObjectId(userId),
-          kind: "frontend",
-          status: "Accepted",
-        })
-      : Promise.resolve([]),
-  ]);
-
-  const completed = new Set(completedIds.map(String));
-  return docs.map((doc) => ({
-    id: doc._id.toString(),
-    slug: doc.slug,
-    title: doc.title,
-    difficulty: doc.difficulty,
-    tech: doc.tech,
-    tags: doc.tags,
-    brief: doc.brief,
-    completed: completed.has(doc._id.toString()),
-  }));
 }
 
 interface SbChallengeDetailRow {
@@ -121,7 +83,6 @@ interface SbChallengeDetailRow {
 }
 
 export async function getChallengeBySlug(slug: string) {
-  if (be() === "supabase") {
     const { data, error } = await supabaseAdmin()
       .from("frontend_challenges")
       .select(
@@ -145,26 +106,6 @@ export async function getChallengeBySlug(slug: string) {
       checklist: doc.checklist ?? [],
       starterFiles: filesToRecord(doc.starter_files ?? []),
     };
-  }
-  await connectDB();
-  const doc = await FrontendChallenge.findOne({
-    slug,
-    isPublished: true,
-  }).lean();
-  if (!doc) return null;
-
-  return {
-    id: doc._id.toString(),
-    slug: doc.slug,
-    title: doc.title,
-    difficulty: doc.difficulty,
-    tech: doc.tech,
-    tags: doc.tags,
-    brief: doc.brief,
-    description: doc.description,
-    checklist: doc.checklist,
-    starterFiles: filesToRecord(doc.starterFiles),
-  };
 }
 
 export type ChallengeDetail = NonNullable<
@@ -185,7 +126,6 @@ export interface SubmittableChallenge {
 export async function getSubmittableChallenge(
   challengeId: string,
 ): Promise<SubmittableChallenge | null> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("frontend_challenges")
       .select("id,title,difficulty,tech,design_spec,checklist,tags")
@@ -201,21 +141,6 @@ export async function getSubmittableChallenge(
       id: c.id, title: c.title, difficulty: c.difficulty, tech: c.tech,
       designSpec: c.design_spec ?? "", checklist: c.checklist ?? [], tags: c.tags ?? [],
     };
-  }
-  const { Types } = await import("mongoose");
-  if (!Types.ObjectId.isValid(challengeId)) return null;
-  await connectDB();
-  const doc = await FrontendChallenge.findOne({ _id: challengeId, isPublished: true }).lean();
-  if (!doc) return null;
-  return {
-    id: doc._id.toString(),
-    title: doc.title,
-    difficulty: doc.difficulty,
-    tech: doc.tech,
-    designSpec: doc.designSpec ?? "",
-    checklist: doc.checklist,
-    tags: doc.tags,
-  };
 }
 
 /** Atomically bump a challenge's attempt/completion counters. */
@@ -223,7 +148,6 @@ export async function incrementChallengeStats(
   challengeId: string,
   accepted: boolean,
 ): Promise<void> {
-  if (be() === "supabase") {
     const { error } = await supabaseAdmin().rpc("increment_challenge_stats", {
       p_challenge: challengeId,
       p_attempts: 1,
@@ -231,13 +155,6 @@ export async function incrementChallengeStats(
     });
     if (error) throw new Error(error.message);
     return;
-  }
-  const { Types } = await import("mongoose");
-  await connectDB();
-  await FrontendChallenge.updateOne(
-    { _id: new Types.ObjectId(challengeId) },
-    { $inc: { "stats.attempts": 1, "stats.completed": accepted ? 1 : 0 } },
-  );
 }
 
 // ── Admin ────────────────────────────────────────────────────────────────
@@ -249,7 +166,6 @@ export interface AdminChallengeListItem {
 
 /** Admin: list all challenges (drafts included). */
 export async function adminListChallenges(): Promise<AdminChallengeListItem[]> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("frontend_challenges")
       .select("id,slug,title,difficulty,tech,is_published,stats,created_at")
@@ -261,14 +177,6 @@ export async function adminListChallenges(): Promise<AdminChallengeListItem[]> {
       id: c.id, slug: c.slug, title: c.title, difficulty: c.difficulty, tech: c.tech,
       isPublished: c.is_published, attempts: c.stats?.attempts ?? 0, createdAt: new Date(c.created_at),
     }));
-  }
-  await connectDB();
-  const challenges = await FrontendChallenge.find().sort({ createdAt: -1 }).limit(200)
-    .select("slug title difficulty tech isPublished stats createdAt").lean();
-  return challenges.map((c) => ({
-    id: c._id.toString(), slug: c.slug, title: c.title, difficulty: c.difficulty, tech: c.tech,
-    isPublished: c.isPublished, attempts: c.stats.attempts, createdAt: c.createdAt,
-  }));
 }
 
 export interface CreateChallengeInput {
@@ -279,7 +187,6 @@ export interface CreateChallengeInput {
 
 /** Admin: create a challenge. Returns id + slug. */
 export async function createChallenge(input: CreateChallengeInput): Promise<{ id: string; slug: string }> {
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const slug = await uniqueSlug(input.title, async (s) => {
       const { data } = await sb.from("frontend_challenges").select("id").eq("slug", s).maybeSingle();
@@ -293,22 +200,10 @@ export async function createChallenge(input: CreateChallengeInput): Promise<{ id
     }).select("id").single();
     if (error) throw new Error(error.message);
     return { id: (data as { id: string }).id, slug };
-  }
-  await connectDB();
-  const slug = await uniqueSlug(input.title, async (s) => Boolean(await FrontendChallenge.exists({ slug: s })));
-  const doc = new FrontendChallenge({
-    slug, title: input.title, difficulty: input.difficulty, tech: input.tech, tags: input.tags,
-    brief: input.brief, description: input.description, designSpec: input.designSpec,
-    starterFiles: input.starterFiles, checklist: input.checklist, isPublished: input.isPublished,
-    createdBy: input.createdBy,
-  });
-  await doc.save();
-  return { id: doc._id.toString(), slug };
 }
 
 /** Admin: full challenge detail for the edit dialog. */
 export async function getAdminChallenge(id: string) {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("frontend_challenges")
       .select("id,title,difficulty,tech,tags,brief,description,design_spec,starter_files,checklist,is_published")
@@ -324,16 +219,6 @@ export async function getAdminChallenge(id: string) {
       description: c.description, designSpec: c.design_spec ?? "", starterFiles: filesToRecord(c.starter_files ?? []),
       checklist: c.checklist ?? [], isPublished: c.is_published,
     };
-  }
-  if (!Types.ObjectId.isValid(id)) return null;
-  await connectDB();
-  const c = await FrontendChallenge.findById(id).lean();
-  if (!c) return null;
-  return {
-    id: c._id.toString(), title: c.title, difficulty: c.difficulty, tech: c.tech, tags: c.tags, brief: c.brief,
-    description: c.description, designSpec: c.designSpec, starterFiles: filesToRecord(c.starterFiles),
-    checklist: c.checklist, isPublished: c.isPublished,
-  };
 }
 
 const C_FIELD_MAP: Record<string, string> = {
@@ -348,7 +233,6 @@ export async function updateChallenge(id: string, patch: Record<string, unknown>
   if ("starterFiles" in mapped && mapped.starterFiles) {
     mapped.starterFiles = recordToFiles(mapped.starterFiles as Record<string, string>);
   }
-  if (be() === "supabase") {
     const row: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(mapped)) if (C_FIELD_MAP[k]) row[C_FIELD_MAP[k]] = v;
     if (!Object.keys(row).length) {
@@ -358,26 +242,13 @@ export async function updateChallenge(id: string, patch: Record<string, unknown>
     const { data, error } = await supabaseAdmin().from("frontend_challenges").update(row).eq("id", id).select("slug").maybeSingle();
     if (error) throw new Error(error.message);
     return (data as { slug: string } | null)?.slug ?? null;
-  }
-  if (!Types.ObjectId.isValid(id)) return null;
-  await connectDB();
-  const updated = await FrontendChallenge.findByIdAndUpdate(id, { $set: mapped }, { returnDocument: "after" });
-  return updated?.slug ?? null;
 }
 
 /** Admin: delete a challenge and its submissions. Returns false if not found. */
 export async function deleteChallengeCascade(id: string): Promise<boolean> {
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const { data } = await sb.from("frontend_challenges").delete().eq("id", id).select("id").maybeSingle();
     if (!data) return false;
     await sb.from("submissions").delete().eq("challenge_id", id);
     return true;
-  }
-  if (!Types.ObjectId.isValid(id)) return false;
-  await connectDB();
-  const deleted = await FrontendChallenge.findByIdAndDelete(id);
-  if (!deleted) return false;
-  await Submission.deleteMany({ challenge: deleted._id });
-  return true;
 }

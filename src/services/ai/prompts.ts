@@ -1,6 +1,4 @@
-import { PromptTemplate } from "@/models";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
 /**
  * Default prompt templates. Admins can override any of these from the
@@ -178,8 +176,7 @@ export async function getPrompt(
   let maxTokens = fallback?.maxTokens ?? 2048;
 
   try {
-    if (backendFor("ai") === "supabase") {
-      const { data } = await supabaseAdmin()
+    {      const { data } = await supabaseAdmin()
         .from("prompt_templates")
         .select("template,temperature,max_tokens")
         .eq("key", key)
@@ -191,15 +188,7 @@ export async function getPrompt(
         template = override.template;
         temperature = override.temperature;
         maxTokens = override.max_tokens;
-      }
-    } else {
-      const override = await PromptTemplate.findOne({ key }).lean();
-      if (override) {
-        template = override.template;
-        temperature = override.temperature;
-        maxTokens = override.maxTokens;
-      }
-    }
+      }}
   } catch {
     // fall back to defaults if the DB is unavailable
   }

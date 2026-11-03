@@ -1,25 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
+import { NextRequest,NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-auth";
 import { enforceAiCredit } from "@/services/ai-credits";
 import { enforceRateLimit } from "@/lib/rate-limit";
-import { FrontendChallenge, Question } from "@/models";
 import { aiChatRequestSchema } from "@/schemas/ai";
 import {
-  isAiConfigured,
-  streamCompletion,
-  type ChatMessage,
+isAiConfigured,
+streamCompletion,
+type ChatMessage,
 } from "@/services/ai/groq";
 import { getPrompt } from "@/services/ai/prompts";
-import { isOnTopic, OFF_TOPIC_REPLY } from "@/services/ai/topic-guard";
+import { isOnTopic,OFF_TOPIC_REPLY } from "@/services/ai/topic-guard";
 import { getPostHogServer } from "@/lib/posthog-server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 import {
-  findOrCreateAiChat,
-  saveAiChatMessages,
-  getAiChatMessages,
-  type StoredChatMessage,
+findOrCreateAiChat,
+saveAiChatMessages,
+getAiChatMessages,
+type StoredChatMessage,
 } from "@/services/ai-store";
 
 export const maxDuration = 60;
@@ -62,48 +59,32 @@ export async function POST(req: NextRequest) {
   }
   const input = parsed.data;
 
-  const sbData = backendFor("questions") === "supabase";
-
   // Build problem context for the system prompt
   let contextBlock = "";
   if (input.questionId) {
-    let question: { title: string; difficulty: string; category: string; description: string; constraints: string[] } | null = null;
-    if (sbData) {
-      const { data } = await supabaseAdmin()
-        .from("questions")
-        .select("title,difficulty,category,description,constraints")
-        .eq("id", input.questionId)
-        .maybeSingle();
-      question = data as typeof question;
-    } else {
-      await connectDB();
-      const q = await Question.findById(input.questionId)
-        .select("title difficulty category description constraints")
-        .lean();
-      question = q
-        ? { title: q.title, difficulty: q.difficulty, category: q.category, description: q.description, constraints: q.constraints }
-        : null;
-    }
+    const { data } = await supabaseAdmin()
+      .from("questions")
+      .select("title,difficulty,category,description,constraints")
+      .eq("id", input.questionId)
+      .maybeSingle();
+    const question = data as {
+      title: string;
+      difficulty: string;
+      category: string;
+      description: string;
+      constraints: string[];
+    } | null;
     if (question) {
       contextBlock += `Current problem: "${question.title}" (${question.difficulty}, ${question.category})\n\nProblem statement:\n${question.description.slice(0, 4000)}\n\nConstraints: ${(question.constraints ?? []).join("; ")}\n`;
     }
   }
   if (input.challengeId) {
-    let challenge: { title: string; difficulty: string; tech: string; description: string } | null = null;
-    if (sbData) {
-      const { data } = await supabaseAdmin()
-        .from("frontend_challenges")
-        .select("title,difficulty,tech,description")
-        .eq("id", input.challengeId)
-        .maybeSingle();
-      challenge = data as typeof challenge;
-    } else {
-      await connectDB();
-      const c = await FrontendChallenge.findById(input.challengeId)
-        .select("title difficulty tech description designSpec")
-        .lean();
-      challenge = c ? { title: c.title, difficulty: c.difficulty, tech: c.tech, description: c.description } : null;
-    }
+    const { data } = await supabaseAdmin()
+      .from("frontend_challenges")
+      .select("title,difficulty,tech,description")
+      .eq("id", input.challengeId)
+      .maybeSingle();
+    const challenge = data as { title: string; difficulty: string; tech: string; description: string } | null;
     if (challenge) {
       contextBlock += `Current frontend challenge: "${challenge.title}" (${challenge.difficulty}, ${challenge.tech})\n\nBrief:\n${challenge.description.slice(0, 3000)}\n`;
     }

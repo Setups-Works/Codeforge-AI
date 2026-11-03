@@ -70,9 +70,9 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-bold">3. Data Storage and Security</h2>
           <p className="mt-2 text-muted-foreground">
-            Your data is stored on MongoDB Atlas (cloud database) hosted in
-            secure data centres. Passwords are hashed with bcrypt (cost factor
-            12) and never stored in plain text. We use HTTPS for all data in
+            Your data is stored in Supabase (managed PostgreSQL) hosted in
+            secure data centres. Passwords are handled by Supabase Auth, hashed
+            with bcrypt, and never stored in plain text. We use HTTPS for all data in
             transit.
           </p>
         </section>

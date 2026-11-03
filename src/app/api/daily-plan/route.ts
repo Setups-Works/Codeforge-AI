@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/api-auth";
-import { Submission, Question } from "@/models";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
 interface PlanQuestion {
   slug: string;
@@ -21,8 +18,7 @@ export async function GET() {
   let hard: PlanQuestion | null;
   let weakCategory: string | undefined;
 
-  if (backendFor("submissions") === "supabase") {
-    const sb = supabaseAdmin();
+  {    const sb = supabaseAdmin();
     const { data: subs } = await sb
       .from("submissions")
       .select("question_id")
@@ -52,40 +48,7 @@ export async function GET() {
       const c = candidates[0];
       return c ? { slug: c.slug, title: c.title, difficulty: c.difficulty, category: c.category } : null;
     };
-    [easy, medium, hard] = await Promise.all([pick("Easy", true), pick("Medium", false), pick("Hard", false)]);
-  } else {
-    await connectDB();
-    const recentSubs = await Submission.find({
-      user: session.user.id,
-      kind: "dsa",
-      status: "Accepted",
-    })
-      .sort({ createdAt: -1 })
-      .limit(20)
-      .populate("question", "category difficulty")
-      .lean();
-
-    const solvedIds = recentSubs.map((s) => s.question?._id).filter((id): id is NonNullable<typeof id> => !!id);
-    const categoryCounts: Record<string, number> = {};
-    for (const s of recentSubs) {
-      const q = s.question as { category?: string } | null;
-      if (q?.category) categoryCounts[q.category] = (categoryCounts[q.category] ?? 0) + 1;
-    }
-    weakCategory = Object.entries(categoryCounts).sort((a, b) => a[1] - b[1])[0]?.[0];
-
-    [easy, medium, hard] = await Promise.all([
-      Question.findOne({
-        isPublished: true, difficulty: "Easy", _id: { $nin: solvedIds },
-        ...(weakCategory ? { category: weakCategory } : {}),
-      }).select("slug title difficulty category").lean() as Promise<PlanQuestion | null>,
-      Question.findOne({
-        isPublished: true, difficulty: "Medium", _id: { $nin: solvedIds },
-      }).select("slug title difficulty category").lean() as Promise<PlanQuestion | null>,
-      Question.findOne({
-        isPublished: true, difficulty: "Hard", _id: { $nin: solvedIds },
-      }).select("slug title difficulty category").lean() as Promise<PlanQuestion | null>,
-    ]);
-  }
+    [easy, medium, hard] = await Promise.all([pick("Easy", true), pick("Medium", false), pick("Hard", false)]);}
 
   const tasks = [easy, medium, hard].filter(Boolean).map((q) => ({
     question: q,

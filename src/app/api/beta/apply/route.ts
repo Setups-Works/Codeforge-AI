@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { connectDB } from "@/lib/mongodb";
-import { User } from "@/models";
 import { sendEmail } from "@/lib/mailer";
-import { betaWelcomeEmailHtml, betaWelcomeEmailSubject } from "@/lib/email-templates";
+import { betaWelcomeEmailHtml,betaWelcomeEmailSubject } from "@/lib/email-templates";
 import { BETA_LIMIT } from "@/lib/constants";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
-import { betaUserCount, updateUserPlan } from "@/services/billing-store";
+import { betaUserCount,updateUserPlan } from "@/services/billing-store";
 
 // Called after Google OAuth on /beta/success to apply Go plan if slots available
 export async function POST() {
@@ -15,19 +12,13 @@ export async function POST() {
   if (!session?.user?.id) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   let user: { name: string; email: string; betaUser: boolean } | null;
-  if (backendFor("account") === "supabase") {
-    const { data } = await supabaseAdmin()
+  {    const { data } = await supabaseAdmin()
       .from("users")
       .select("name,email,beta_user")
       .eq("id", session.user.id)
       .maybeSingle();
     const u = data as { name: string; email: string; beta_user: boolean } | null;
-    user = u ? { name: u.name, email: u.email, betaUser: u.beta_user } : null;
-  } else {
-    await connectDB();
-    const u = await User.findById(session.user.id).select("name email betaUser").lean();
-    user = u ? { name: u.name, email: u.email ?? "", betaUser: Boolean(u.betaUser) } : null;
-  }
+    user = u ? { name: u.name, email: u.email, betaUser: u.beta_user } : null;}
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   // Already a beta user — just confirm

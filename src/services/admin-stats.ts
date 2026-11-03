@@ -1,22 +1,6 @@
-import { connectDB } from "@/lib/mongodb";
-import {
-  Contest,
-  FrontendChallenge,
-  Question,
-  Submission,
-  Subscription,
-  User,
-  AiUsage,
-  AiChat,
-  AiToolRun,
-  Progress,
-  DailyActivity,
-} from "@/models";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
-import { currentPeriod, monthlyAllowance } from "@/services/ai-credits";
+import { currentPeriod,monthlyAllowance } from "@/services/ai-credits";
 
-const be = () => backendFor("account");
 
 const day = (d: string | Date) => new Date(d).toISOString().slice(0, 10);
 
@@ -36,8 +20,6 @@ export interface AdminAnalytics {
 export async function getAdminAnalytics(): Promise<AdminAnalytics> {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000);
   const monthStart = new Date(new Date().toISOString().slice(0, 7) + "-01T00:00:00.000Z");
-
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     // Minimal builder surface to sidestep Supabase's deeply-generic types.
     interface Filterable {
@@ -110,59 +92,6 @@ export async function getAdminAnalytics(): Promise<AdminAnalytics> {
       difficultyAcceptance: [...diffMap.entries()].map(([difficulty, v]) => ({ difficulty, total: v.total, accepted: v.accepted, rate: v.total > 0 ? Math.round((v.accepted / v.total) * 100) : 0 })),
       revenueTotal, revenueMonth, revenuePayments: paid.length, currency: paid[paid.length - 1]?.currency ?? "INR",
     });
-  }
-
-  await connectDB();
-  const [
-    totalUsers, newUsers30d, totalQuestions, publishedQuestions, totalChallenges, totalContests,
-    totalSubmissions, acceptedSubmissions, signupSeries, submissionSeries, languageDistribution,
-    difficultyAcceptance, revenueAgg, revenueMonthAgg, payingUsers,
-  ] = await Promise.all([
-    User.countDocuments(), User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
-    Question.countDocuments(), Question.countDocuments({ isPublished: true }),
-    FrontendChallenge.countDocuments(), Contest.countDocuments(),
-    Submission.countDocuments(), Submission.countDocuments({ status: "Accepted" }),
-    User.aggregate<{ _id: string; count: number }>([
-      { $match: { createdAt: { $gte: thirtyDaysAgo } } },
-      { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, count: { $sum: 1 } } },
-      { $sort: { _id: 1 } },
-    ]),
-    Submission.aggregate<{ _id: string; count: number; accepted: number }>([
-      { $match: { createdAt: { $gte: thirtyDaysAgo } } },
-      { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, count: { $sum: 1 }, accepted: { $sum: { $cond: [{ $eq: ["$status", "Accepted"] }, 1, 0] } } } },
-      { $sort: { _id: 1 } },
-    ]),
-    Submission.aggregate<{ _id: string; count: number }>([
-      { $match: { language: { $exists: true, $ne: null } } },
-      { $group: { _id: "$language", count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $limit: 12 },
-    ]),
-    Submission.aggregate<{ _id: string; total: number; accepted: number }>([
-      { $match: { kind: "dsa", question: { $exists: true } } },
-      { $lookup: { from: "questions", localField: "question", foreignField: "_id", as: "questionDoc" } },
-      { $unwind: "$questionDoc" },
-      { $group: { _id: "$questionDoc.difficulty", total: { $sum: 1 }, accepted: { $sum: { $cond: [{ $eq: ["$status", "Accepted"] }, 1, 0] } } } },
-    ]),
-    Subscription.aggregate<{ total: number; count: number; currency: string }>([
-      { $match: { status: "paid" } },
-      { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 }, currency: { $last: "$currency" } } },
-    ]),
-    Subscription.aggregate<{ total: number }>([
-      { $match: { status: "paid", createdAt: { $gte: monthStart } } },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
-    ]),
-    User.countDocuments({ plan: { $in: ["go", "plus"] } }),
-  ]);
-
-  return buildAnalytics({
-    totalUsers, newUsers30d, totalQuestions, publishedQuestions, totalChallenges, totalContests,
-    totalSubmissions, acceptedSubmissions, payingUsers,
-    signupSeries: signupSeries.map((r) => ({ date: r._id, signups: r.count })),
-    submissionSeries: submissionSeries.map((r) => ({ date: r._id, submissions: r.count, accepted: r.accepted })),
-    languageDistribution: languageDistribution.map((r) => ({ language: r._id, count: r.count })),
-    difficultyAcceptance: difficultyAcceptance.map((r) => ({ difficulty: r._id, total: r.total, accepted: r.accepted, rate: r.total > 0 ? Math.round((r.accepted / r.total) * 100) : 0 })),
-    revenueTotal: revenueAgg[0]?.total ?? 0, revenueMonth: revenueMonthAgg[0]?.total ?? 0,
-    revenuePayments: revenueAgg[0]?.count ?? 0, currency: revenueAgg[0]?.currency ?? "INR",
-  });
 }
 
 function buildAnalytics(x: {
@@ -219,8 +148,7 @@ export async function getAdminBilling(filter: { q?: string; plan?: string }): Pr
   const payByUser = new Map<string, { total: number; count: number; lastPaymentAt: Date; currency: string }>();
   let summary: AdminBilling["summary"];
 
-  if (be() === "supabase") {
-    const sb = supabaseAdmin();
+  {    const sb = supabaseAdmin();
     let uq = sb.from("users")
       .select("id,name,username,email,image,plan,plan_expires_at,trial_ends_at,billing_cycle,created_at")
       .order("created_at", { ascending: false }).limit(200);
@@ -260,40 +188,7 @@ export async function getAdminBilling(filter: { q?: string; plan?: string }): Pr
       currency: paidArr[paidArr.length - 1]?.currency ?? "INR",
       payingUsers: payingUsersRes.count ?? 0,
       creditsUsedThisMonth: ((allUsage ?? []) as { used: number }[]).reduce((s, u) => s + (u.used ?? 0), 0),
-    };
-  } else {
-    await connectDB();
-    const query: Record<string, unknown> = {};
-    if (filter.q) { const regex = { $regex: filter.q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" }; query.$or = [{ name: regex }, { email: regex }, { username: regex }]; }
-    if (filter.plan && filter.plan !== "all") query.plan = filter.plan;
-    const docs = await User.find(query).sort({ createdAt: -1 }).limit(200)
-      .select("name username email image plan planExpiresAt trialEndsAt billingCycle createdAt").lean();
-    users = docs.map((u) => ({
-      id: u._id.toString(), name: u.name, username: u.username, email: u.email ?? null, image: u.image ?? null,
-      plan: u.plan ?? "free", planExpiresAt: u.planExpiresAt ?? null, trialEndsAt: u.trialEndsAt ?? null,
-      billingCycle: u.billingCycle ?? null, createdAt: u.createdAt,
-    }));
-    const userIds = docs.map((u) => u._id);
-    const usageDocs = await AiUsage.find({ user: { $in: userIds }, period }).select("user used").lean();
-    for (const d of usageDocs) usageByUser.set(String(d.user), d.used);
-    const payAgg = await Subscription.aggregate<{ _id: unknown; total: number; count: number; lastPaymentAt: Date; currency: string }>([
-      { $match: { user: { $in: userIds }, status: "paid" } },
-      { $group: { _id: "$user", total: { $sum: "$amount" }, count: { $sum: 1 }, lastPaymentAt: { $max: "$createdAt" }, currency: { $last: "$currency" } } },
-    ]);
-    for (const p of payAgg) payByUser.set(String(p._id), { total: p.total, count: p.count, lastPaymentAt: p.lastPaymentAt, currency: p.currency });
-    const [totals] = await Subscription.aggregate<{ revenue: number; payments: number; currency: string }>([
-      { $match: { status: "paid" } },
-      { $group: { _id: null, revenue: { $sum: "$amount" }, payments: { $sum: 1 }, currency: { $last: "$currency" } } },
-    ]);
-    const totalCreditsUsed = await AiUsage.aggregate<{ used: number }>([
-      { $match: { period } }, { $group: { _id: null, used: { $sum: "$used" } } },
-    ]);
-    const payingUsers = await User.countDocuments({ plan: { $in: ["go", "plus"] } });
-    summary = {
-      totalRevenue: totals?.revenue ?? 0, totalPayments: totals?.payments ?? 0, currency: totals?.currency ?? "INR",
-      payingUsers, creditsUsedThisMonth: totalCreditsUsed[0]?.used ?? 0,
-    };
-  }
+    };}
 
   const rows: AdminBillingRow[] = users.map((u) => {
     const used = usageByUser.get(u.id) ?? 0;
@@ -460,8 +355,6 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
   const weekAgoIso = new Date(now - 7 * DAY).toISOString();
   const monthAgoIso = new Date(now - 30 * DAY).toISOString();
   const activityFrom = dayStr(now - 31 * DAY);
-
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     interface Filterable {
       gte(col: string, v: unknown): Filterable;
@@ -525,37 +418,4 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
       activePaid: activePaidRows.map((r) => ({ id: r.id, billingCycle: r.billing_cycle, planExpiresAt: r.plan_expires_at ? new Date(r.plan_expires_at).getTime() : null })),
       paidSubs: paidSubRows.map((r) => ({ user: r.user_id, amount: r.amount ?? 0, currency: r.currency ?? "INR", billingCycle: r.billing_cycle, createdAt: new Date(r.created_at).getTime() })),
     });
-  }
-
-  await connectDB();
-  const [
-    totalUsers, newToday, newWeek, newMonth, acceptedSubs, aiChats, resumeReviews,
-    courseCompletions, trialUsers, paidUsers, expiredLast30,
-    activityDocs, cohortDocs, activePaidDocs, paidSubDocs,
-  ] = await Promise.all([
-    User.countDocuments(),
-    User.countDocuments({ createdAt: { $gte: new Date(startTodayIso) } }),
-    User.countDocuments({ createdAt: { $gte: new Date(weekAgoIso) } }),
-    User.countDocuments({ createdAt: { $gte: new Date(monthAgoIso) } }),
-    Submission.countDocuments({ status: "Accepted" }),
-    AiChat.countDocuments(),
-    AiToolRun.countDocuments({ tool: "resume" }),
-    Progress.countDocuments({ percent: { $gte: 100 } }),
-    User.countDocuments({ trialEndsAt: { $gt: new Date(now) } }),
-    User.countDocuments({ plan: { $in: ["go", "plus"] } }),
-    User.countDocuments({ planExpiresAt: { $gte: new Date(monthAgoIso), $lt: new Date(now) } }),
-    DailyActivity.find({ date: { $gte: activityFrom } }).select("user date").lean(),
-    User.find({ createdAt: { $gte: new Date(now - 31 * DAY) } }).select("createdAt").lean(),
-    User.find({ plan: { $in: ["go", "plus"] } }).select("billingCycle planExpiresAt").lean(),
-    Subscription.find({ status: "paid" }).select("user amount currency billingCycle createdAt").lean(),
-  ]);
-
-  return computeMetrics({
-    now, totalUsers, newToday, newWeek, newMonth, acceptedSubs, aiChats, resumeReviews,
-    courseCompletions, trialUsers, paidUsers, expiredLast30,
-    activity: activityDocs.map((d) => ({ user: String(d.user), date: d.date })),
-    cohortUsers: cohortDocs.map((d) => ({ id: String(d._id), createdAt: new Date(d.createdAt).getTime() })),
-    activePaid: activePaidDocs.map((d) => ({ id: String(d._id), billingCycle: d.billingCycle ?? null, planExpiresAt: d.planExpiresAt ? new Date(d.planExpiresAt).getTime() : null })),
-    paidSubs: paidSubDocs.map((d) => ({ user: String(d.user), amount: d.amount ?? 0, currency: d.currency ?? "INR", billingCycle: d.billingCycle ?? null, createdAt: new Date(d.createdAt).getTime() })),
-  });
 }

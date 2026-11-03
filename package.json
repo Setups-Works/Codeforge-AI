@@ -11,8 +11,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:e2e": "playwright test",
-    "seed": "node scripts/seed-questions.mjs",
-    "seed:supabase": "node scripts/seed-questions-supabase.mjs"
+    "seed": "node scripts/seed-questions-supabase.mjs"
   },
   "dependencies": {
     "@codesandbox/sandpack-react": "^2.20.0",
@@ -37,7 +36,6 @@
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
     "@vercel/analytics": "^2.0.1",
-    "@vercel/blob": "^2.5.0",
     "@vercel/speed-insights": "^2.0.0",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
@@ -52,7 +50,6 @@
     "lenis": "^1.3.25",
     "monaco-editor": "^0.55.1",
     "monaco-vim": "^0.4.4",
-    "mongoose": "^9.7.0",
     "motion": "^12.42.2",
     "nanoid": "^5.1.11",
     "next": "15.5.19",

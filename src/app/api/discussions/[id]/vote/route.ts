@@ -1,11 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
+import { NextRequest,NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-auth";
-import { Discussion } from "@/models";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
-const be = () => backendFor("discussions");
 
 export async function POST(
   req: NextRequest,
@@ -21,8 +17,6 @@ export async function POST(
   }
 
   const uid = session.user.id;
-
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const { data } = await sb
       .from("discussions")
@@ -51,38 +45,4 @@ export async function POST(
       downvotes: downArr.length,
       userVote: up.has(uid) ? 1 : down.has(uid) ? -1 : 0,
     });
-  }
-
-  await connectDB();
-  const discussion = await Discussion.findById(id);
-  if (!discussion) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const upIdx = discussion.upvotes.findIndex((u) => u.toString() === uid);
-  const downIdx = discussion.downvotes.findIndex((u) => u.toString() === uid);
-
-  if (vote === 1) {
-    if (upIdx >= 0) {
-      discussion.upvotes.splice(upIdx, 1);
-    } else {
-      discussion.upvotes.push(uid as never);
-      if (downIdx >= 0) discussion.downvotes.splice(downIdx, 1);
-    }
-  } else {
-    if (downIdx >= 0) {
-      discussion.downvotes.splice(downIdx, 1);
-    } else {
-      discussion.downvotes.push(uid as never);
-      if (upIdx >= 0) discussion.upvotes.splice(upIdx, 1);
-    }
-  }
-
-  await discussion.save();
-  return NextResponse.json({
-    upvotes: discussion.upvotes.length,
-    downvotes: discussion.downvotes.length,
-    userVote: discussion.upvotes.some((u) => u.toString() === uid)
-      ? 1
-      : discussion.downvotes.some((u) => u.toString() === uid)
-        ? -1
-        : 0,
-  });
 }

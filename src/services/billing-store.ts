@@ -1,10 +1,5 @@
-import { Types } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
-import { User, Subscription, WebhookEvent } from "@/models";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
-const be = () => backendFor("account");
 
 /** Patch applied to a user's plan/billing fields (camelCase, backend-agnostic). */
 export interface UserPlanPatch {
@@ -40,7 +35,6 @@ function toSb(value: unknown): unknown {
 
 /** Apply a plan/billing patch to a user on the active backend. */
 export async function updateUserPlan(userId: string, patch: UserPlanPatch): Promise<void> {
-  if (be() === "supabase") {
     const row: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(patch)) {
       if (v === undefined) continue;
@@ -51,9 +45,6 @@ export async function updateUserPlan(userId: string, patch: UserPlanPatch): Prom
       if (error) throw new Error(error.message);
     }
     return;
-  }
-  await connectDB();
-  await User.findByIdAndUpdate(userId, patch);
 }
 
 export interface UserBillingFields {
@@ -67,7 +58,6 @@ export interface UserBillingFields {
 
 /** Read the billing-relevant fields of a user. */
 export async function getUserBillingFields(userId: string): Promise<UserBillingFields | null> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("users")
       .select("plan,plan_expires_at,trial_ends_at,razorpay_subscription_id,name,email")
@@ -86,20 +76,6 @@ export async function getUserBillingFields(userId: string): Promise<UserBillingF
       name: u.name,
       email: u.email,
     };
-  }
-  await connectDB();
-  const u = await User.findById(userId)
-    .select("plan planExpiresAt trialEndsAt razorpaySubscriptionId name email")
-    .lean();
-  if (!u) return null;
-  return {
-    plan: u.plan ?? "free",
-    planExpiresAt: u.planExpiresAt ?? null,
-    trialEndsAt: u.trialEndsAt ?? null,
-    razorpaySubscriptionId: u.razorpaySubscriptionId ?? null,
-    name: u.name ?? null,
-    email: u.email ?? null,
-  };
 }
 
 export interface SubscriptionInput {
@@ -122,7 +98,6 @@ export interface SubscriptionInput {
 
 /** Create a subscription tracking record on the active backend. */
 export async function createSubscriptionRecord(input: SubscriptionInput): Promise<void> {
-  if (be() === "supabase") {
     const { error } = await supabaseAdmin().from("subscriptions").insert({
       user_id: input.userId,
       plan: input.plan,
@@ -142,26 +117,6 @@ export async function createSubscriptionRecord(input: SubscriptionInput): Promis
     });
     if (error) throw new Error(error.message);
     return;
-  }
-  await connectDB();
-  const doc = new Subscription({
-    user: new Types.ObjectId(input.userId),
-    plan: input.plan,
-    billingCycle: input.billingCycle,
-    amount: input.amount,
-    currency: input.currency,
-    kind: input.kind,
-    razorpayOrderId: input.razorpayOrderId,
-    razorpaySubscriptionId: input.razorpaySubscriptionId,
-    razorpayPaymentId: input.razorpayPaymentId,
-    couponCode: input.couponCode,
-    discount: input.discount,
-    status: input.status,
-    ...(input.trialEndsAt ? { trialEndsAt: input.trialEndsAt } : {}),
-    ...(input.periodStart ? { periodStart: input.periodStart } : {}),
-    ...(input.periodEnd ? { periodEnd: input.periodEnd } : {}),
-  });
-  await doc.save();
 }
 
 export interface SubscriptionRecord {
@@ -180,7 +135,6 @@ export async function findUserSubscription(opts: {
   razorpayOrderId?: string;
   razorpaySubscriptionId?: string;
 }): Promise<SubscriptionRecord | null> {
-  if (be() === "supabase") {
     let q = supabaseAdmin()
       .from("subscriptions")
       .select("id,plan,billing_cycle,amount,coupon_code,discount,trial_ends_at")
@@ -202,22 +156,6 @@ export async function findUserSubscription(opts: {
       discount: s.discount ?? 0,
       trialEndsAt: s.trial_ends_at ? new Date(s.trial_ends_at) : null,
     };
-  }
-  await connectDB();
-  const query: Record<string, unknown> = { user: new Types.ObjectId(opts.userId) };
-  if (opts.razorpaySubscriptionId) query.razorpaySubscriptionId = opts.razorpaySubscriptionId;
-  else if (opts.razorpayOrderId) query.razorpayOrderId = opts.razorpayOrderId;
-  const s = await Subscription.findOne(query).lean();
-  if (!s) return null;
-  return {
-    id: s._id.toString(),
-    plan: s.plan,
-    billingCycle: s.billingCycle === "yearly" ? "yearly" : "monthly",
-    amount: s.amount,
-    couponCode: s.couponCode ?? null,
-    discount: s.discount ?? 0,
-    trialEndsAt: s.trialEndsAt ?? null,
-  };
 }
 
 export interface SubscriptionPatch {
@@ -250,7 +188,6 @@ export interface PaidInvoice {
 
 /** List a user's paid subscriptions (invoice history). */
 export async function listPaidSubscriptions(userId: string, limit: number): Promise<PaidInvoice[]> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("subscriptions")
       .select("id,plan,billing_cycle,amount,currency,period_start,period_end,razorpay_payment_id,created_at")
@@ -267,17 +204,6 @@ export async function listPaidSubscriptions(userId: string, limit: number): Prom
       periodEnd: s.period_end ? new Date(s.period_end) : null,
       paymentId: s.razorpay_payment_id, createdAt: new Date(s.created_at),
     }));
-  }
-  await connectDB();
-  const subs = await Subscription.find({ user: new Types.ObjectId(userId), status: "paid" })
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .select("plan billingCycle amount currency periodStart periodEnd razorpayPaymentId createdAt")
-    .lean();
-  return subs.map((s) => ({
-    id: s._id.toString(), plan: s.plan, billingCycle: s.billingCycle, amount: s.amount, currency: s.currency ?? "INR",
-    periodStart: s.periodStart ?? null, periodEnd: s.periodEnd ?? null, paymentId: s.razorpayPaymentId ?? null, createdAt: s.createdAt,
-  }));
 }
 
 export interface InvoiceDetail {
@@ -296,7 +222,6 @@ export interface InvoiceDetail {
 
 /** Fetch a single paid subscription owned by the user (for an invoice PDF/HTML). */
 export async function getPaidSubscriptionById(userId: string, id: string): Promise<InvoiceDetail | null> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("subscriptions")
       .select("id,plan,billing_cycle,amount,currency,discount,coupon_code,period_start,period_end,razorpay_payment_id,created_at")
@@ -316,20 +241,6 @@ export async function getPaidSubscriptionById(userId: string, id: string): Promi
       periodEnd: s.period_end ? new Date(s.period_end) : null,
       paymentId: s.razorpay_payment_id, createdAt: new Date(s.created_at),
     };
-  }
-  await connectDB();
-  if (!Types.ObjectId.isValid(id)) return null;
-  const s = await Subscription.findOne({
-    _id: new Types.ObjectId(id),
-    user: new Types.ObjectId(userId),
-    status: "paid",
-  }).lean();
-  if (!s) return null;
-  return {
-    id: s._id.toString(), plan: s.plan, billingCycle: s.billingCycle, amount: s.amount, currency: s.currency ?? "INR",
-    discount: s.discount ?? 0, couponCode: s.couponCode ?? null,
-    periodStart: s.periodStart ?? null, periodEnd: s.periodEnd ?? null, paymentId: s.razorpayPaymentId ?? null, createdAt: s.createdAt,
-  };
 }
 
 export interface InvoiceUserProfile {
@@ -340,7 +251,6 @@ export interface InvoiceUserProfile {
 
 /** Read a user's name/email/billing for invoice rendering. */
 export async function getInvoiceUserProfile(userId: string): Promise<InvoiceUserProfile | null> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("users")
       .select("name,email,billing")
@@ -349,29 +259,19 @@ export async function getInvoiceUserProfile(userId: string): Promise<InvoiceUser
     if (!data) return null;
     const u = data as { name: string | null; email: string | null; billing: Record<string, string> | null };
     return { name: u.name, email: u.email, billing: u.billing };
-  }
-  await connectDB();
-  const u = await User.findById(userId).select("name email billing").lean();
-  if (!u) return null;
-  return { name: u.name ?? null, email: u.email ?? null, billing: (u.billing as Record<string, string>) ?? null };
 }
 
 /** Count beta users, and flip the current user to a beta plan. */
 export async function betaUserCount(): Promise<number> {
-  if (be() === "supabase") {
     const { count } = await supabaseAdmin()
       .from("users")
       .select("id", { count: "exact", head: true })
       .eq("beta_user", true);
     return count ?? 0;
-  }
-  await connectDB();
-  return User.countDocuments({ betaUser: true });
 }
 
 /** Update a subscription record by its native id. */
 export async function updateSubscriptionRecord(id: string, patch: SubscriptionPatch): Promise<void> {
-  if (be() === "supabase") {
     const row: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(patch)) {
       if (v === undefined) continue;
@@ -382,24 +282,12 @@ export async function updateSubscriptionRecord(id: string, patch: SubscriptionPa
       if (error) throw new Error(error.message);
     }
     return;
-  }
-  await connectDB();
-  await Subscription.findByIdAndUpdate(id, patch);
 }
 
 /** Record a webhook event id for idempotency. Returns false if already seen. */
 export async function recordWebhookEvent(id: string, event: string): Promise<boolean> {
-  if (be() === "supabase") {
     const { error } = await supabaseAdmin().from("webhook_events").insert({ id, event });
-    return !error; // unique violation → already processed
-  }
-  await connectDB();
-  try {
-    await WebhookEvent.create({ _id: id, event });
-    return true;
-  } catch {
-    return false;
-  }
+    return !error;
 }
 
 export interface RzpUser {
@@ -412,7 +300,6 @@ export interface RzpUser {
 
 /** Find a user by their Razorpay subscription id. */
 export async function findUserByRazorpaySubId(subId: string): Promise<RzpUser | null> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("users")
       .select("id,plan,billing_cycle,email,name")
@@ -421,17 +308,6 @@ export async function findUserByRazorpaySubId(subId: string): Promise<RzpUser | 
     if (!data) return null;
     const u = data as { id: string; plan: string; billing_cycle: string | null; email: string | null; name: string | null };
     return { id: u.id, plan: u.plan, billingCycle: u.billing_cycle, email: u.email, name: u.name };
-  }
-  await connectDB();
-  const u = await User.findOne({ razorpaySubscriptionId: subId }).select("plan billingCycle email name").lean();
-  if (!u) return null;
-  return {
-    id: u._id.toString(),
-    plan: u.plan ?? "free",
-    billingCycle: u.billingCycle ?? null,
-    email: u.email ?? null,
-    name: u.name ?? null,
-  };
 }
 
 /** Update a user's plan fields by Razorpay subscription id. Returns the user. */
@@ -450,7 +326,6 @@ export async function upsertInvoiceByPaymentId(
   paymentId: string,
   input: SubscriptionInput,
 ): Promise<boolean> {
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const { data: existing } = await sb
       .from("subscriptions")
@@ -460,26 +335,4 @@ export async function upsertInvoiceByPaymentId(
     if (existing) return false;
     await createSubscriptionRecord({ ...input, razorpayPaymentId: paymentId });
     return true;
-  }
-  await connectDB();
-  const res = await Subscription.updateOne(
-    { razorpayPaymentId: paymentId },
-    {
-      $setOnInsert: {
-        user: new Types.ObjectId(input.userId),
-        plan: input.plan,
-        billingCycle: input.billingCycle,
-        amount: input.amount,
-        currency: input.currency ?? "INR",
-        kind: input.kind ?? "subscription",
-        razorpaySubscriptionId: input.razorpaySubscriptionId,
-        razorpayPaymentId: paymentId,
-        status: input.status,
-        periodStart: input.periodStart,
-        periodEnd: input.periodEnd,
-      },
-    },
-    { upsert: true },
-  );
-  return (res.upsertedCount ?? 0) > 0;
 }

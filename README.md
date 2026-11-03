@@ -287,7 +287,7 @@ Every external dependency is optional and isolated, so a missing key degrades on
 | **Language** | TypeScript 5 (Strict) | Compile-time type safety across client and server |
 | **State Management** | Zustand 5 & React Query 5 | Client-side store & server-state caching/fetching |
 | **Styling** | Tailwind CSS v4 & Framer Motion 12 | Zero-runtime styling, custom themes, and smooth micro-animations |
-| **Database** | Supabase (Postgres) + `postgres.js` | Relational store — 33 tables with row-level security; a `backendFor()` flag keeps a Mongoose/MongoDB path for instant rollback |
+| **Database** | Supabase (Postgres) + `postgres.js` | Relational store — 33 tables with row-level security |
 | **File Storage** | Supabase Storage | Résumés, profile avatars and cover photos (served from public buckets) |
 | **Cache & Rate-Limits** | Upstash Redis & Upstash Ratelimit 2 | Leaderboards caching, rate-limiting middleware |
 | **Authentication** | Supabase Auth + `@supabase/ssr` · **Passkeys** (`@simplewebauthn`) · bcryptjs | Cookie sessions, email/password + Google/GitHub OAuth, passwordless passkey (WebAuthn) sign-in |
@@ -326,8 +326,10 @@ cp .env.example .env.local
 Set the **required** variables in `.env.local`:
 
 ```env
-# Database connection
-MONGODB_URI="mongodb+srv://..."
+# Database / auth / storage (Supabase)
+NEXT_PUBLIC_SUPABASE_URL="https://<project>.supabase.co"
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="..."
+SUPABASE_SERVICE_ROLE_KEY="..."
 
 # Auth secret — generate with: openssl rand -base64 32
 AUTH_SECRET="your-generated-auth-secret"
@@ -363,8 +365,6 @@ Open **http://localhost:3000** to preview the app.
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Core   | **Required** | Supabase publishable (anon) key for the browser/SSR client.                |
 | `SUPABASE_SERVICE_ROLE_KEY`         | Core      | **Required** | Server-only service-role key — the data + storage backend (bypasses RLS).  |
 | `SUPABASE_DB_URL`                    | Core      | _Optional_   | Direct Postgres connection for migrations & scripts.                       |
-| `DATA_BACKEND`                       | Core      | _Optional_   | `supabase` (default in prod) or `mongo` (rollback). Per-module: `DATA_BACKEND_<MODULE>`. |
-| `MONGODB_URI`                       | Rollback  | _Optional_   | Legacy MongoDB, kept for the dual-backend rollback path.                   |
 | `GROQ_API_KEY`                      | AI        | _Optional_   | Streams hints, explanations & AI tools. Panels show setup help if omitted. |
 | `UPSTASH_REDIS_REST_URL` / `_TOKEN` | Cache     | _Optional_   | Rate-limiting & leaderboards. Falls back to in-memory.                     |
 | `GOOGLE_CLIENT_ID` / `_SECRET`      | Auth      | _Optional_   | Google one-click sign-in.                                                  |

@@ -1,5 +1,5 @@
 import { EXECUTION_LIMITS, type LanguageConfig } from "@/lib/constants";
-import type { QuestionTestCase } from "@/models";
+import type { QuestionTestCase } from "@/types/db";
 import { pistonProvider } from "./piston";
 import { judge0Provider } from "./judge0";
 import { paizaProvider } from "./paiza";

@@ -1,11 +1,7 @@
-import { Types } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
-import { BlogPost } from "@/models";
 import { uniqueSlug } from "@/lib/slug";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor, toUuidOrNull } from "@/lib/data-backend";
+import { toUuidOrNull } from "@/lib/data-backend";
 
-const be = () => backendFor("blog");
 
 /** Blog post shaped like the Mongo lean doc the pages/components consume. */
 export interface BlogPostView {
@@ -66,7 +62,6 @@ function fromRow(r: SbBlogRow): BlogPostView {
 
 /** Published posts for the blog index (no cover bytes). */
 export async function listPublishedPosts(limit: number): Promise<BlogPostView[]> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("blog_posts")
       .select(SB_COLS)
@@ -75,34 +70,10 @@ export async function listPublishedPosts(limit: number): Promise<BlogPostView[]>
       .order("created_at", { ascending: false })
       .limit(limit);
     return ((data ?? []) as SbBlogRow[]).map(fromRow);
-  }
-  await connectDB();
-  const posts = await BlogPost.find({ status: "published" })
-    .select("-coverData")
-    .sort({ publishedAt: -1, createdAt: -1 })
-    .limit(limit)
-    .lean();
-  return posts.map((p) => ({
-    _id: p._id.toString(),
-    slug: p.slug,
-    title: p.title,
-    description: p.description,
-    content: p.content,
-    tags: p.tags ?? [],
-    seoTitle: p.seoTitle ?? null,
-    seoDescription: p.seoDescription ?? null,
-    seoKeywords: p.seoKeywords ?? null,
-    status: p.status,
-    views: p.views ?? 0,
-    publishedAt: p.publishedAt ?? null,
-    createdAt: p.createdAt,
-    updatedAt: p.updatedAt,
-  }));
 }
 
 /** A single published post by slug (no cover bytes). */
 export async function getPublishedPost(slug: string): Promise<BlogPostView | null> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("blog_posts")
       .select(SB_COLS)
@@ -110,44 +81,19 @@ export async function getPublishedPost(slug: string): Promise<BlogPostView | nul
       .eq("status", "published")
       .maybeSingle();
     return data ? fromRow(data as SbBlogRow) : null;
-  }
-  await connectDB();
-  const p = await BlogPost.findOne({ slug, status: "published" }).select("-coverData").lean();
-  if (!p) return null;
-  return {
-    _id: p._id.toString(),
-    slug: p.slug,
-    title: p.title,
-    description: p.description,
-    content: p.content,
-    tags: p.tags ?? [],
-    seoTitle: p.seoTitle ?? null,
-    seoDescription: p.seoDescription ?? null,
-    seoKeywords: p.seoKeywords ?? null,
-    status: p.status,
-    views: p.views ?? 0,
-    publishedAt: p.publishedAt ?? null,
-    createdAt: p.createdAt,
-    updatedAt: p.updatedAt,
-  };
 }
 
 /** Best-effort view increment. */
 export async function incrementBlogViews(slug: string): Promise<void> {
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const { data } = await sb.from("blog_posts").select("views").eq("slug", slug).maybeSingle();
     const views = ((data as { views: number } | null)?.views ?? 0) + 1;
     await sb.from("blog_posts").update({ views }).eq("slug", slug);
     return;
-  }
-  await connectDB();
-  await BlogPost.updateOne({ slug }, { $inc: { views: 1 } });
 }
 
 /** Published slugs + last-modified for the sitemap. */
 export async function listPublishedSlugs(): Promise<{ slug: string; updatedAt: Date }[]> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("blog_posts")
       .select("slug,updated_at")
@@ -156,10 +102,6 @@ export async function listPublishedSlugs(): Promise<{ slug: string; updatedAt: D
       slug: p.slug,
       updatedAt: new Date(p.updated_at),
     }));
-  }
-  await connectDB();
-  const posts = await BlogPost.find({ status: "published" }, "slug updatedAt").lean<{ slug: string; updatedAt: Date }[]>();
-  return posts.map((p) => ({ slug: p.slug, updatedAt: p.updatedAt }));
 }
 
 // ── Admin ────────────────────────────────────────────────────────────────
@@ -179,7 +121,6 @@ export interface AdminBlogListItem {
 
 /** All posts (drafts included, no cover bytes) for the admin list. */
 export async function adminListPosts(limit: number): Promise<AdminBlogListItem[]> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("blog_posts")
       .select("id,slug,title,description,tags,status,views,cover_mime,published_at,created_at")
@@ -193,14 +134,6 @@ export async function adminListPosts(limit: number): Promise<AdminBlogListItem[]
       status: p.status, views: p.views, coverMime: p.cover_mime,
       publishedAt: p.published_at ? new Date(p.published_at) : null, createdAt: new Date(p.created_at),
     }));
-  }
-  await connectDB();
-  const posts = await BlogPost.find().select("-coverData").sort({ createdAt: -1 }).limit(limit).lean();
-  return posts.map((p) => ({
-    id: p._id.toString(), slug: p.slug, title: p.title, description: p.description, tags: p.tags ?? [],
-    status: p.status, views: p.views ?? 0, coverMime: p.coverMime ?? null,
-    publishedAt: p.publishedAt ?? null, createdAt: p.createdAt,
-  }));
 }
 
 export interface CreateBlogPost {
@@ -220,7 +153,6 @@ export interface CreateBlogPost {
 /** Create a blog post, generating a unique slug. Returns id + slug. */
 export async function createBlogPost(input: CreateBlogPost): Promise<{ id: string; slug: string }> {
   const publishedAt = input.status === "published" ? new Date() : null;
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const slug = await uniqueSlug(input.title, async (s) => {
       const { data } = await sb.from("blog_posts").select("id").eq("slug", s).maybeSingle();
@@ -234,17 +166,6 @@ export async function createBlogPost(input: CreateBlogPost): Promise<{ id: strin
     }).select("id").single();
     if (error) throw new Error(error.message);
     return { id: (data as { id: string }).id, slug };
-  }
-  await connectDB();
-  const slug = await uniqueSlug(input.title, async (s) => !!(await BlogPost.exists({ slug: s })));
-  const post = new BlogPost({
-    slug, title: input.title, description: input.description, content: input.content, tags: input.tags,
-    seoTitle: input.seoTitle, seoDescription: input.seoDescription, seoKeywords: input.seoKeywords,
-    coverData: input.coverData, coverMime: input.coverMime, author: input.authorId,
-    status: input.status, publishedAt,
-  });
-  await post.save();
-  return { id: post._id.toString(), slug };
 }
 
 export interface BlogPatch {
@@ -269,19 +190,12 @@ const BLOG_FIELD_MAP: Record<keyof BlogPatch, string> = {
 
 /** True when the post has no publishedAt yet (to stamp it on first publish). */
 export async function blogNeedsPublishedAt(id: string): Promise<boolean> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin().from("blog_posts").select("published_at").eq("id", id).maybeSingle();
     return data ? !(data as { published_at: string | null }).published_at : false;
-  }
-  await connectDB();
-  if (!Types.ObjectId.isValid(id)) return false;
-  const existing = await BlogPost.findById(id).select("publishedAt").lean();
-  return existing ? !existing.publishedAt : false;
 }
 
 /** Update a blog post by id. Returns false if not found. */
 export async function updateBlogPost(id: string, patch: BlogPatch): Promise<boolean> {
-  if (be() === "supabase") {
     const row: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(patch)) {
       if (v === undefined) continue;
@@ -291,20 +205,10 @@ export async function updateBlogPost(id: string, patch: BlogPatch): Promise<bool
     const { data, error } = await supabaseAdmin().from("blog_posts").update(row).eq("id", id).select("id").maybeSingle();
     if (error) throw new Error(error.message);
     return Boolean(data);
-  }
-  await connectDB();
-  if (!Types.ObjectId.isValid(id)) return false;
-  const res = await BlogPost.updateOne({ _id: id }, { $set: patch });
-  return res.matchedCount > 0;
 }
 
 /** Delete a blog post by id. */
 export async function deleteBlogPost(id: string): Promise<void> {
-  if (be() === "supabase") {
     await supabaseAdmin().from("blog_posts").delete().eq("id", id);
     return;
-  }
-  await connectDB();
-  if (!Types.ObjectId.isValid(id)) return;
-  await BlogPost.deleteOne({ _id: id });
 }

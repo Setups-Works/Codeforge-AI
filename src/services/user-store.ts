@@ -1,31 +1,20 @@
-import { Types } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
-import { User, Follow } from "@/models";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
-const be = () => backendFor("account");
 
 /** Whether the user finished onboarding (platform layout + onboarding gate). */
 export async function getOnboardingComplete(userId: string): Promise<boolean> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("users")
       .select("onboarding")
       .eq("id", userId)
       .maybeSingle();
     return Boolean((data as { onboarding?: { completed?: boolean } } | null)?.onboarding?.completed);
-  }
-  await connectDB();
-  const u = await User.findById(userId).select("onboarding").lean();
-  return Boolean(u?.onboarding?.completed);
 }
 
 /** Onboarding completion + display name (onboarding page). */
 export async function getOnboardingWithName(
   userId: string,
 ): Promise<{ completed: boolean; name: string } | null> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("users")
       .select("onboarding,name")
@@ -34,26 +23,16 @@ export async function getOnboardingWithName(
     if (!data) return null;
     const u = data as { onboarding?: { completed?: boolean }; name: string };
     return { completed: Boolean(u.onboarding?.completed), name: u.name };
-  }
-  await connectDB();
-  const u = await User.findById(userId).select("onboarding name").lean();
-  if (!u) return null;
-  return { completed: Boolean(u.onboarding?.completed), name: u.name };
 }
 
 /** The user's current plan (pricing page). */
 export async function getUserPlan(userId: string): Promise<string> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("users")
       .select("plan")
       .eq("id", userId)
       .maybeSingle();
     return (data as { plan?: string } | null)?.plan ?? "free";
-  }
-  await connectDB();
-  const u = await User.findById(userId).select("plan").lean();
-  return u?.plan ?? "free";
 }
 
 export interface EditorPreferences {
@@ -91,7 +70,6 @@ export interface SettingsProfile {
 
 /** Full profile for the settings page. */
 export async function getUserSettings(userId: string): Promise<SettingsProfile | null> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("users")
       .select("name,username,email,providers,bio,location,website,github_url,linkedin_url,image,cover_image,email_opt_out,preferences,plan,plan_expires_at,trial_ends_at,billing_cycle")
@@ -117,22 +95,6 @@ export async function getUserSettings(userId: string): Promise<SettingsProfile |
       trialEndsAt: u.trial_ends_at ? new Date(u.trial_ends_at) : null,
       billingCycle: u.billing_cycle,
     };
-  }
-  await connectDB();
-  const u = await User.findById(userId).lean();
-  if (!u) return null;
-  return {
-    name: u.name, username: u.username, email: u.email ?? null, providers: u.providers ?? [],
-    bio: u.bio ?? "", location: u.location ?? "",
-    website: u.website ?? "", githubUrl: u.githubUrl ?? "", linkedinUrl: u.linkedinUrl ?? "",
-    image: u.image ?? null, coverImage: (u as { coverImage?: string }).coverImage ?? null,
-    emailOptOut: Boolean(u.emailOptOut),
-    preferences: { ...DEFAULT_PREFS, ...(u.preferences ?? {}) },
-    plan: u.plan ?? "free",
-    planExpiresAt: u.planExpiresAt ?? null,
-    trialEndsAt: u.trialEndsAt ?? null,
-    billingCycle: u.billingCycle ?? null,
-  };
 }
 
 export interface ProfilePatch {
@@ -149,7 +111,6 @@ export interface ProfilePatch {
 
 /** Whether a username is taken by someone other than `excludeUserId`. */
 export async function isUsernameTaken(username: string, excludeUserId: string): Promise<boolean> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("users")
       .select("id")
@@ -157,14 +118,10 @@ export async function isUsernameTaken(username: string, excludeUserId: string): 
       .neq("id", excludeUserId)
       .maybeSingle();
     return Boolean(data);
-  }
-  await connectDB();
-  return Boolean(await User.exists({ username: username.toLowerCase(), _id: { $ne: excludeUserId } }));
 }
 
 /** Save the editable public-profile fields. */
 export async function updateUserProfile(userId: string, patch: ProfilePatch): Promise<void> {
-  if (be() === "supabase") {
     const row: Record<string, unknown> = {
       name: patch.name,
       username: patch.username.toLowerCase(),
@@ -179,42 +136,20 @@ export async function updateUserProfile(userId: string, patch: ProfilePatch): Pr
     const { error } = await supabaseAdmin().from("users").update(row).eq("id", userId);
     if (error) throw new Error(error.message);
     return;
-  }
-  await connectDB();
-  const set: Record<string, unknown> = {
-    name: patch.name,
-    username: patch.username.toLowerCase(),
-    bio: patch.bio,
-    location: patch.location,
-    website: patch.website,
-    githubUrl: patch.githubUrl,
-    linkedinUrl: patch.linkedinUrl,
-  };
-  if (patch.image !== undefined) set.image = patch.image;
-  if (patch.coverImage !== undefined) set.coverImage = patch.coverImage;
-  await User.updateOne({ _id: userId }, { $set: set });
 }
 
 /** Save the editor/workspace preferences jsonb. */
 export async function updateUserPreferences(userId: string, prefs: EditorPreferences): Promise<void> {
-  if (be() === "supabase") {
     const { error } = await supabaseAdmin().from("users").update({ preferences: prefs }).eq("id", userId);
     if (error) throw new Error(error.message);
     return;
-  }
-  await connectDB();
-  await User.updateOne({ _id: userId }, { $set: { preferences: prefs } });
 }
 
 /** Toggle marketing/newsletter email opt-out. */
 export async function setEmailOptOut(userId: string, optOut: boolean): Promise<void> {
-  if (be() === "supabase") {
     const { error } = await supabaseAdmin().from("users").update({ email_opt_out: optOut }).eq("id", userId);
     if (error) throw new Error(error.message);
     return;
-  }
-  await connectDB();
-  await User.updateOne({ _id: userId }, { $set: { emailOptOut: optOut } });
 }
 
 export interface CheckoutProfile {
@@ -226,7 +161,6 @@ export interface CheckoutProfile {
 
 /** Name/email/billing/trial for the checkout page prefill. */
 export async function getUserCheckout(userId: string): Promise<CheckoutProfile | null> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("users")
       .select("name,email,billing,trial_ends_at")
@@ -235,44 +169,29 @@ export async function getUserCheckout(userId: string): Promise<CheckoutProfile |
     if (!data) return null;
     const u = data as { name: string; email: string | null; billing: Record<string, string> | null; trial_ends_at: string | null };
     return { name: u.name, email: u.email ?? "", billing: u.billing, trialEndsAt: u.trial_ends_at ? new Date(u.trial_ends_at) : null };
-  }
-  await connectDB();
-  const u = await User.findById(userId).select("name email billing trialEndsAt").lean();
-  if (!u) return null;
-  return { name: u.name, email: u.email ?? "", billing: (u.billing as Record<string, string>) ?? null, trialEndsAt: u.trialEndsAt ?? null };
 }
 
 /** Resolve a username to its user id (public profile). */
 export async function resolveUserIdByUsername(username: string): Promise<string | null> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("users")
       .select("id")
       .eq("username", username)
       .maybeSingle();
     return (data as { id: string } | null)?.id ?? null;
-  }
-  await connectDB();
-  const u = await User.findOne({ username }).select("_id").lean();
-  return u?._id.toString() ?? null;
 }
 
 /** Count non-banned members (community stats). */
 export async function countActiveMembers(): Promise<number> {
-  if (be() === "supabase") {
     const { count } = await supabaseAdmin()
       .from("users")
       .select("id", { count: "exact", head: true })
       .eq("banned", false);
     return count ?? 0;
-  }
-  await connectDB();
-  return User.countDocuments({ banned: false });
 }
 
 /** Whether followerId already follows followingId. */
 export async function isFollowing(followerId: string, followingId: string): Promise<boolean> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("follows")
       .select("id")
@@ -280,9 +199,6 @@ export async function isFollowing(followerId: string, followingId: string): Prom
       .eq("following_id", followingId)
       .maybeSingle();
     return Boolean(data);
-  }
-  await connectDB();
-  return Boolean(await Follow.exists({ follower: followerId, following: followingId }));
 }
 
 // ── Admin ────────────────────────────────────────────────────────────────
@@ -339,7 +255,6 @@ function shapeAdminUser(u: {
 
 /** Admin: search/filter users. */
 export async function adminListUsers(filter: { q?: string; plan?: string }): Promise<AdminUser[]> {
-  if (be() === "supabase") {
     let query = supabaseAdmin()
       .from("users")
       .select("id,name,username,email,image,role,banned,stats,providers,plan,plan_expires_at,trial_ends_at,billing_cycle,beta_user,campaign,created_at")
@@ -364,28 +279,6 @@ export async function adminListUsers(filter: { q?: string; plan?: string }): Pro
       campaign: (u.campaign as string) ?? null,
       createdAt: new Date(u.created_at as string),
     }));
-  }
-  await connectDB();
-  const query: Record<string, unknown> = {};
-  if (filter.q) {
-    const regex = { $regex: filter.q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
-    query.$or = [{ name: regex }, { email: regex }, { username: regex }];
-  }
-  if (filter.plan && filter.plan !== "all") {
-    if (filter.plan === "beta") query.betaUser = true;
-    else query.plan = filter.plan;
-  }
-  const users = await User.find(query)
-    .sort({ createdAt: -1 })
-    .limit(200)
-    .select("name username email image role banned stats createdAt providers plan planExpiresAt trialEndsAt billingCycle betaUser")
-    .lean();
-  return users.map((u) => shapeAdminUser({
-    id: u._id.toString(), name: u.name, username: u.username, email: u.email ?? null, image: u.image ?? null,
-    role: u.role, banned: Boolean(u.banned), stats: u.stats as AdminUserStats, providers: u.providers ?? null,
-    plan: u.plan ?? null, planExpiresAt: u.planExpiresAt ?? null, trialEndsAt: u.trialEndsAt ?? null,
-    billingCycle: u.billingCycle ?? null, betaUser: u.betaUser ?? null, createdAt: u.createdAt,
-  }));
 }
 
 export interface AdminUserPatch {
@@ -405,7 +298,6 @@ const ADMIN_USER_MAP: Record<keyof AdminUserPatch, string> = {
 
 /** Admin: update a user's role/ban/plan fields. Returns false if not found. */
 export async function adminUpdateUser(id: string, patch: AdminUserPatch): Promise<boolean> {
-  if (be() === "supabase") {
     const row: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(patch)) {
       if (v === undefined) continue;
@@ -419,30 +311,20 @@ export async function adminUpdateUser(id: string, patch: AdminUserPatch): Promis
     const { data, error } = await supabaseAdmin().from("users").update(row).eq("id", id).select("id").maybeSingle();
     if (error) throw new Error(error.message);
     return Boolean(data);
-  }
-  await connectDB();
-  if (!Types.ObjectId.isValid(id)) return false;
-  const updated = await User.findByIdAndUpdate(id, { $set: patch }, { returnDocument: "after" });
-  return Boolean(updated);
 }
 
 /** Count opted-in, non-banned users (newsletter reach). */
 export async function countNewsletterRecipients(): Promise<number> {
-  if (be() === "supabase") {
     const { count } = await supabaseAdmin()
       .from("users")
       .select("id", { count: "exact", head: true })
       .neq("email_opt_out", true)
       .neq("banned", true);
     return count ?? 0;
-  }
-  await connectDB();
-  return User.countDocuments({ emailOptOut: { $ne: true }, banned: { $ne: true } });
 }
 
 /** List opted-in, non-banned recipients (email + name) for a broadcast. */
 export async function listNewsletterRecipients(): Promise<{ email: string; name?: string }[]> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("users")
       .select("email,name")
@@ -451,10 +333,6 @@ export async function listNewsletterRecipients(): Promise<{ email: string; name?
     return ((data ?? []) as { email: string | null; name: string | null }[])
       .filter((u) => u.email)
       .map((u) => ({ email: u.email as string, name: u.name ?? undefined }));
-  }
-  await connectDB();
-  const users = await User.find({ emailOptOut: { $ne: true }, banned: { $ne: true } }).select("email name").lean();
-  return users.filter((u) => u.email).map((u) => ({ email: u.email as string, name: u.name }));
 }
 
 
@@ -463,7 +341,6 @@ export async function updateUserMedia(
   userId: string,
   patch: { image?: string | null; coverImage?: string | null },
 ): Promise<void> {
-  if (be() === "supabase") {
     const row: Record<string, unknown> = {};
     if (patch.image !== undefined) row.image = patch.image;
     if (patch.coverImage !== undefined) row.cover_image = patch.coverImage;
@@ -471,10 +348,4 @@ export async function updateUserMedia(
     const { error } = await supabaseAdmin().from("users").update(row).eq("id", userId);
     if (error) throw new Error(error.message);
     return;
-  }
-  await connectDB();
-  const set: Record<string, unknown> = {};
-  if (patch.image !== undefined) set.image = patch.image;
-  if (patch.coverImage !== undefined) set.coverImage = patch.coverImage;
-  if (Object.keys(set).length) await User.updateOne({ _id: userId }, { $set: set });
 }

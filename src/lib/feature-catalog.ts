@@ -6,7 +6,7 @@ import type { PlanId } from "./plans";
  * can override each item's minimum plan (stored in the FeatureAccess doc); the
  * `defaultMinPlan` here is the fallback when there is no override.
  *
- * Keep this file framework-free (no next/server, no mongoose) so it can be
+ * Keep this file framework-free (no next/server) so it can be
  * imported from client components.
  */
 

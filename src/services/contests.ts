@@ -1,12 +1,7 @@
-import { Types } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
-import { cached, cache } from "@/lib/redis";
-import { Contest, Question, User } from "@/models";
+import { cached,cache } from "@/lib/redis";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 import { awardContestBadge } from "@/services/gamification/badges";
 
-const be = () => backendFor("contests");
 
 /** Embedded participant shape stored in the contests.participants jsonb. */
 interface SbParticipant {
@@ -62,7 +57,6 @@ export interface ContestListItem {
 export async function listContests(
   userId?: string,
 ): Promise<ContestListItem[]> {
-  if (be() === "supabase") {
     const { data, error } = await supabaseAdmin()
       .from("contests")
       .select("slug,title,type,starts_at,duration_minutes,participants,questions")
@@ -85,27 +79,6 @@ export async function listContests(
         joined: userId ? participants.some((p) => p.user === userId) : false,
       };
     });
-  }
-  await connectDB();
-  const contests = await Contest.find({ isPublished: true })
-    .sort({ startsAt: -1 })
-    .limit(50)
-    .select("slug title type startsAt durationMinutes participants questions")
-    .lean();
-
-  return contests.map((contest) => ({
-    slug: contest.slug,
-    title: contest.title,
-    type: contest.type,
-    startsAt: contest.startsAt.toISOString(),
-    durationMinutes: contest.durationMinutes,
-    status: contestStatus(contest.startsAt, contest.durationMinutes),
-    participantCount: contest.participants.length,
-    questionCount: contest.questions.length,
-    joined: userId
-      ? contest.participants.some((p) => p.user.toString() === userId)
-      : false,
-  }));
 }
 
 export interface ContestDetail {
@@ -129,51 +102,7 @@ export async function getContestDetail(
   slug: string,
   userId?: string,
 ): Promise<ContestDetail | null> {
-  if (be() === "supabase") return getContestDetailSupabase(slug, userId);
-  await connectDB();
-  const contest = await Contest.findOne({ slug, isPublished: true })
-    .populate<{
-      questions: { question: { _id: Types.ObjectId; slug: string; title: string; difficulty: string } | null; points: number }[];
-    }>("questions.question", "slug title difficulty")
-    .lean();
-  if (!contest) return null;
-
-  const status = contestStatus(contest.startsAt, contest.durationMinutes);
-  const participant = userId
-    ? contest.participants.find((p) => p.user.toString() === userId)
-    : undefined;
-  const joined = !!participant;
-
-  const revealQuestions = status !== "upcoming" && (joined || status === "ended");
-
-  return {
-    slug: contest.slug,
-    title: contest.title,
-    description: contest.description,
-    type: contest.type,
-    startsAt: contest.startsAt.toISOString(),
-    endsAt: new Date(
-      contest.startsAt.getTime() + contest.durationMinutes * 60_000,
-    ).toISOString(),
-    durationMinutes: contest.durationMinutes,
-    status,
-    participantCount: contest.participants.length,
-    joined,
-    questions: revealQuestions
-      ? contest.questions
-          .filter((entry) => entry.question)
-          .map((entry) => ({
-            slug: entry.question!.slug,
-            title: entry.question!.title,
-            difficulty: entry.question!.difficulty,
-            points: entry.points,
-            solved:
-              participant?.solvedQuestionIds.includes(
-                entry.question!._id.toString(),
-              ) ?? false,
-          }))
-      : null,
-  };
+return getContestDetailSupabase(slug, userId);
 }
 
 async function getContestDetailSupabase(
@@ -252,7 +181,6 @@ export async function joinContest(
   slug: string,
   userId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const { data } = await sb
       .from("contests")
@@ -288,31 +216,6 @@ export async function joinContest(
     if (error) throw new Error(error.message);
     await cache.del(`contest:lb:${slug}`);
     return { ok: true };
-  }
-
-  await connectDB();
-  const contest = await Contest.findOne({ slug, isPublished: true });
-  if (!contest) return { ok: false, error: "Contest not found" };
-
-  const status = contestStatus(contest.startsAt, contest.durationMinutes);
-  if (status === "ended") {
-    return { ok: false, error: "This contest has already ended" };
-  }
-  if (contest.participants.some((p) => p.user.toString() === userId)) {
-    return { ok: true };
-  }
-
-  contest.participants.push({
-    user: new Types.ObjectId(userId),
-    joinedAt: new Date(),
-    score: 0,
-    penaltySeconds: 0,
-    solvedQuestionIds: [],
-    finished: false,
-  });
-  await contest.save();
-  await cache.del(`contest:lb:${slug}`);
-  return { ok: true };
 }
 
 export interface ContestLeaderboardEntry {
@@ -329,7 +232,6 @@ export async function getContestLeaderboard(
   slug: string,
 ): Promise<ContestLeaderboardEntry[] | null> {
   return cached(`contest:lb:${slug}`, 30, async () => {
-    if (be() === "supabase") {
       const sb = supabaseAdmin();
       const { data } = await sb
         .from("contests")
@@ -363,36 +265,6 @@ export async function getContestLeaderboard(
         })
         .sort((a, b) => b.score - a.score || a.penaltySeconds - b.penaltySeconds)
         .map((entry, index) => ({ ...entry, rank: index + 1 }));
-    }
-
-    await connectDB();
-    const contest = await Contest.findOne({ slug, isPublished: true })
-      .select("participants")
-      .lean();
-    if (!contest) return null;
-
-    const userIds = contest.participants.map((p) => p.user);
-    const users = await User.find({ _id: { $in: userIds } })
-      .select("name username image")
-      .lean();
-    const userMap = new Map(users.map((user) => [user._id.toString(), user]));
-
-    return contest.participants
-      .map((participant) => {
-        const user = userMap.get(participant.user.toString());
-        return {
-          name: user?.name ?? "Unknown",
-          username: user?.username ?? "",
-          image: user?.image ?? null,
-          score: participant.score,
-          penaltySeconds: participant.penaltySeconds,
-          solvedCount: participant.solvedQuestionIds.length,
-        };
-      })
-      .sort(
-        (a, b) => b.score - a.score || a.penaltySeconds - b.penaltySeconds,
-      )
-      .map((entry, index) => ({ ...entry, rank: index + 1 }));
   });
 }
 
@@ -410,8 +282,6 @@ export async function scoreContestSolve(opts: {
   now?: number;
 }): Promise<string | null> {
   const now = opts.now ?? Date.now();
-
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const { data } = await sb
       .from("contests")
@@ -446,38 +316,6 @@ export async function scoreContestSolve(opts: {
       await awardContestBadge(opts.userId);
     }
     return row.id;
-  }
-
-  await connectDB();
-  const contest = await Contest.findOne({ slug: opts.slug, isPublished: true });
-  const entry = contest?.questions.find(
-    (q) => q.question.toString() === opts.questionId,
-  );
-  if (
-    !contest ||
-    !entry ||
-    now < contest.startsAt.getTime() ||
-    now > contest.startsAt.getTime() + contest.durationMinutes * 60_000
-  ) {
-    return null;
-  }
-  const participant = contest.participants.find(
-    (p) => p.user.toString() === opts.userId,
-  );
-  if (
-    participant &&
-    opts.accepted &&
-    !participant.solvedQuestionIds.includes(opts.questionId)
-  ) {
-    participant.solvedQuestionIds.push(opts.questionId);
-    participant.score += entry.points;
-    participant.penaltySeconds += Math.floor(
-      (now - contest.startsAt.getTime()) / 1000,
-    );
-    await contest.save();
-    await awardContestBadge(new Types.ObjectId(opts.userId));
-  }
-  return contest._id.toString();
 }
 
 /** Deterministic daily challenge: rotates through published questions by date */
@@ -489,7 +327,6 @@ export async function getDailyChallenge(): Promise<{
 } | null> {
   return cached("daily-challenge", 600, async () => {
     const dayNumber = Math.floor(Date.now() / 86_400_000);
-    if (be() === "supabase") {
       const sb = supabaseAdmin();
       const { count } = await sb
         .from("questions")
@@ -508,23 +345,6 @@ export async function getDailyChallenge(): Promise<{
         | undefined;
       if (!q) return null;
       return { id: q.id, slug: q.slug, title: q.title, difficulty: q.difficulty };
-    }
-
-    await connectDB();
-    const count = await Question.countDocuments({ isPublished: true });
-    if (count === 0) return null;
-    const question = await Question.findOne({ isPublished: true })
-      .sort({ createdAt: 1 })
-      .skip(dayNumber % count)
-      .select("slug title difficulty")
-      .lean();
-    if (!question) return null;
-    return {
-      id: question._id.toString(),
-      slug: question.slug,
-      title: question.title,
-      difficulty: question.difficulty,
-    };
   });
 }
 
@@ -539,7 +359,6 @@ export interface AdminContestListItem {
 
 /** Admin: list all contests (drafts included). */
 export async function adminListContests(): Promise<AdminContestListItem[]> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("contests")
       .select("id,slug,title,type,starts_at,duration_minutes,is_published,participants,questions")
@@ -552,27 +371,14 @@ export async function adminListContests(): Promise<AdminContestListItem[]> {
       durationMinutes: c.duration_minutes, isPublished: c.is_published,
       participantCount: (c.participants ?? []).length, questionCount: (c.questions ?? []).length,
     }));
-  }
-  await connectDB();
-  const contests = await Contest.find().sort({ startsAt: -1 }).limit(100)
-    .select("slug title type startsAt durationMinutes isPublished participants questions").lean();
-  return contests.map((c) => ({
-    id: c._id.toString(), slug: c.slug, title: c.title, type: c.type, startsAt: c.startsAt,
-    durationMinutes: c.durationMinutes, isPublished: c.isPublished,
-    participantCount: c.participants.length, questionCount: c.questions.length,
-  }));
 }
 
 /** Count published questions among the given ids (contest validation). */
 export async function countPublishedQuestions(ids: string[]): Promise<number> {
-  if (be() === "supabase") {
     const { count } = await supabaseAdmin()
       .from("questions").select("id", { count: "exact", head: true })
       .in("id", ids).eq("is_published", true);
     return count ?? 0;
-  }
-  await connectDB();
-  return Question.countDocuments({ _id: { $in: ids.map((i) => new Types.ObjectId(i)) }, isPublished: true });
 }
 
 export interface CreateContestInput {
@@ -582,7 +388,6 @@ export interface CreateContestInput {
 
 /** Admin: create a contest. Returns id + slug. */
 export async function createContest(input: CreateContestInput): Promise<{ id: string; slug: string }> {
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const slug = await uniqueSlug(input.title, async (s) => {
       const { data } = await sb.from("contests").select("id").eq("slug", s).maybeSingle();
@@ -596,17 +401,6 @@ export async function createContest(input: CreateContestInput): Promise<{ id: st
     }).select("id").single();
     if (error) throw new Error(error.message);
     return { id: (data as { id: string }).id, slug };
-  }
-  await connectDB();
-  const slug = await uniqueSlug(input.title, async (s) => Boolean(await Contest.exists({ slug: s })));
-  const doc = new Contest({
-    title: input.title, description: input.description, type: input.type, startsAt: input.startsAt,
-    durationMinutes: input.durationMinutes,
-    questions: input.questions.map((q) => ({ question: new Types.ObjectId(q.questionId), points: q.points })),
-    isPublished: input.isPublished, slug, createdBy: input.createdBy,
-  });
-  await doc.save();
-  return { id: doc._id.toString(), slug };
 }
 
 export interface ContestPatch {
@@ -618,7 +412,6 @@ const CONTEST_FIELD_MAP: Record<keyof ContestPatch, string> = {
 
 /** Admin: update a contest. Returns false if not found. */
 export async function updateContest(id: string, patch: ContestPatch): Promise<boolean> {
-  if (be() === "supabase") {
     const row: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(patch)) {
       if (v === undefined) continue;
@@ -628,20 +421,10 @@ export async function updateContest(id: string, patch: ContestPatch): Promise<bo
     const { data, error } = await supabaseAdmin().from("contests").update(row).eq("id", id).select("id").maybeSingle();
     if (error) throw new Error(error.message);
     return Boolean(data);
-  }
-  if (!Types.ObjectId.isValid(id)) return false;
-  await connectDB();
-  const updated = await Contest.findByIdAndUpdate(id, { $set: patch }, { returnDocument: "after" });
-  return Boolean(updated);
 }
 
 /** Admin: delete a contest. Returns false if not found. */
 export async function deleteContest(id: string): Promise<boolean> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin().from("contests").delete().eq("id", id).select("id").maybeSingle();
     return Boolean(data);
-  }
-  if (!Types.ObjectId.isValid(id)) return false;
-  await connectDB();
-  return Boolean(await Contest.findByIdAndDelete(id));
 }

@@ -1,16 +1,10 @@
 import { NextResponse } from "next/server";
-import { Types } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
-import { GenUsage } from "@/models";
-import { PLANS, type PlanId } from "@/lib/plans";
+import { PLANS,type PlanId } from "@/lib/plans";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
-const be = () => backendFor("gen");
 
 /** Read the current period's generated-problem count from the active backend. */
 async function readGenCount(userId: string, period: string): Promise<number> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("gen_usage")
       .select("count")
@@ -18,12 +12,6 @@ async function readGenCount(userId: string, period: string): Promise<number> {
       .eq("period", period)
       .maybeSingle();
     return (data as { count: number } | null)?.count ?? 0;
-  }
-  await connectDB();
-  const doc = await GenUsage.findOne({ user: new Types.ObjectId(userId), period })
-    .select("count")
-    .lean();
-  return doc?.count ?? 0;
 }
 
 /** Current period, "YYYY-MM" (UTC) — matches the AI-credit period. */
@@ -88,7 +76,6 @@ export async function enforceGenQuota(
       );
     }
   }
-  if (be() === "supabase") {
     const { error } = await supabaseAdmin().rpc("increment_gen_usage", {
       p_user: userId,
       p_period: currentPeriod(),
@@ -96,12 +83,4 @@ export async function enforceGenQuota(
     });
     if (error) throw new Error(error.message);
     return null;
-  }
-  await connectDB();
-  await GenUsage.updateOne(
-    { user: new Types.ObjectId(userId), period: currentPeriod() },
-    { $inc: { count } },
-    { upsert: true },
-  );
-  return null;
 }

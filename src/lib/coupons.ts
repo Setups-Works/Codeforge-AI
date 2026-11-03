@@ -1,12 +1,8 @@
-import { Types } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
-import { Coupon, CouponRedemption, type CouponDoc } from "@/models";
-import { PLANS, type PlanId, type BillingCycle } from "@/lib/plans";
-import { computeDiscount, normalizeCode } from "@/lib/coupon-math";
+import { type CouponDoc } from "@/types/db";
+import { PLANS,type PlanId,type BillingCycle } from "@/lib/plans";
+import { computeDiscount,normalizeCode } from "@/lib/coupon-math";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
-const be = () => backendFor("coupons");
 
 /** Map a Supabase coupons row (snake_case) to the CouponDoc shape the math uses. */
 interface SbCouponRow {
@@ -71,11 +67,10 @@ export async function validateCoupon(opts: {
   const code = normalizeCode(opts.code);
   if (!code) return { ok: false, reason: "Enter a coupon code" };
 
-  let coupon: (CouponDoc & { _id: string | Types.ObjectId }) | null;
+  let coupon: (CouponDoc & { _id: string }) | null;
   let alreadyRedeemed: () => Promise<boolean>;
 
-  if (be() === "supabase") {
-    const sb = supabaseAdmin();
+  {    const sb = supabaseAdmin();
     const { data } = await sb.from("coupons").select("*").eq("code", code).maybeSingle();
     coupon = data ? toCouponDoc(data as SbCouponRow) : null;
     const couponId = data ? (data as SbCouponRow).id : null;
@@ -88,20 +83,7 @@ export async function validateCoupon(opts: {
         .eq("user_id", opts.userId)
         .maybeSingle();
       return Boolean(r);
-    };
-  } else {
-    await connectDB();
-    const doc = await Coupon.findOne({ code }).lean<CouponDoc & { _id: Types.ObjectId }>();
-    coupon = doc ?? null;
-    alreadyRedeemed = async () => {
-      if (!doc) return false;
-      const already = await CouponRedemption.findOne({
-        coupon: doc._id,
-        user: new Types.ObjectId(opts.userId),
-      }).lean();
-      return Boolean(already);
-    };
-  }
+    };}
 
   if (!coupon || !coupon.active) return { ok: false, reason: "Invalid or inactive coupon" };
 
@@ -148,8 +130,6 @@ export async function redeemCoupon(opts: {
 }): Promise<void> {
   const code = normalizeCode(opts.code);
   if (!code) return;
-
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const { data } = await sb
       .from("coupons")
@@ -171,30 +151,6 @@ export async function redeemCoupon(opts: {
       p_max: coupon.max_redemptions,
     });
     return;
-  }
-
-  await connectDB();
-  const coupon = await Coupon.findOne({ code }).select("_id maxRedemptions").lean<CouponDoc & { _id: Types.ObjectId }>();
-  if (!coupon) return;
-
-  try {
-    await CouponRedemption.create({
-      coupon: coupon._id,
-      code,
-      user: new Types.ObjectId(opts.userId),
-      discount: opts.discount,
-    });
-  } catch {
-    // Duplicate (coupon,user) — already redeemed, don't double-count.
-    return;
-  }
-
-  await Coupon.updateOne(
-    coupon.maxRedemptions >= 0
-      ? { _id: coupon._id, usedCount: { $lt: coupon.maxRedemptions } }
-      : { _id: coupon._id },
-    { $inc: { usedCount: 1 } },
-  );
 }
 
 // ── Admin ────────────────────────────────────────────────────────────────
@@ -217,7 +173,6 @@ export interface AdminCoupon {
 
 /** Admin: list all coupons. */
 export async function adminListCoupons(): Promise<AdminCoupon[]> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("coupons")
       .select("*")
@@ -231,15 +186,6 @@ export async function adminListCoupons(): Promise<AdminCoupon[]> {
       expiresAt: c.expires_at ? new Date(c.expires_at as string) : null,
       active: Boolean(c.active), createdAt: new Date(c.created_at as string),
     }));
-  }
-  await connectDB();
-  const coupons = await Coupon.find().sort({ createdAt: -1 }).limit(500).lean();
-  return coupons.map((c) => ({
-    id: c._id.toString(), code: c.code, description: c.description ?? "", type: c.type, value: c.value,
-    minAmount: c.minAmount, maxRedemptions: c.maxRedemptions, usedCount: c.usedCount,
-    oncePerUser: c.oncePerUser, plans: c.plans ?? [], expiresAt: c.expiresAt ?? null,
-    active: c.active, createdAt: c.createdAt,
-  }));
 }
 
 export interface CreateCoupon {
@@ -257,7 +203,6 @@ export interface CreateCoupon {
 
 /** Admin: create a coupon. Returns its id, or null if the code exists. */
 export async function createCoupon(input: CreateCoupon): Promise<string | null> {
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const { data: exists } = await sb.from("coupons").select("id").eq("code", input.code).maybeSingle();
     if (exists) return null;
@@ -268,17 +213,6 @@ export async function createCoupon(input: CreateCoupon): Promise<string | null> 
     }).select("id").single();
     if (error) throw new Error(error.message);
     return (data as { id: string }).id;
-  }
-  await connectDB();
-  const exists = await Coupon.findOne({ code: input.code }).lean();
-  if (exists) return null;
-  const coupon = new Coupon({
-    code: input.code, description: input.description, type: input.type, value: input.value,
-    minAmount: input.minAmount, maxRedemptions: input.maxRedemptions, oncePerUser: input.oncePerUser,
-    plans: input.plans, expiresAt: input.expiresAt, active: input.active,
-  });
-  await coupon.save();
-  return coupon._id.toString();
 }
 
 export interface CouponPatch {
@@ -301,7 +235,6 @@ const COUPON_FIELD_MAP: Record<keyof CouponPatch, string> = {
 
 /** Admin: update a coupon (never its code or usedCount). */
 export async function updateCoupon(id: string, patch: CouponPatch): Promise<void> {
-  if (be() === "supabase") {
     const row: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(patch)) {
       if (v === undefined) continue;
@@ -309,17 +242,10 @@ export async function updateCoupon(id: string, patch: CouponPatch): Promise<void
     }
     if (Object.keys(row).length) await supabaseAdmin().from("coupons").update(row).eq("id", id);
     return;
-  }
-  await connectDB();
-  if (Types.ObjectId.isValid(id)) await Coupon.updateOne({ _id: id }, { $set: patch });
 }
 
 /** Admin: delete a coupon. */
 export async function deleteCoupon(id: string): Promise<void> {
-  if (be() === "supabase") {
     await supabaseAdmin().from("coupons").delete().eq("id", id);
     return;
-  }
-  await connectDB();
-  if (Types.ObjectId.isValid(id)) await Coupon.deleteOne({ _id: id });
 }

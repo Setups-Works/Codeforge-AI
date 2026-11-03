@@ -1,4 +1,4 @@
-import type { SiteConfigDoc } from "@/models/SiteConfig";
+import type { SiteConfigDoc } from "@/types/db";
 
 /**
  * Pure, dependency-free site-config helpers and constants — no `next/cache` or

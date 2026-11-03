@@ -1,12 +1,7 @@
-import { Types } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
-import { mapToObject } from "@/lib/utils";
-import { Progress, Question, Roadmap, type RoadmapDoc } from "@/models";
+import { type RoadmapDoc } from "@/types/db";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 import type { RoadmapTrack } from "@/lib/constants";
 
-const be = () => backendFor("roadmaps");
 
 interface RoadmapSection {
   key: string;
@@ -113,7 +108,6 @@ let roadmapsEnsured = false;
 
 export async function ensureRoadmaps(): Promise<void> {
   if (roadmapsEnsured) return;
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const { data: existing } = await sb.from("roadmaps").select("track");
     const have = new Set((existing ?? []).map((r) => r.track));
@@ -124,16 +118,6 @@ export async function ensureRoadmaps(): Promise<void> {
     }
     roadmapsEnsured = true;
     return;
-  }
-  await connectDB();
-  for (const definition of DEFAULT_ROADMAPS) {
-    await Roadmap.updateOne(
-      { track: definition.track },
-      { $setOnInsert: definition },
-      { upsert: true },
-    );
-  }
-  roadmapsEnsured = true;
 }
 
 export interface RoadmapTopicView {
@@ -177,8 +161,7 @@ export async function getRoadmapView(
   let percent: number;
   const questionCounts = new Map<string, number>();
 
-  if (be() === "supabase") {
-    const sb = supabaseAdmin();
+  {    const sb = supabaseAdmin();
     const { data: roadmap } = await sb
       .from("roadmaps")
       .select("title,description,sections")
@@ -209,34 +192,7 @@ export async function getRoadmapView(
       for (const row of (data ?? []) as { category: string }[]) {
         questionCounts.set(row.category, (questionCounts.get(row.category) ?? 0) + 1);
       }
-    }
-  } else {
-    const roadmap = await Roadmap.findOne({ track }).lean();
-    if (!roadmap) return null;
-    roadmapMeta = roadmap as unknown as {
-      title: string;
-      description: string;
-      sections: RoadmapSection[];
-    };
-
-    const progress = userId
-      ? await Progress.findOne({
-          user: new Types.ObjectId(userId),
-          track,
-        }).lean()
-      : null;
-    topicSolves = mapToObject(progress?.topicSolves);
-    completedTopics = new Set(progress?.completedTopics ?? []);
-    percent = progress?.percent ?? 0;
-
-    if (track === "dsa") {
-      const counts = await Question.aggregate<{ _id: string; count: number }>([
-        { $match: { isPublished: true } },
-        { $group: { _id: "$category", count: { $sum: 1 } } },
-      ]);
-      for (const row of counts) questionCounts.set(row._id, row.count);
-    }
-  }
+    }}
 
   const roadmap = roadmapMeta;
 

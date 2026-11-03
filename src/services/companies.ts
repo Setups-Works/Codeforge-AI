@@ -1,12 +1,7 @@
-import { Types } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
 import { COMPANIES } from "@/lib/constants";
-import { Company, Question, Submission } from "@/models";
 import { slugify } from "@/lib/slug";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
-const be = () => backendFor("companies");
 
 const COMPANY_DESCRIPTIONS: Record<string, string> = {
   Google: "Algorithm-heavy interviews with emphasis on optimal solutions and system design.",
@@ -22,7 +17,6 @@ let companiesEnsured = false;
 
 export async function ensureDefaultCompanies(): Promise<void> {
   if (companiesEnsured) return;
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const rows = COMPANIES.map((name) => ({
       name,
@@ -40,23 +34,6 @@ export async function ensureDefaultCompanies(): Promise<void> {
     }
     companiesEnsured = true;
     return;
-  }
-  await connectDB();
-  for (const name of COMPANIES) {
-    await Company.updateOne(
-      { name },
-      {
-        $setOnInsert: {
-          name,
-          slug: slugify(name),
-          description: COMPANY_DESCRIPTIONS[name] ?? "",
-          logo: "building-2",
-        },
-      },
-      { upsert: true },
-    );
-  }
-  companiesEnsured = true;
 }
 
 export interface CompanyListItem {
@@ -77,8 +54,6 @@ export async function listCompaniesWithProgress(
   userId?: string,
 ): Promise<CompanyListItem[]> {
   await ensureDefaultCompanies();
-
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const [companiesRes, questionsRes] = await Promise.all([
       sb.from("companies").select("slug,name,description").order("name"),
@@ -122,55 +97,10 @@ export async function listCompaniesWithProgress(
         solvedCount: ids.filter((id) => solvedIds.has(id)).length,
       };
     });
-  }
-
-  const [companies, questionCounts] = await Promise.all([
-    Company.find().sort({ name: 1 }).lean(),
-    Question.aggregate<{ _id: string; count: number; ids: Types.ObjectId[] }>([
-      { $match: { isPublished: true } },
-      { $unwind: "$companies" },
-      {
-        $group: {
-          _id: "$companies",
-          count: { $sum: 1 },
-          ids: { $push: "$_id" },
-        },
-      },
-    ]),
-  ]);
-
-  const solvedIds = userId
-    ? new Set(
-        (
-          await Submission.distinct("question", {
-            user: new Types.ObjectId(userId),
-            kind: "dsa",
-            status: "Accepted",
-          })
-        ).map(String),
-      )
-    : new Set<string>();
-
-  const countMap = new Map(questionCounts.map((row) => [row._id, row]));
-
-  return companies.map((company) => {
-    const row = countMap.get(company.name);
-    const solvedCount = row
-      ? row.ids.filter((id) => solvedIds.has(id.toString())).length
-      : 0;
-    return {
-      slug: company.slug,
-      name: company.name,
-      description: company.description,
-      questionCount: row?.count ?? 0,
-      solvedCount,
-    };
-  });
 }
 
 export async function getCompanyBySlug(slug: string) {
   await ensureDefaultCompanies();
-  if (be() === "supabase") {
     const { data, error } = await supabaseAdmin()
       .from("companies")
       .select("slug,name,description,logo")
@@ -183,6 +113,4 @@ export async function getCompanyBySlug(slug: string) {
       description: string | null;
       logo: string | null;
     } | null;
-  }
-  return Company.findOne({ slug }).lean();
 }

@@ -1,9 +1,8 @@
 import { QUESTION_CATEGORIES } from "@/lib/constants";
-import { Question } from "@/models";
-import { questionInputSchema, type QuestionInput } from "@/schemas/question";
+import { questionInputSchema,type QuestionInput } from "@/schemas/question";
 import { uniqueSlug } from "@/lib/slug";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor, toUuidOrNull } from "@/lib/data-backend";
+import { toUuidOrNull } from "@/lib/data-backend";
 import { traceable } from "langsmith/traceable";
 import { complete } from "./groq";
 import { getPrompt } from "./prompts";
@@ -108,7 +107,6 @@ export async function saveQuestionDraft(
   creatorId: string,
   source: "manual" | "json-import" | "ai-generated",
 ): Promise<{ slug: string; title: string; category: string; difficulty: string }> {
-  if (backendFor("questions") === "supabase") {
     const sb = supabaseAdmin();
     const slug = await uniqueSlug(input.title, async (candidate) => {
       const { data } = await sb
@@ -144,21 +142,4 @@ export async function saveQuestionDraft(
       category: input.category,
       difficulty: input.difficulty,
     };
-  }
-
-  const slug = await uniqueSlug(input.title, async (candidate) =>
-    Boolean(await Question.exists({ slug: candidate })),
-  );
-  const question = await Question.create({
-    ...input,
-    slug,
-    source,
-    createdBy: creatorId,
-  });
-  return {
-    slug: question.slug,
-    title: question.title,
-    category: question.category,
-    difficulty: question.difficulty,
-  };
 }

@@ -1,12 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
+import { NextRequest,NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-auth";
 import { requireFeature } from "@/services/feature-access";
-import { SpacedRepetition } from "@/models";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
-const be = () => backendFor("revision");
 
 interface SbCardRow {
   id: string;
@@ -74,8 +70,6 @@ export async function GET() {
   if (gate) return gate;
 
   const now = new Date();
-
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const nowIso = now.toISOString();
     const [dueRes, upRes] = await Promise.all([
@@ -87,29 +81,6 @@ export async function GET() {
     const due = await attachCardQuestions((dueRes.data ?? []) as SbCardRow[]);
     const upcoming = await attachCardQuestions((upRes.data ?? []) as SbCardRow[]);
     return NextResponse.json({ due, upcoming, dueCount: due.length });
-  }
-
-  await connectDB();
-
-  const dueCards = await SpacedRepetition.find({
-    user: session.user.id,
-    nextReview: { $lte: now },
-  })
-    .populate("question", "slug title difficulty category")
-    .sort({ nextReview: 1 })
-    .limit(20)
-    .lean();
-
-  const upcoming = await SpacedRepetition.find({
-    user: session.user.id,
-    nextReview: { $gt: now },
-  })
-    .sort({ nextReview: 1 })
-    .limit(10)
-    .populate("question", "slug title difficulty")
-    .lean();
-
-  return NextResponse.json({ due: dueCards, upcoming, dueCount: dueCards.length });
 }
 
 export async function POST(req: NextRequest) {
@@ -122,8 +93,6 @@ export async function POST(req: NextRequest) {
   if (!questionId || quality === undefined) {
     return NextResponse.json({ error: "questionId and quality required" }, { status: 400 });
   }
-
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const { data: existing } = await sb
       .from("spaced_repetition")
@@ -155,34 +124,6 @@ export async function POST(req: NextRequest) {
     if (saved.error) return NextResponse.json({ error: saved.error.message }, { status: 500 });
     const [card] = await attachCardQuestions([saved.data as SbCardRow]);
     return NextResponse.json({ card });
-  }
-
-  await connectDB();
-
-  let card = await SpacedRepetition.findOne({ user: session.user.id, question: questionId });
-
-  if (!card) {
-    card = await SpacedRepetition.create({
-      user: session.user.id,
-      question: questionId,
-    });
-  }
-
-  const { interval, repetitions, easeFactor, nextReview } = sm2(
-    quality,
-    card.repetitions,
-    card.easeFactor,
-    card.interval,
-  );
-
-  card.interval = interval;
-  card.repetitions = repetitions;
-  card.easeFactor = easeFactor;
-  card.nextReview = nextReview;
-  card.lastReview = new Date();
-  await card.save();
-
-  return NextResponse.json({ card });
 }
 
 export async function PUT(req: NextRequest) {
@@ -193,8 +134,6 @@ export async function PUT(req: NextRequest) {
 
   const { questionId } = await req.json();
   if (!questionId) return NextResponse.json({ error: "questionId required" }, { status: 400 });
-
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const { data: existing } = await sb
       .from("spaced_repetition")
@@ -208,14 +147,4 @@ export async function PUT(req: NextRequest) {
         .insert({ user_id: session.user.id, question_id: questionId });
     }
     return NextResponse.json({ ok: true });
-  }
-
-  await connectDB();
-  await SpacedRepetition.findOneAndUpdate(
-    { user: session.user.id, question: questionId },
-    { $setOnInsert: { user: session.user.id, question: questionId } },
-    { upsert: true, returnDocument: 'after' },
-  );
-
-  return NextResponse.json({ ok: true });
 }

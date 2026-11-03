@@ -1,21 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
+import { NextRequest,NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-auth";
-import { Discussion } from "@/models";
-import { escapeRegex, sanitizeUserContent, cap } from "@/lib/sanitize";
+import { sanitizeUserContent,cap } from "@/lib/sanitize";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 import { pingIndexNow } from "@/lib/indexnow";
 import {
-  DISCUSSION_LIST_COLS,
-  DISCUSSION_FULL_COLS,
-  fetchAuthors,
-  listShape,
-  detailShape,
-  type SbDiscussionRow,
+DISCUSSION_LIST_COLS,
+DISCUSSION_FULL_COLS,
+fetchAuthors,
+listShape,
+detailShape,
+type SbDiscussionRow,
 } from "@/services/discussions-store";
 
-const be = () => backendFor("discussions");
 
 export async function GET(req: NextRequest) {
   const questionId = req.nextUrl.searchParams.get("question") ?? undefined;
@@ -23,8 +19,6 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, Number(req.nextUrl.searchParams.get("page") ?? 1));
   const limit = 20;
   const q = req.nextUrl.searchParams.get("q") ?? undefined;
-
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     let query = sb
       .from("discussions")
@@ -42,26 +36,6 @@ export async function GET(req: NextRequest) {
     const discussions = rows.map((r) => listShape(r, authors));
     const total = count ?? 0;
     return NextResponse.json({ discussions, total, page, pages: Math.ceil(total / limit) });
-  }
-
-  await connectDB();
-  const filter: Record<string, unknown> = {};
-  if (questionId) filter.question = questionId;
-  if (kind) filter.kind = kind;
-  if (q) filter.title = { $regex: escapeRegex(q), $options: "i" };
-
-  const [discussions, total] = await Promise.all([
-    Discussion.find(filter)
-      .sort({ isPinned: -1, createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .populate("author", "username name image")
-      .select("-replies")
-      .lean(),
-    Discussion.countDocuments(filter),
-  ]);
-
-  return NextResponse.json({ discussions, total, page, pages: Math.ceil(total / limit) });
 }
 
 export async function POST(req: NextRequest) {
@@ -88,8 +62,6 @@ export async function POST(req: NextRequest) {
   const cleanTitle = sanitizeUserContent(title);
   const cleanContent = sanitizeUserContent(content);
   const cleanTags = tags.map(sanitizeUserContent);
-
-  if (be() === "supabase") {
     const { data, error: insErr } = await supabaseAdmin()
       .from("discussions")
       .insert({
@@ -111,20 +83,4 @@ export async function POST(req: NextRequest) {
     const authors = await fetchAuthors([row.author_id ?? ""].filter(Boolean));
     await pingIndexNow(`/forum/${row.id}`);
     return NextResponse.json({ discussion: detailShape(row, authors) }, { status: 201 });
-  }
-
-  await connectDB();
-  const discussion = await Discussion.create({
-    question: questionId,
-    author: session.user.id,
-    title: cleanTitle,
-    content: cleanContent,
-    kind,
-    tags: cleanTags,
-    language,
-  });
-
-  await discussion.populate("author", "username name image");
-  await pingIndexNow(`/forum/${discussion._id}`);
-  return NextResponse.json({ discussion }, { status: 201 });
 }

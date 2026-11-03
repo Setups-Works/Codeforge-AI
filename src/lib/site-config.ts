@@ -1,10 +1,8 @@
 import { unstable_cache } from "next/cache";
-import { connectDB } from "@/lib/mongodb";
-import { SiteConfig, type SiteConfigDoc } from "@/models/SiteConfig";
-import { APP_NAME, APP_DESCRIPTION } from "@/lib/constants";
-import { SITE_CONFIG_TAG, resolve } from "@/lib/site-config-shared";
+import { type SiteConfigDoc } from "@/types/db";
+import { APP_NAME,APP_DESCRIPTION } from "@/lib/constants";
+import { SITE_CONFIG_TAG,resolve } from "@/lib/site-config-shared";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
 // Pure helpers/constants moved to the dependency-free `@/lib/site-config-shared`
 // (unit-testable without pulling in `next/cache`); re-exported here so existing
@@ -15,17 +13,12 @@ export { SITE_CONFIG_TAG, MASKED, SENSITIVE_FIELDS, resolve, maskConfig } from "
 export const getSiteConfig = unstable_cache(
   async (): Promise<SiteConfigDoc> => {
     try {
-      if (backendFor("site_config") === "supabase") {
         const { data } = await supabaseAdmin()
           .from("site_config")
           .select("config")
           .eq("id", "global")
           .maybeSingle();
         return ((data as { config?: SiteConfigDoc } | null)?.config ?? {}) as SiteConfigDoc;
-      }
-      await connectDB();
-      const cfg = await SiteConfig.findById("global").lean<SiteConfigDoc>();
-      return cfg ?? ({} as SiteConfigDoc);
     } catch (err) {
       // The DB may be unreachable during build/prerender (e.g. robots.txt,
       // sitemap.xml). Fall back to env-based config instead of crashing.

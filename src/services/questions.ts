@@ -1,12 +1,6 @@
-import { Types } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
-import { mapToObject } from "@/lib/utils";
-import { Question, Submission } from "@/models";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 import type { QuestionFilter } from "@/schemas/question";
 
-const be = () => backendFor("questions");
 
 /** Shape of the `stats` jsonb / Mongo subdoc used for acceptance rate. */
 interface QStats {
@@ -39,7 +33,6 @@ export interface QuestionListResult {
 
 /** Published question slugs + last-modified (sitemap). */
 export async function listPublishedQuestionSlugs(): Promise<{ slug: string; updatedAt: Date }[]> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("questions")
       .select("slug,updated_at")
@@ -48,10 +41,6 @@ export async function listPublishedQuestionSlugs(): Promise<{ slug: string; upda
       slug: q.slug,
       updatedAt: new Date(q.updated_at),
     }));
-  }
-  await connectDB();
-  const rows = await Question.find({ isPublished: true }, "slug updatedAt").lean<{ slug: string; updatedAt: Date }[]>();
-  return rows.map((q) => ({ slug: q.slug, updatedAt: q.updatedAt }));
 }
 
 /** Distinct question ids the user solved / attempted, as string sets */
@@ -59,7 +48,6 @@ export async function getUserQuestionStatuses(userId: string): Promise<{
   solved: Set<string>;
   attempted: Set<string>;
 }> {
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const [acc, att] = await Promise.all([
       sb
@@ -82,100 +70,13 @@ export async function getUserQuestionStatuses(userId: string): Promise<{
       solved: new Set((acc.data ?? []).map((r) => String(r.question_id))),
       attempted: new Set((att.data ?? []).map((r) => String(r.question_id))),
     };
-  }
-  const [solvedIds, attemptedIds] = await Promise.all([
-    Submission.distinct("question", {
-      user: new Types.ObjectId(userId),
-      kind: "dsa",
-      status: "Accepted",
-    }),
-    Submission.distinct("question", {
-      user: new Types.ObjectId(userId),
-      kind: "dsa",
-    }),
-  ]);
-  return {
-    solved: new Set(solvedIds.map(String)),
-    attempted: new Set(attemptedIds.map(String)),
-  };
 }
 
 export async function listQuestions(
   filter: QuestionFilter,
   userId?: string,
 ): Promise<QuestionListResult> {
-  if (be() === "supabase") return listQuestionsSupabase(filter, userId);
-  await connectDB();
-
-  const query: Record<string, unknown> = { isPublished: true };
-  if (filter.difficulty) query.difficulty = filter.difficulty;
-  if (filter.category) query.category = filter.category;
-  if (filter.company) query.companies = filter.company;
-  if (filter.tag) query.tags = filter.tag;
-  if (filter.q) {
-    query.$or = [
-      { title: { $regex: filter.q, $options: "i" } },
-      { tags: { $regex: filter.q, $options: "i" } },
-    ];
-  }
-
-  const statuses = userId
-    ? await getUserQuestionStatuses(userId)
-    : { solved: new Set<string>(), attempted: new Set<string>() };
-
-  // Status filtering happens on ids so pagination stays correct
-  if (filter.status && userId) {
-    const solvedIds = [...statuses.solved].map((id) => new Types.ObjectId(id));
-    const attemptedIds = [...statuses.attempted].map(
-      (id) => new Types.ObjectId(id),
-    );
-    if (filter.status === "solved") query._id = { $in: solvedIds };
-    else if (filter.status === "attempted") {
-      query._id = {
-        $in: attemptedIds.filter((id) => !statuses.solved.has(id.toString())),
-      };
-    } else query._id = { $nin: attemptedIds };
-  }
-
-  const skip = (filter.page - 1) * filter.limit;
-  const [docs, total] = await Promise.all([
-    Question.find(query)
-      .sort({ createdAt: 1 })
-      .skip(skip)
-      .limit(filter.limit)
-      .select("slug title difficulty category tags companies stats")
-      .lean(),
-    Question.countDocuments(query),
-  ]);
-
-  const items: QuestionListItem[] = docs.map((doc) => {
-    const id = doc._id.toString();
-    return {
-      id,
-      slug: doc.slug,
-      title: doc.title,
-      difficulty: doc.difficulty,
-      category: doc.category,
-      tags: doc.tags,
-      companies: doc.companies,
-      acceptanceRate:
-        doc.stats.submissions > 0
-          ? Math.round((doc.stats.accepted / doc.stats.submissions) * 100)
-          : null,
-      status: statuses.solved.has(id)
-        ? "solved"
-        : statuses.attempted.has(id)
-          ? "attempted"
-          : "todo",
-    };
-  });
-
-  return {
-    items,
-    total,
-    page: filter.page,
-    hasMore: skip + docs.length < total,
-  };
+return listQuestionsSupabase(filter, userId);
 }
 
 interface SbQuestionRow {
@@ -258,39 +159,7 @@ async function listQuestionsSupabase(
 
 /** Public view of a question — hidden test cases and solution stripped */
 export async function getQuestionBySlug(slug: string) {
-  if (be() === "supabase") return getQuestionBySlugSupabase(slug);
-  await connectDB();
-  const doc = await Question.findOne({ slug, isPublished: true }).lean();
-  if (!doc) return null;
-
-  return {
-    id: doc._id.toString(),
-    slug: doc.slug,
-    title: doc.title,
-    difficulty: doc.difficulty,
-    category: doc.category,
-    tags: doc.tags,
-    companies: doc.companies,
-    description: doc.description,
-    // strip subdocument _id ObjectIds — they can't serialize to client components
-    examples: doc.examples.map((example) => ({
-      input: example.input,
-      output: example.output,
-      explanation: example.explanation ?? null,
-    })),
-    constraints: doc.constraints,
-    starterCode: mapToObject(doc.starterCode),
-    sampleTests: doc.testCases
-      .filter((tc) => !tc.hidden)
-      .map((tc) => ({ input: tc.input, expected: tc.expected })),
-    hiddenTestCount: doc.testCases.filter((tc) => tc.hidden).length,
-    hints: doc.hints,
-    editorial: doc.editorial ?? null,
-    acceptanceRate:
-      doc.stats.submissions > 0
-        ? Math.round((doc.stats.accepted / doc.stats.submissions) * 100)
-        : null,
-  };
+return getQuestionBySlugSupabase(slug);
 }
 
 interface SbExample {
@@ -382,7 +251,6 @@ export interface AdminQuestionListItem {
 
 /** Admin: list all questions (drafts included), optional title search. */
 export async function adminListQuestions(search?: string): Promise<AdminQuestionListItem[]> {
-  if (be() === "supabase") {
     let q = supabaseAdmin()
       .from("questions")
       .select("id,slug,title,difficulty,category,is_published,source,stats,created_at")
@@ -397,21 +265,10 @@ export async function adminListQuestions(search?: string): Promise<AdminQuestion
       id: x.id, slug: x.slug, title: x.title, difficulty: x.difficulty, category: x.category,
       isPublished: x.is_published, source: x.source, submissions: x.stats?.submissions ?? 0, createdAt: new Date(x.created_at),
     }));
-  }
-  await connectDB();
-  const query: Record<string, unknown> = {};
-  if (search) query.title = { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
-  const questions = await Question.find(query).sort({ createdAt: -1 }).limit(200)
-    .select("slug title difficulty category isPublished source stats createdAt").lean();
-  return questions.map((x) => ({
-    id: x._id.toString(), slug: x.slug, title: x.title, difficulty: x.difficulty, category: x.category,
-    isPublished: x.isPublished, source: x.source ?? null, submissions: x.stats.submissions, createdAt: x.createdAt,
-  }));
 }
 
 /** Admin: full question detail for the edit dialog. */
 export async function getAdminQuestion(id: string) {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("questions")
       .select("id,title,difficulty,category,tags,companies,description,examples,constraints,starter_code,test_cases,solution,editorial,hints,is_published")
@@ -427,19 +284,6 @@ export async function getAdminQuestion(id: string) {
       testCases: (d.test_cases ?? []).map((t) => ({ input: t.input, expected: t.expected, hidden: t.hidden })),
       solution: (d as { solution: string | null }).solution, editorial: d.editorial, hints: d.hints ?? [], isPublished: d.is_published,
     };
-  }
-  if (!Types.ObjectId.isValid(id)) return null;
-  await connectDB();
-  const q = await Question.findById(id).lean();
-  if (!q) return null;
-  return {
-    id: q._id.toString(), title: q.title, difficulty: q.difficulty, category: q.category, tags: q.tags,
-    companies: q.companies, description: q.description,
-    examples: q.examples.map((e) => ({ input: e.input, output: e.output, explanation: e.explanation ?? null })),
-    constraints: q.constraints, starterCode: mapToObject(q.starterCode),
-    testCases: q.testCases.map((t) => ({ input: t.input, expected: t.expected, hidden: t.hidden })),
-    solution: q.solution, editorial: q.editorial, hints: q.hints, isPublished: q.isPublished,
-  };
 }
 
 const Q_FIELD_MAP: Record<string, string> = {
@@ -450,7 +294,6 @@ const Q_FIELD_MAP: Record<string, string> = {
 
 /** Admin: update selected fields of a question. Returns the slug, or null. */
 export async function updateQuestion(id: string, patch: Record<string, unknown>): Promise<string | null> {
-  if (be() === "supabase") {
     const row: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(patch)) if (Q_FIELD_MAP[k]) row[Q_FIELD_MAP[k]] = v;
     if (!Object.keys(row).length) {
@@ -460,33 +303,19 @@ export async function updateQuestion(id: string, patch: Record<string, unknown>)
     const { data, error } = await supabaseAdmin().from("questions").update(row).eq("id", id).select("slug").maybeSingle();
     if (error) throw new Error(error.message);
     return (data as { slug: string } | null)?.slug ?? null;
-  }
-  if (!Types.ObjectId.isValid(id)) return null;
-  await connectDB();
-  const updated = await Question.findByIdAndUpdate(id, { $set: patch }, { returnDocument: "after" });
-  return updated?.slug ?? null;
 }
 
 /** Admin: delete a question and its submissions. Returns false if not found. */
 export async function deleteQuestionCascade(id: string): Promise<boolean> {
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const { data } = await sb.from("questions").delete().eq("id", id).select("id").maybeSingle();
     if (!data) return false;
     await sb.from("submissions").delete().eq("question_id", id);
     return true;
-  }
-  if (!Types.ObjectId.isValid(id)) return false;
-  await connectDB();
-  const deleted = await Question.findByIdAndDelete(id);
-  if (!deleted) return false;
-  await Submission.deleteMany({ question: deleted._id });
-  return true;
 }
 
 /** Admin: bulk publish/unpublish/delete. Returns the affected count. */
 export async function bulkQuestions(ids: string[], action: "publish" | "unpublish" | "delete"): Promise<number> {
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     if (action === "delete") {
       const { data } = await sb.from("questions").delete().in("id", ids).select("id");
@@ -495,16 +324,6 @@ export async function bulkQuestions(ids: string[], action: "publish" | "unpublis
     }
     const { data } = await sb.from("questions").update({ is_published: action === "publish" }).in("id", ids).select("id");
     return (data ?? []).length;
-  }
-  await connectDB();
-  const objIds = ids.filter((i) => Types.ObjectId.isValid(i)).map((i) => new Types.ObjectId(i));
-  if (action === "delete") {
-    const result = await Question.deleteMany({ _id: { $in: objIds } });
-    await Submission.deleteMany({ question: { $in: objIds } });
-    return result.deletedCount ?? 0;
-  }
-  const result = await Question.updateMany({ _id: { $in: objIds } }, { $set: { isPublished: action === "publish" } });
-  return result.modifiedCount ?? 0;
 }
 
 /** Admin: every question in import-file shape (backup export). */
@@ -524,7 +343,6 @@ export async function exportQuestions(): Promise<Record<string, unknown>[]> {
     ...(q.solution ? { solution: q.solution } : {}), ...(q.editorial ? { editorial: q.editorial } : {}),
     hints: q.hints, isPublished: q.isPublished,
   });
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("questions")
       .select("title,difficulty,category,tags,companies,description,examples,constraints,starter_code,test_cases,solution,editorial,hints,is_published")
@@ -538,12 +356,4 @@ export async function exportQuestions(): Promise<Record<string, unknown>[]> {
       solution: q.solution as string | null, editorial: q.editorial as string | null,
       hints: (q.hints as string[]) ?? [], isPublished: q.is_published as boolean,
     }));
-  }
-  await connectDB();
-  const questions = await Question.find().sort({ createdAt: 1 }).lean();
-  return questions.map((q) => shape({
-    title: q.title, difficulty: q.difficulty, category: q.category, tags: q.tags, companies: q.companies,
-    description: q.description, examples: q.examples, constraints: q.constraints, starterCode: mapToObject(q.starterCode),
-    testCases: q.testCases, solution: q.solution, editorial: q.editorial, hints: q.hints, isPublished: q.isPublished,
-  }));
 }

@@ -1946,7 +1946,7 @@ export const openApiSpec: Record<string, any> = {
     "/admin/settings/test": {
       post: {
         tags: ["Admin"],
-        summary: "Test a service connection — SMTP, Groq, MongoDB, Redis, Judge0, Piston, Paiza, Razorpay (admin)",
+        summary: "Test a service connection — SMTP, Groq, Supabase, Redis, Judge0, Piston, Paiza, Razorpay (admin)",
         requestBody: {
           required: true,
           content: { "application/json": { schema: { type: "object", required: ["service"], properties: { service: { type: "string", example: "smtp" } } } } },

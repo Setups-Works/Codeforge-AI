@@ -14,7 +14,7 @@ import { SITE_URL, faqLd, graph, howToLd, pageNodes } from "@/lib/seo";
 export const revalidate = 300;
 
 /** The landing's "popular problems" preview changes rarely — cache it so the
- *  home page doesn't query Mongo on every visit (the page stays dynamic only to
+ *  home page doesn't query the database on every visit (the page stays dynamic only to
  *  reflect the signed-in header state). */
 const getLandingProblems = unstable_cache(
   async (): Promise<{ problems: LandingProblem[]; total: number }> => {

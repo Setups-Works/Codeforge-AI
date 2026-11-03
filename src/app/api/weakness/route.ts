@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
 import { requireUser } from "@/lib/api-auth";
 import { requireFeature } from "@/services/feature-access";
-import { Submission } from "@/models";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
 const CATEGORIES = [
   "Array", "String", "Hash Table", "Linked List", "Stack", "Queue",
@@ -21,8 +18,7 @@ export async function GET() {
 
   const categoryStats: Record<string, { attempted: number; accepted: number }> = {};
 
-  if (backendFor("submissions") === "supabase") {
-    const sb = supabaseAdmin();
+  {    const sb = supabaseAdmin();
     const { data: subs } = await sb
       .from("submissions")
       .select("question_id,status")
@@ -42,25 +38,7 @@ export async function GET() {
       if (!categoryStats[cat]) categoryStats[cat] = { attempted: 0, accepted: 0 };
       categoryStats[cat].attempted++;
       if (sub.status === "Accepted") categoryStats[cat].accepted++;
-    }
-  } else {
-    await connectDB();
-    const submissions = await Submission.find({
-      user: session.user.id,
-      kind: "dsa",
-      question: { $ne: null },
-    })
-      .populate("question", "category difficulty")
-      .lean();
-    for (const sub of submissions) {
-      const q = sub.question as { category?: string } | null;
-      if (!q?.category) continue;
-      const cat = q.category;
-      if (!categoryStats[cat]) categoryStats[cat] = { attempted: 0, accepted: 0 };
-      categoryStats[cat].attempted++;
-      if (sub.status === "Accepted") categoryStats[cat].accepted++;
-    }
-  }
+    }}
 
   const analysis = Object.entries(categoryStats).map(([category, stats]) => ({
     category,

@@ -1,22 +1,12 @@
-import { Types } from "mongoose";
 import {
-  levelForXp,
-  XP_REWARDS,
-  XP_FRONTEND_CHALLENGE,
-  type Difficulty,
+levelForXp,
+XP_REWARDS,
+XP_FRONTEND_CHALLENGE,
+type Difficulty,
 } from "@/lib/constants";
-import {
-  DailyActivity,
-  Progress,
-  Roadmap,
-  User,
-  type RoadmapDoc,
-} from "@/models";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
-import { checkAndAwardBadges, type EarnedBadge, type BadgeStats } from "./badges";
+import { checkAndAwardBadges,type EarnedBadge,type BadgeStats } from "./badges";
 
-const be = () => backendFor("gamification");
 
 /** Full mutable stats used during an accepted solve. */
 interface SolveStats extends BadgeStats {
@@ -60,7 +50,6 @@ export async function recordDailyActivity(
   accepted: boolean,
   xpEarned = 0,
 ): Promise<void> {
-  if (be() === "supabase") {
     const { error } = await supabaseAdmin().rpc("increment_daily_activity", {
       p_user: userId,
       p_date: todayUTC(),
@@ -70,18 +59,6 @@ export async function recordDailyActivity(
     });
     if (error) throw new Error(error.message);
     return;
-  }
-  await DailyActivity.updateOne(
-    { user: new Types.ObjectId(userId), date: todayUTC() },
-    {
-      $inc: {
-        submissions: 1,
-        accepted: accepted ? 1 : 0,
-        xpEarned,
-      },
-    },
-    { upsert: true },
-  );
 }
 
 /**
@@ -164,7 +141,6 @@ export async function recordAcceptedSolve(
 
 /** Load the mutable stats block for a user from the active backend. */
 async function loadSolveStats(userId: string): Promise<SolveStats | null> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("users")
       .select("stats")
@@ -188,51 +164,16 @@ async function loadSolveStats(userId: string): Promise<SolveStats | null> {
         lastActiveDate: s.streak?.lastActiveDate ?? null,
       },
     };
-  }
-  const user = await User.findById(userId).select("stats").lean();
-  if (!user) return null;
-  return {
-    xp: user.stats.xp,
-    level: user.stats.level,
-    frontendCompleted: user.stats.frontendCompleted,
-    solved: { ...user.stats.solved },
-    streak: {
-      current: user.stats.streak.current,
-      longest: user.stats.streak.longest,
-      lastActiveDate: user.stats.streak.lastActiveDate ?? null,
-    },
-  };
 }
 
 /** Persist the mutated stats block back to the active backend. */
 async function saveSolveStats(userId: string, stats: SolveStats): Promise<void> {
-  if (be() === "supabase") {
     const { error } = await supabaseAdmin()
       .from("users")
       .update({ stats })
       .eq("id", userId);
     if (error) throw new Error(error.message);
     return;
-  }
-  await User.updateOne(
-    { _id: new Types.ObjectId(userId) },
-    {
-      $set: {
-        "stats.xp": stats.xp,
-        "stats.level": stats.level,
-        "stats.frontendCompleted": stats.frontendCompleted,
-        "stats.solved": stats.solved,
-        "stats.streak": stats.streak,
-      },
-    },
-  );
-}
-
-function countTopics(roadmap: RoadmapDoc): number {
-  return roadmap.sections.reduce(
-    (sum, section) => sum + section.topics.length,
-    0,
-  );
 }
 
 /** Increment topic solve counters for every topic matching the solve's tags */
@@ -242,8 +183,6 @@ export async function advanceRoadmapProgress(
   tags: string[],
 ): Promise<void> {
   const lowerTags = new Set(tags.map((t) => t.toLowerCase()));
-
-  if (be() === "supabase") {
     const sb = supabaseAdmin();
     const { data: roadmap } = await sb
       .from("roadmaps")
@@ -302,41 +241,6 @@ export async function advanceRoadmapProgress(
       await sb.from("progress").insert(row);
     }
     return;
-  }
-
-  const roadmap = await Roadmap.findOne({ track }).lean();
-  if (!roadmap) return;
-
-  const matchedTopics = roadmap.sections.flatMap((section) =>
-    section.topics.filter((topic) =>
-      topic.matchTags.some((tag) => lowerTags.has(tag.toLowerCase())),
-    ),
-  );
-  if (matchedTopics.length === 0) return;
-
-  const progress = await Progress.findOneAndUpdate(
-    { user: new Types.ObjectId(userId), track },
-    { $setOnInsert: { completedTopics: [], percent: 0 } },
-    { upsert: true, returnDocument: 'after' },
-  );
-
-  for (const topic of matchedTopics) {
-    const current = progress.topicSolves.get(topic.key) ?? 0;
-    progress.topicSolves.set(topic.key, current + 1);
-    if (
-      current + 1 >= topic.requiredSolves &&
-      !progress.completedTopics.includes(topic.key)
-    ) {
-      progress.completedTopics.push(topic.key);
-    }
-  }
-
-  const total = countTopics(roadmap);
-  progress.percent =
-    total > 0
-      ? Math.round((progress.completedTopics.length / total) * 100)
-      : 0;
-  await progress.save();
 }
 
 /** Roadmap section/topic shape as stored in the `sections` jsonb column. */

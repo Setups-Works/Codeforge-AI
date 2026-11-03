@@ -1,16 +1,10 @@
 import { NextResponse } from "next/server";
-import { Types } from "mongoose";
-import { connectDB } from "@/lib/mongodb";
-import { AiUsage } from "@/models";
-import { PLANS, type PlanId } from "@/lib/plans";
+import { PLANS,type PlanId } from "@/lib/plans";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
-const be = () => backendFor("ai");
 
 /** Read the current period's used count from the active backend. */
 async function readAiUsed(userId: string, period: string): Promise<number> {
-  if (be() === "supabase") {
     const { data } = await supabaseAdmin()
       .from("ai_usage")
       .select("used")
@@ -18,12 +12,6 @@ async function readAiUsed(userId: string, period: string): Promise<number> {
       .eq("period", period)
       .maybeSingle();
     return (data as { used: number } | null)?.used ?? 0;
-  }
-  await connectDB();
-  const doc = await AiUsage.findOne({ user: new Types.ObjectId(userId), period })
-    .select("used")
-    .lean();
-  return doc?.used ?? 0;
 }
 
 /** Current billing period, "YYYY-MM" (UTC). */
@@ -62,20 +50,12 @@ export async function getAiUsage(userId: string, plan: string): Promise<AiUsageS
 
 /** Increment usage by one for the current period. */
 export async function consumeAiCredit(userId: string): Promise<void> {
-  if (be() === "supabase") {
     const { error } = await supabaseAdmin().rpc("increment_ai_usage", {
       p_user: userId,
       p_period: currentPeriod(),
     });
     if (error) throw new Error(error.message);
     return;
-  }
-  await connectDB();
-  await AiUsage.updateOne(
-    { user: new Types.ObjectId(userId), period: currentPeriod() },
-    { $inc: { used: 1 } },
-    { upsert: true },
-  );
 }
 
 /**

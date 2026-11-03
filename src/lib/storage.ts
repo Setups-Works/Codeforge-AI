@@ -1,23 +1,16 @@
-import { put } from "@vercel/blob";
 import { randomUUID } from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
 /**
- * File storage abstraction — Vercel Blob (default) or Supabase Storage, chosen
- * by `backendFor("storage")` (i.e. flips with `DATA_BACKEND=supabase`, or on
- * its own via `DATA_BACKEND_STORAGE=supabase`). Both return a public URL, so
- * downstream code (and the résumé-serve route, which just fetches the URL) is
- * backend-agnostic.
+ * File storage on Supabase Storage. Uploads return a public URL, so downstream
+ * code (and the résumé-serve route, which just fetches the URL) only deals in URLs.
  */
 
 export type StorageBucket = "resumes" | "newsletter" | "avatars" | "covers";
 
-/** True when the active storage backend is configured/usable. */
+/** True when Supabase Storage is configured/usable. */
 export function storageEnabled(): boolean {
-  return backendFor("storage") === "supabase"
-    ? Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)
-    : Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
 /** Filesystem-safe object key with a random prefix to avoid collisions. */
@@ -37,7 +30,6 @@ export async function uploadPublicFile(
   file: File,
   contentType: string,
 ): Promise<string> {
-  if (backendFor("storage") === "supabase") {
     const key = safeKey(file.name);
     const bytes = new Uint8Array(await file.arrayBuffer());
     const sb = supabaseAdmin();
@@ -47,12 +39,4 @@ export async function uploadPublicFile(
     });
     if (error) throw new Error(error.message);
     return sb.storage.from(bucket).getPublicUrl(key).data.publicUrl;
-  }
-
-  const blob = await put(`${bucket}/${file.name}`, file, {
-    access: "public",
-    addRandomSuffix: true,
-    contentType,
-  });
-  return blob.url;
 }

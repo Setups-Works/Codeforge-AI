@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-// Kept local (not imported from @/models) so this client bundle never pulls in mongoose.
+// Kept local so this client bundle stays free of server-only code.
 const FOCUS_AREAS = [
   "Problems / Editor", "Compiler", "AI Tools", "Contests",
   "Auth / Account", "Billing", "Mobile / Responsive", "Performance",

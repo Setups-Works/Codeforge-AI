@@ -1,9 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
-import { Question, FrontendChallenge, Company } from "@/models";
+import { NextRequest,NextResponse } from "next/server";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 
 export async function GET(req: NextRequest) {
   const limited = await enforceRateLimit("api", req);
@@ -13,8 +10,6 @@ export async function GET(req: NextRequest) {
   if (q.length < 2) {
     return NextResponse.json({ questions: [], challenges: [], companies: [] });
   }
-
-  if (backendFor("questions") === "supabase") {
     const sb = supabaseAdmin();
     const like = `%${q}%`;
     const [qRes, cRes, coRes] = await Promise.all([
@@ -33,41 +28,4 @@ export async function GET(req: NextRequest) {
       })),
       companies: ((coRes.data ?? []) as { slug: string; name: string }[]).map((d) => ({ slug: d.slug, name: d.name })),
     });
-  }
-
-  await connectDB();
-  const regex = { $regex: q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
-
-  const [questions, challenges, companies] = await Promise.all([
-    Question.find({
-      isPublished: true,
-      $or: [{ title: regex }, { tags: regex }, { category: regex }],
-    })
-      .limit(6)
-      .select("slug title difficulty category")
-      .lean(),
-    FrontendChallenge.find({
-      isPublished: true,
-      $or: [{ title: regex }, { tags: regex }],
-    })
-      .limit(4)
-      .select("slug title difficulty")
-      .lean(),
-    Company.find({ name: regex }).limit(4).select("slug name").lean(),
-  ]);
-
-  return NextResponse.json({
-    questions: questions.map((doc) => ({
-      slug: doc.slug,
-      title: doc.title,
-      difficulty: doc.difficulty,
-      category: doc.category,
-    })),
-    challenges: challenges.map((doc) => ({
-      slug: doc.slug,
-      title: doc.title,
-      difficulty: doc.difficulty,
-    })),
-    companies: companies.map((doc) => ({ slug: doc.slug, name: doc.name })),
-  });
 }

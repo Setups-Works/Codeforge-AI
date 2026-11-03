@@ -2,10 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-auth";
 import { enforceAiCredit } from "@/services/ai-credits";
 import { complete } from "@/services/ai/groq";
-import { connectDB } from "@/lib/mongodb";
-import { User } from "@/models";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { backendFor } from "@/lib/data-backend";
 import { getRecentDsaCategoryRows } from "@/services/submissions";
 
 interface UserStats {
@@ -23,18 +20,12 @@ export async function GET() {
   if (credit) return credit;
 
   let stats: UserStats | undefined;
-  if (backendFor("account") === "supabase") {
-    const { data } = await supabaseAdmin()
+  {    const { data } = await supabaseAdmin()
       .from("users")
       .select("stats")
       .eq("id", session.user.id)
       .maybeSingle();
-    stats = (data as { stats?: UserStats } | null)?.stats;
-  } else {
-    await connectDB();
-    const user = await User.findById(session.user.id).select("stats").lean();
-    stats = user?.stats as UserStats | undefined;
-  }
+    stats = (data as { stats?: UserStats } | null)?.stats;}
   const recentSubs = await getRecentDsaCategoryRows(session.user.id, 30);
 
   const categoryMap: Record<string, { attempted: number; accepted: number }> = {};
