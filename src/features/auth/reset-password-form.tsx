@@ -27,6 +27,27 @@ const schema = z
   });
 type ResetInput = z.infer<typeof schema>;
 
+// Recovery tokens are single-use. Remember the in-flight redemption per token so
+// a re-run of the effect (strict mode, param changes) reuses it instead of
+// burning the token twice and reporting "expired".
+const redemptions = new Map<string, Promise<boolean>>();
+
+function redeemRecoveryToken(tokenHash: string): Promise<boolean> {
+  let pending = redemptions.get(tokenHash);
+  if (!pending) {
+    const supabase = createClient();
+    pending = supabase.auth
+      .verifyOtp({ token_hash: tokenHash, type: "recovery" })
+      .then(async ({ error }) => {
+        if (!error) return true;
+        const { data } = await supabase.auth.getSession();
+        return !!data.session;
+      });
+    redemptions.set(tokenHash, pending);
+  }
+  return pending;
+}
+
 export function ResetPasswordForm() {
   const router = useRouter();
   const params = useSearchParams();
@@ -52,8 +73,8 @@ export function ResetPasswordForm() {
 
     (async () => {
       if (tokenHash && type === "recovery") {
-        const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" });
-        if (!cancelled) setLinkState(error ? "invalid" : "ok");
+        const ok = await redeemRecoveryToken(tokenHash);
+        if (!cancelled) setLinkState(ok ? "ok" : "invalid");
         return;
       }
       // No token in the URL — maybe the session is already set (hash flow).
