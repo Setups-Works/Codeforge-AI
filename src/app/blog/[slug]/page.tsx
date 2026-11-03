@@ -9,6 +9,7 @@ import { Markdown } from "@/components/shared/markdown";
 import { ArrowLeft } from "@/components/icons";
 import { APP_NAME } from "@/lib/constants";
 import { JsonLd } from "@/components/json-ld";
+import { BRAND_KEYWORDS, breadcrumbLd, graph, mergeKeywords } from "@/lib/seo";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -26,7 +27,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${title} — ${APP_NAME}`,
     description,
-    keywords: post.seoKeywords || undefined,
+    keywords: mergeKeywords(post.seoKeywords?.split(","), post.tags, BRAND_KEYWORDS),
+    alternates: { canonical: `/blog/${slug}` },
     openGraph: {
       title,
       description,
@@ -56,7 +58,11 @@ export default async function BlogPostPage({ params }: PageProps) {
     image: [`${SITE}/api/blog/cover/${slug}`],
     datePublished: new Date(post.publishedAt ?? post.createdAt).toISOString(),
     dateModified: new Date(post.updatedAt ?? post.createdAt).toISOString(),
-    keywords: (post.tags ?? []).join(", "),
+    keywords: mergeKeywords(post.seoKeywords?.split(","), post.tags).join(", "),
+    articleSection: post.tags?.[0],
+    wordCount: post.content.split(/\s+/).length,
+    inLanguage: "en",
+    isAccessibleForFree: true,
     url: `${SITE}/blog/${slug}`,
     mainEntityOfPage: { "@type": "WebPage", "@id": `${SITE}/blog/${slug}` },
     author: { "@type": "Organization", name: APP_NAME, url: SITE },
@@ -70,6 +76,15 @@ export default async function BlogPostPage({ params }: PageProps) {
   return (
     <div className="min-h-svh bg-background">
       <JsonLd data={articleLd} />
+      <JsonLd
+        data={graph(
+          breadcrumbLd([
+            { name: "Home", url: SITE },
+            { name: "Blog", url: "/blog" },
+            { name: post.title, url: `${SITE}/blog/${slug}` },
+          ]),
+        )}
+      />
       <PublicHeader signedIn={!!session?.user} />
 
       <article className="mx-auto max-w-3xl px-4 py-10 sm:px-6">

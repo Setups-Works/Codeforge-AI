@@ -6,8 +6,18 @@ import { countDiscussions } from "@/services/discussions-store";
 import { PublicHeader } from "@/components/layout/public-header";
 import { Button } from "@/components/ui/button";
 import { ForumList } from "@/features/discussions/forum-list";
+import { JsonLd } from "@/components/json-ld";
+import { BRAND_KEYWORDS, SITE_URL, graph, mergeKeywords, pageNodes } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Community Forum — Setups Works Lab" };
+const DESCRIPTION =
+  "Join the Setups Works Lab community forum — discuss DSA problems, share interview experiences and get coding-interview and career advice.";
+
+export const metadata: Metadata = {
+  title: "Community Forum — Setups Works Lab",
+  description: DESCRIPTION,
+  keywords: mergeKeywords(BRAND_KEYWORDS, ["coding interview forum", "DSA discussion", "interview experiences", "programming community", "career advice for developers"]),
+  alternates: { canonical: "/forum" },
+};
 export const dynamic = "force-dynamic";
 
 export default async function ForumPage() {
@@ -19,8 +29,22 @@ export default async function ForumPage() {
     countDiscussions({ sinceToday: true }),
   ]);
 
+  const ld = graph(
+    ...pageNodes({
+      url: "/forum",
+      name: "Community Forum",
+      description: DESCRIPTION,
+      type: "CollectionPage",
+      breadcrumb: [
+        { name: "Home", url: SITE_URL },
+        { name: "Community Forum", url: "/forum" },
+      ],
+    }),
+  );
+
   return (
     <div className="min-h-svh bg-background">
+      <JsonLd data={ld} />
       <PublicHeader signedIn={signedIn} />
 
       {/* hero banner */}

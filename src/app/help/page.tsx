@@ -11,20 +11,41 @@ import {
   searchIndex,
 } from "@/content/docs";
 import { PageAura } from "@/components/shared/reactbits-kit";
+import { JsonLd } from "@/components/json-ld";
+import { BRAND_KEYWORDS, SITE_URL, graph, itemListLd, mergeKeywords, pageNodes } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Documentation — Setups Works Lab",
   description:
     "Searchable docs for Setups Works Lab — features, API, SDKs, tutorials, guides, FAQs and examples.",
+  keywords: mergeKeywords(BRAND_KEYWORDS, ["documentation", "help center", "REST API docs", "coding interview prep guides", "AI mentor guide", "getting started tutorial"]),
+  alternates: { canonical: "/help" },
 };
 export const dynamic = "force-dynamic";
 
 export default async function HelpHomePage() {
   const session = await auth();
   const index = searchIndex();
+  const ld = graph(
+    ...pageNodes({
+      url: "/help",
+      name: "Documentation — Setups Works Lab",
+      description: "Features, API, SDKs, tutorials, guides and FAQs for Setups Works Lab.",
+      type: "CollectionPage",
+      breadcrumb: [
+        { name: "Home", url: SITE_URL },
+        { name: "Documentation", url: "/help" },
+      ],
+    }),
+    itemListLd(
+      "Documentation categories",
+      DOC_CATEGORIES.map((c) => ({ name: c.title, url: `/help#${c.id}`, description: c.description })),
+    ),
+  );
 
   return (
     <div className="relative min-h-svh overflow-hidden bg-background">
+      <JsonLd data={ld} />
       <PageAura height={480} />
       <PublicHeader signedIn={!!session?.user} />
 

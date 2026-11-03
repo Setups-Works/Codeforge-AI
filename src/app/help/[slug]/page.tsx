@@ -16,6 +16,8 @@ import {
   searchIndex,
 } from "@/content/docs";
 import { cn } from "@/lib/utils";
+import { JsonLd } from "@/components/json-ld";
+import { SITE_URL, faqFromMarkdown, graph, ids, mergeKeywords, pageNodes } from "@/lib/seo";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -32,6 +34,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${article.title} — Setups Works Lab Docs`,
     description: article.description,
+    keywords: mergeKeywords(article.tags, [article.title, "Setups Works Lab docs", getCategory(article.category)?.title]),
+    alternates: { canonical: `/help/${article.slug}` },
+    openGraph: { type: "article", url: `${SITE_URL}/help/${article.slug}`, title: article.title, description: article.description, tags: article.tags },
   };
 }
 
@@ -47,8 +52,45 @@ export default async function DocArticlePage({ params }: PageProps) {
   const prev = idx > 0 ? siblings[idx - 1] : null;
   const next = idx < siblings.length - 1 ? siblings[idx + 1] : null;
 
+  const url = `${SITE_URL}/help/${article.slug}`;
+  const ld = graph(
+    ...pageNodes({
+      url,
+      name: article.title,
+      description: article.description,
+      keywords: article.tags,
+      mainEntity: { "@id": `${url}#article` },
+      breadcrumb: [
+        { name: "Home", url: SITE_URL },
+        { name: "Documentation", url: "/help" },
+        ...(category ? [{ name: category.title, url: `/help#${category.id}` }] : []),
+        { name: article.title, url },
+      ],
+    }),
+    {
+      "@type": "TechArticle",
+      "@id": `${url}#article`,
+      headline: article.title,
+      description: article.description,
+      url,
+      keywords: article.tags.join(", "),
+      articleSection: category?.title,
+      wordCount: article.body.split(/\s+/).length,
+      proficiencyLevel: "Beginner",
+      inLanguage: "en",
+      isAccessibleForFree: true,
+      author: { "@id": ids.org },
+      publisher: { "@id": ids.org },
+      mainEntityOfPage: { "@id": `${url}#webpage` },
+    },
+    // The FAQ category is literally Q&A, so mark those up as a FAQPage when
+    // the article body follows "### Question" / answer structure.
+    ...(article.category === "faq" ? faqFromMarkdown(article.body, url) : []),
+  );
+
   return (
     <div className="min-h-svh bg-background">
+      <JsonLd data={ld} />
       <PublicHeader signedIn={!!session?.user} />
 
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-8 lg:grid-cols-[260px_1fr]">

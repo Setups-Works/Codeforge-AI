@@ -15,6 +15,7 @@ import { config } from "@fortawesome/fontawesome-svg-core";
 import "@fortawesome/fontawesome-svg-core/styles.css";
 import "./globals.css";
 import { JsonLd } from "@/components/json-ld";
+import { BRAND_KEYWORDS, CORE_KEYWORDS, PRIMARY_NAV, mergeKeywords, siteNavigationLd } from "@/lib/seo";
 
 // Font Awesome inserts its own CSS at runtime by default; we import the
 // stylesheet above and disable auto-insertion to avoid a flash of oversized
@@ -53,16 +54,13 @@ export async function generateMetadata(): Promise<Metadata> {
     description: desc,
     keywords: cfg.siteKeywords
       ? cfg.siteKeywords.split(",").map((k) => k.trim()).filter(Boolean)
-      : [
-          // Brand
-          "Setups Works Lab", "Setups Works", "setupsworkslab", "labs.setups.works", "setups works lab",
-          // Primary
-          "AI coding mentor", "coding interview preparation", "DSA practice",
-          "online compiler", "LeetCode alternative", "algorithm practice",
-          "data structures and algorithms", "AI pair programmer",
-          "coding practice platform", "technical interview prep", "competitive programming",
-          "mock interview", "spaced repetition coding", "FAANG interview prep",
-        ],
+      : mergeKeywords(BRAND_KEYWORDS, CORE_KEYWORDS, [
+          "Python coding practice", "Java DSA practice", "C++ competitive programming",
+          "JavaScript interview questions", "system design interview", "frontend interview prep",
+          "LeetCode patterns", "two pointers", "dynamic programming practice", "graph algorithms practice",
+          "Google interview questions", "Amazon interview questions", "Microsoft interview questions",
+          "AI code review", "AI mock interview", "coding contests", "interview roadmap",
+        ]),
     authors: [{ name: "Setups Works" }],
     creator: "Setups Works",
     applicationName: name,
@@ -241,12 +239,16 @@ export default async function RootLayout({
         description: desc,
         publisher: { "@id": `${url}/#org` },
         inLanguage: "en",
+        hasPart: siteNavigationLd(PRIMARY_NAV).map((n) => ({ "@id": n["@id"] })),
         potentialAction: {
           "@type": "SearchAction",
           target: { "@type": "EntryPoint", urlTemplate: `${url}/problems?q={search_term_string}` },
           "query-input": "required name=search_term_string",
         },
       },
+      // Primary navigation as named entities — the clearest signal for which
+      // destinations Google should offer as sitelinks under the homepage result.
+      ...siteNavigationLd(PRIMARY_NAV),
       {
         "@type": ["WebApplication", "SoftwareApplication"],
         "@id": `${url}/#app`,

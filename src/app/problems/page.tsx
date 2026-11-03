@@ -8,16 +8,57 @@ import { PublicHeader } from "@/components/layout/public-header";
 import { ProblemsFilters } from "@/features/problems/problems-filters";
 import { ProblemsList } from "@/features/problems/problems-list";
 import { CategoryChips } from "@/features/problems/category-chips";
+import { JsonLd } from "@/components/json-ld";
+import { listQuestions } from "@/services/questions";
+import { BRAND_KEYWORDS, CORE_KEYWORDS, SITE_URL, graph, itemListLd, mergeKeywords, pageNodes } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Problems" };
+const DESCRIPTION =
+  "Practice curated LeetCode-style DSA and coding-interview problems in arrays, strings, trees, graphs and dynamic programming. Solve in 12 languages with an online compiler and AI mentor.";
+
+export const metadata: Metadata = {
+  title: "Coding Interview Problems — DSA Practice",
+  description: DESCRIPTION,
+  keywords: mergeKeywords(BRAND_KEYWORDS, CORE_KEYWORDS, [
+    "coding interview problems", "DSA problems with solutions", "array problems", "string problems",
+    "linked list problems", "binary tree problems", "graph problems", "dynamic programming problems",
+    "easy medium hard coding questions", "company wise interview questions",
+  ]),
+  alternates: { canonical: "/problems" },
+  openGraph: { type: "website", url: `${SITE_URL}/problems`, title: "Coding Interview Problems — DSA Practice", description: DESCRIPTION },
+};
 export const dynamic = "force-dynamic";
 
 export default async function ProblemsPage() {
   const session = await auth();
   const signedIn = !!session?.user;
 
+  // Top of the catalogue as an ItemList so search can understand the collection.
+  const featured = await listQuestions({ page: 1, limit: 20 })
+    .then((r) => r.items)
+    .catch(() => []);
+  const ld = graph(
+    ...pageNodes({
+      url: "/problems",
+      name: "Coding Interview Problems",
+      description: DESCRIPTION,
+      type: "CollectionPage",
+      breadcrumb: [
+        { name: "Home", url: SITE_URL },
+        { name: "Problems", url: "/problems" },
+      ],
+    }),
+    featured.length
+      ? itemListLd(
+          "Coding interview problems",
+          featured.map((p) => ({ name: p.title, url: `/problems/${p.slug}`, description: `${p.difficulty} · ${p.category}` })),
+          `${SITE_URL}/problems#list`,
+        )
+      : null,
+  );
+
   return (
     <div className="min-h-svh">
+      <JsonLd data={ld} />
       <PublicHeader signedIn={signedIn} />
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">

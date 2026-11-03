@@ -8,10 +8,18 @@ import { getFeatureAccess } from "@/services/feature-access";
 import { buildPricingFeatures } from "@/lib/feature-catalog";
 import { Clock, RefreshCw, HeadphonesIcon, Sparkles } from "@/components/icons";
 import { PageAura } from "@/components/shared/reactbits-kit";
+import { JsonLd } from "@/components/json-ld";
+import { BRAND_KEYWORDS, mergeKeywords, pricingGraph } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Pricing — Setups Works Lab",
-  description: "Simple, transparent pricing. Start free, upgrade anytime.",
+  description:
+    "Simple, transparent pricing for AI coding interview prep. Start free, then upgrade to Go or Plus with a 7-day free trial — unlimited problems, AI mentor, mock interviews and more.",
+  keywords: mergeKeywords(BRAND_KEYWORDS, [
+    "coding interview prep pricing", "LeetCode premium alternative", "AI coding mentor subscription",
+    "free coding practice platform", "interview prep plans", "DSA practice subscription",
+  ]),
+  alternates: { canonical: "/pricing" },
 };
 export const dynamic = "force-dynamic";
 
@@ -29,6 +37,7 @@ export default async function PricingPage() {
 
   return (
     <div className="relative min-h-svh overflow-hidden bg-background">
+      <JsonLd data={pricingGraph()} />
       <PageAura height={520} />
       <PublicHeader signedIn={signedIn} />
 

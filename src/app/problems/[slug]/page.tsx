@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { DifficultyBadge } from "@/components/shared/difficulty-badge";
 import { JsonLd } from "@/components/json-ld";
 import { APP_NAME } from "@/lib/constants";
+import { problemGraph, problemKeywords } from "@/lib/seo";
 
 const SITE = "https://labs.setups.works";
 
@@ -48,9 +49,16 @@ export async function generateMetadata({
   return {
     title: `${question.title} — ${question.difficulty} Coding Problem`,
     description,
-    keywords: [question.title, `${question.title} solution`, question.difficulty, ...(question.tags ?? []), "coding interview", "dsa"],
+    keywords: problemKeywords(question),
     alternates: { canonical: `/problems/${question.slug}` },
-    openGraph: { type: "article", url, title: `${question.title} — ${question.difficulty} Coding Problem`, description },
+    openGraph: {
+      type: "article",
+      url,
+      title: `${question.title} — ${question.difficulty} Coding Problem`,
+      description,
+      section: question.category,
+      tags: [...(question.tags ?? []), ...(question.companies ?? [])],
+    },
     twitter: { card: "summary_large_image", title: question.title, description },
   };
 }
@@ -67,44 +75,7 @@ export default async function ProblemPage({ params, searchParams }: PageProps) {
   const question = await getQuestionBySlug(slug);
   if (!question) notFound();
 
-  const url = `${SITE}/problems/${question.slug}`;
-  const problemLd = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": ["LearningResource", "TechArticle"],
-        "@id": `${url}#problem`,
-        name: question.title,
-        headline: question.title,
-        url,
-        description: summarize(question.description),
-        learningResourceType: "Coding practice problem",
-        educationalLevel: question.difficulty,
-        educationalUse: "Interview preparation",
-        teaches: question.tags ?? [],
-        about: (question.tags ?? []).map((t) => ({ "@type": "Thing", name: t })),
-        inLanguage: "en",
-        isAccessibleForFree: true,
-        keywords: [question.title, question.difficulty, ...(question.tags ?? []), "coding interview", "dsa"].join(", "),
-        author: { "@type": "Organization", name: APP_NAME, url: SITE },
-        publisher: {
-          "@type": "Organization",
-          name: APP_NAME,
-          url: SITE,
-          logo: { "@type": "ImageObject", url: `${SITE}/icon-512.png` },
-        },
-        mainEntityOfPage: { "@type": "WebPage", "@id": url },
-      },
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home", item: SITE },
-          { "@type": "ListItem", position: 2, name: "Problems", item: `${SITE}/problems` },
-          { "@type": "ListItem", position: 3, name: question.title, item: url },
-        ],
-      },
-    ],
-  };
+  const problemLd = problemGraph(question, summarize(question.description));
 
   return (
     <div className="flex h-svh flex-col">

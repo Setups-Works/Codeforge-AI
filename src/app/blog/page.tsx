@@ -5,20 +5,52 @@ import { auth } from "@/lib/auth";
 import { listPublishedPosts } from "@/services/blog-store";
 import { PublicHeader } from "@/components/layout/public-header";
 import { APP_NAME } from "@/lib/constants";
+import { JsonLd } from "@/components/json-ld";
+import { BRAND_KEYWORDS, SITE_URL, graph, ids, itemListLd, mergeKeywords, pageNodes } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: `Blog — ${APP_NAME}`,
   description:
     "Product updates, feature deep-dives and tips from the Setups Works Lab team.",
+  keywords: mergeKeywords(BRAND_KEYWORDS, ["coding interview blog", "DSA tips", "interview preparation guide", "AI coding mentor updates", "software engineer career advice"]),
+  alternates: { canonical: "/blog" },
 };
 export const dynamic = "force-dynamic";
 
 export default async function BlogIndexPage() {
   const session = await auth();
   const posts = await listPublishedPosts(60);
+  const ld = graph(
+    ...pageNodes({
+      url: "/blog",
+      name: `Blog — ${APP_NAME}`,
+      description: "Product updates, feature deep-dives and tips from the Setups Works Lab team.",
+      type: "CollectionPage",
+      mainEntity: { "@id": `${SITE_URL}/blog#blog` },
+      breadcrumb: [
+        { name: "Home", url: SITE_URL },
+        { name: "Blog", url: "/blog" },
+      ],
+    }),
+    {
+      "@type": "Blog",
+      "@id": `${SITE_URL}/blog#blog`,
+      name: `${APP_NAME} Blog`,
+      url: `${SITE_URL}/blog`,
+      inLanguage: "en",
+      publisher: { "@id": ids.org },
+    },
+    posts.length
+      ? itemListLd(
+          "Latest posts",
+          posts.map((p) => ({ name: p.title, url: `/blog/${p.slug}`, description: p.description ?? undefined, image: `${SITE_URL}/api/blog/cover/${p.slug}` })),
+        )
+      : null,
+  );
 
   return (
     <div className="min-h-svh bg-background">
+      <JsonLd data={ld} />
       <PublicHeader signedIn={!!session?.user} />
 
       <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">

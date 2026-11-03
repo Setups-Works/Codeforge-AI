@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import { getFeatureAccess } from "@/services/feature-access";
 import { buildPricingFeatures } from "@/lib/feature-catalog";
 import { JsonLd } from "@/components/json-ld";
+import { SITE_URL, faqLd, graph, howToLd, pageNodes } from "@/lib/seo";
 
 // Statically render the landing and revalidate every 5 minutes. The signed-in
 // header state is resolved on the client, so there's no per-request server work
@@ -33,18 +34,34 @@ const getLandingProblems = unstable_cache(
   { revalidate: 300, tags: ["questions"] },
 );
 
-export const metadata: Metadata = { alternates: { canonical: "/" } };
-
-/** FAQPage structured data — eligible for FAQ rich results in search. */
-const faqJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: FAQS.map((faq) => ({
-    "@type": "Question",
-    name: faq.q,
-    acceptedAnswer: { "@type": "Answer", text: faq.a },
-  })),
+export const metadata: Metadata = {
+  title: { absolute: "Setups Works Lab — AI Coding Interview Prep, DSA Practice & Online Compiler" },
+  alternates: { canonical: "/" },
 };
+
+/** Home graph: WebPage, FAQPage (FAQ rich results) and a HowTo for the core flow. */
+const homeJsonLd = graph(
+  ...pageNodes({
+    url: SITE_URL,
+    name: "Setups Works Lab — AI Coding Interview Prep",
+    description:
+      "Practice DSA problems, run code in 12 languages and get an AI mentor and pair programmer to ace your next technical interview.",
+    type: "WebPage",
+    speakable: ["h1", "h2"],
+  }),
+  faqLd(FAQS, `${SITE_URL}/#faq`),
+  howToLd({
+    id: `${SITE_URL}/#howto`,
+    name: "How to prepare for a coding interview with Setups Works Lab",
+    description: "A step-by-step routine for interview prep using practice problems, the AI mentor and spaced repetition.",
+    steps: [
+      { name: "Pick a problem", text: "Choose a DSA problem by topic, difficulty or target company.", url: "/problems" },
+      { name: "Solve it in the editor", text: "Write your solution in any of 12 languages and run it against the test cases.", url: "/compiler" },
+      { name: "Ask the AI mentor for hints", text: "Get hints specific to your code without being handed the full solution." },
+      { name: "Review with spaced repetition", text: "Revisit problems on an SM-2 schedule so the patterns stick." },
+    ],
+  }),
+);
 
 export default async function HomePage() {
   // Real problems for the home page preview — never fail the landing
@@ -67,7 +84,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <JsonLd data={faqJsonLd} />
+      <JsonLd data={homeJsonLd} />
       <Landing
         problems={problems}
         totalProblems={totalProblems}
