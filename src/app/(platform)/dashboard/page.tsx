@@ -4,7 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { RefreshCw } from "@/components/icons";
 import { format } from "date-fns";
-import { ArrowRight, Code2, Flame, Sparkles } from "@/components/icons";
+import { ArrowRight, Code2, Flame, GraduationCap, Sparkles } from "@/components/icons";
 import { getSession } from "@/lib/session";
 import { getDashboardData } from "@/services/stats";
 import { getDailyChallenge } from "@/services/contests";
@@ -12,6 +12,7 @@ import { StatsOverview } from "@/features/dashboard/stats-overview";
 import { DifficultyBadge } from "@/components/shared/difficulty-badge";
 import { Button } from "@/components/ui/button";
 import { XP_DAILY_CHALLENGE_BONUS } from "@/lib/constants";
+import { lmsEnabled } from "@/lib/lms/flag";
 
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -35,6 +36,13 @@ export default async function DashboardPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          {lmsEnabled() && (
+            <Button asChild variant="outline" size="sm">
+              <Link href="/learn">
+                <GraduationCap className="size-4 text-primary" /> Go learn
+              </Link>
+            </Button>
+          )}
           <Button asChild variant="outline" size="sm">
             <Link href="/generate">
               <Sparkles className="size-4 text-primary" /> Generate

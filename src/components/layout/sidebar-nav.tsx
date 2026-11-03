@@ -6,7 +6,7 @@ import { useSession } from "@/lib/auth-client";
 import { ShieldCheck, Settings, Crown } from "@/components/icons";
 import { PlanBadge } from "@/features/subscription/plan-badge";
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS, type NavItem } from "./nav-items";
+import { LEARN_NAV_ITEMS, NAV_ITEMS, isLearnPath, type NavItem } from "./nav-items";
 
 const ROW = "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors";
 const ACTIVE = "bg-sidebar-accent font-medium text-sidebar-accent-foreground";
@@ -20,11 +20,14 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const isAdmin = session?.user?.role === "admin";
   const plan = session?.user?.plan ?? "free";
 
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(`${href}/`);
+  const learnMode = isLearnPath(pathname);
+  const isActive = (item: NavItem) => {
+    const href = item.href.split("#")[0];
+    return item.exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   const groups: Record<string, NavItem[]> = {};
-  for (const item of NAV_ITEMS) {
+  for (const item of learnMode ? LEARN_NAV_ITEMS : NAV_ITEMS) {
     const g = item.group ?? "Main";
     (groups[g] ??= []).push(item);
   }
@@ -45,7 +48,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                   key={item.href}
                   href={item.href}
                   onClick={onNavigate}
-                  className={cn(ROW, isActive(item.href) ? ACTIVE : IDLE)}
+                  className={cn(ROW, isActive(item) ? ACTIVE : IDLE)}
                 >
                   <item.icon className="size-4" />
                   {item.title}

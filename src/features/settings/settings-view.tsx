@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Settings } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,14 @@ export interface SettingsSection {
 export function SettingsView({ sections }: { sections: SettingsSection[] }) {
   const [active, setActive] = useState<string>(sections[0]?.id ?? "");
   const current = sections.find((s) => s.id === active) ?? sections[0];
+
+  // Deep links like /settings#billing open that section.
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (id && sections.some((s) => s.id === id)) setActive(id);
+    // Run once on mount: later section clicks must not be reset by the hash.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="grid gap-5 md:grid-cols-[224px_1fr] md:gap-10">

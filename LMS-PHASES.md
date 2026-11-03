@@ -7,8 +7,8 @@ decisions). We build **one phase at a time**; each phase ships behind
 | Phase | Theme | Outcome | State |
 |---|---|---|---|
 | 0 | Decisions & foundation | Flag + schema + video abstraction + access rules | ✅ done |
-| 1 | Admin course CMS | Admin can create, structure and publish a course | 🟡 built, UI not yet clicked through |
-| 2 | Learn mode shell | Toggle, LMS sidebar, catalogue, product detail | ⬜ |
+| 1 | Admin course CMS | Admin can create, structure and publish a course | ✅ deployed (flag off) |
+| 2 | Learn mode shell | Toggle, LMS sidebar, catalogue, product detail | 🟡 built, UI not yet clicked through |
 | 3 | Player & progress | Watch lessons, continue watching, resume | ⬜ |
 | 4 | Purchase & entitlement | Buy a course with Razorpay, get access | ⬜ |
 | 5 | Unified billing | One Billing & Usage ledger in Settings | ⬜ |
@@ -17,6 +17,7 @@ decisions). We build **one phase at a time**; each phase ships behind
 | 8 | Practice integration | Problem lessons, quizzes, AI mentor, XP | ⬜ |
 | 9 | Growth & commerce | Course coupons, bundles, referrals, emails | ⬜ |
 | 10 | Analytics & hardening | Admin analytics, refunds, GST, video host upgrade, tests | ⬜ |
+| 11 | Landing page | Home page showcases the full LMS (after all phases) | ⬜ |
 
 ---
 
@@ -74,7 +75,21 @@ Reordering uses up/down buttons (no drag-and-drop library in the codebase).
   category/level/price filters), `/learn/courses/[slug]` product detail
   (curriculum, outcomes, instructor, preview lesson, price + Buy button wired in
   Phase 4).
-- `GET /api/courses[/slug]` returning published courses only, never video refs.
+- Reads are server-side in `services/lms-catalog.ts` (published only, never selects
+  video columns); a public JSON API is not needed until a client needs one.
+- Mode is derived from the URL only; no cookie (simpler, no hidden state).
+- Nav links for pages that don't exist yet (My courses, Wishlist, Certificates) are
+  added in the phase that builds them.
+
+**Delivered:** `LEARN_NAV_ITEMS` + mode-aware `SidebarNav`/mobile bar, `ModeSwitch` in the
+topbar and mobile drawer, "Go learn" button on `/dashboard`, `/learn`, `/learn/courses`
+(search, category/level/price/sort filters, pagination), `/learn/courses/[slug]`
+(outcomes, curriculum, requirements, description, instructor, price card), `/learn`
+hidden by layout when the flag is off, `/settings#billing` deep link.
+Buy/Enrol button is disabled until Phase 4. **Verified:** typecheck, lint, 53 unit tests,
+a live-DB run of the catalog (draft hidden, publish visible, filters, no Drive id in
+learner payloads), and a production build. **Not yet verified:** clicking through the
+screens as a logged-in user.
 
 **Done when:** a user toggles into Learn mode, browses, and opens a course page;
 toggling back restores the Practice sidebar.
@@ -176,6 +191,20 @@ attribution.
 
 **Done when:** E2E green in CI, refunds verified in test mode, host-upgrade path
 proven with one course.
+
+## Phase 11 — Landing page
+**Goal:** the marketing home page presents the whole LMS. Done **after all other phases**.
+
+- Add LMS sections to `features/marketing/landing.tsx`: course showcase (live data),
+  Learn-mode explainer, how-it-works (browse → buy → watch → certificate), feature
+  list (progress, certificates, coding-problem lessons, AI mentor, reviews), pricing
+  of courses vs plans, FAQs.
+- Content from the DB/`FAQS`/config, built from existing marketing components, no
+  hardcoded course data; schema and keywords via `lib/seo.ts`.
+- Update `llms.txt`, sitemap and root JSON-LD to mention courses.
+
+**Done when:** the landing page reflects every shipped LMS capability and links to
+`/courses`.
 
 ---
 

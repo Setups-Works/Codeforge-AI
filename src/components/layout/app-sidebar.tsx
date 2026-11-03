@@ -7,7 +7,7 @@ import { Ellipsis } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/shared/logo";
 import { SidebarNav } from "./sidebar-nav";
-import { MOBILE_NAV_ITEMS, MOBILE_MORE_ITEMS } from "./nav-items";
+import { LEARN_MOBILE_NAV_ITEMS, MOBILE_NAV_ITEMS, MOBILE_MORE_ITEMS, isLearnPath, type NavItem } from "./nav-items";
 
 export function AppSidebar() {
   return (
@@ -24,15 +24,19 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(`${href}/`);
+  const learnMode = isLearnPath(pathname);
+  const tabItems = learnMode ? LEARN_MOBILE_NAV_ITEMS : MOBILE_NAV_ITEMS;
+  const moreItems = learnMode ? [] : MOBILE_MORE_ITEMS;
+
+  const isActive = (href: string, item?: NavItem) =>
+    item?.exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 
   // Close the "More" sheet whenever the route changes.
   useEffect(() => {
     setMoreOpen(false);
   }, [pathname]);
 
-  const moreActive = MOBILE_MORE_ITEMS.some((item) => isActive(item.href));
+  const moreActive = moreItems.some((item) => isActive(item.href));
 
   const tabClass = (active: boolean) =>
     cn(
@@ -71,7 +75,7 @@ export function MobileBottomNav() {
             More
           </p>
           <div className="grid grid-cols-2 gap-1 p-2 pt-1">
-            {MOBILE_MORE_ITEMS.map((item) => {
+            {moreItems.map((item) => {
               const active = isActive(item.href);
               return (
                 <Link
@@ -93,8 +97,8 @@ export function MobileBottomNav() {
           </div>
         </div>
 
-        {MOBILE_NAV_ITEMS.map((item) => {
-          const active = isActive(item.href);
+        {tabItems.map((item) => {
+          const active = isActive(item.href, item);
           return (
             <Link key={item.href} href={item.href} className={tabClass(active)}>
               <span className={pillClass(active)}>
@@ -104,6 +108,7 @@ export function MobileBottomNav() {
             </Link>
           );
         })}
+        {moreItems.length > 0 && (
         <button
           type="button"
           onClick={() => setMoreOpen((open) => !open)}
@@ -116,6 +121,7 @@ export function MobileBottomNav() {
           </span>
           More
         </button>
+        )}
       </nav>
     </>
   );

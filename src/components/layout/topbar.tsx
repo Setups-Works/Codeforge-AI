@@ -25,6 +25,7 @@ import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { Logo } from "@/components/shared/logo";
 import { SidebarNav } from "./sidebar-nav";
 import { CommandSearch, useCommandSearch } from "./command-search";
+import { ModeSwitch } from "./mode-switch";
 
 export function Topbar() {
   const { data: session } = useSession();
@@ -55,11 +56,15 @@ export function Topbar() {
             <div className="flex h-14 items-center border-b px-4">
               <Logo href="/dashboard" />
             </div>
+            <div className="px-3 pt-3">
+              <ModeSwitch className="flex w-full" onNavigate={() => setNavOpen(false)} />
+            </div>
             <SidebarNav onNavigate={() => setNavOpen(false)} />
           </SheetContent>
         </Sheet>
         <Logo href="/dashboard" compact />
       </div>
+      <ModeSwitch className="hidden md:inline-flex" />
       {/* desktop: wide search field */}
       <Button
         variant="outline"

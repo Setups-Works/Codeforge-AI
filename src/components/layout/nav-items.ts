@@ -7,6 +7,8 @@ import {
   Code2,
   FileText,
   Globe,
+  BookOpen,
+  CreditCard,
   GraduationCap,
   LayoutDashboard,
   LineChart,
@@ -30,6 +32,8 @@ export interface NavItem {
   href: string;
   icon: LucideIcon;
   group?: string;
+  /** Match the path exactly instead of as a prefix (for section roots like /learn). */
+  exact?: boolean;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -83,3 +87,22 @@ export const MOBILE_MORE_ITEMS: NavItem[] = [
   "/roadmaps",
   "/contests",
 ].map(byHref);
+
+/** True for every route that belongs to the Learn (LMS) mode. */
+export const isLearnPath = (pathname: string): boolean =>
+  pathname === "/learn" || pathname.startsWith("/learn/");
+
+/** Sidebar shown in Learn mode. Add entries here as LMS pages ship. */
+export const LEARN_NAV_ITEMS: NavItem[] = [
+  { title: "Home", href: "/learn", icon: GraduationCap, group: "Learn", exact: true },
+  { title: "Browse courses", href: "/learn/courses", icon: BookOpen, group: "Learn" },
+  { title: "Billing & orders", href: "/settings#billing", icon: CreditCard, group: "Account" },
+  { title: "Back to Practice", href: "/dashboard", icon: LayoutDashboard, group: "Account" },
+];
+
+/** Mobile bottom-bar items in Learn mode (no "More" sheet needed yet). */
+export const LEARN_MOBILE_NAV_ITEMS: NavItem[] = [
+  LEARN_NAV_ITEMS[0],
+  LEARN_NAV_ITEMS[1],
+  LEARN_NAV_ITEMS[3],
+];
