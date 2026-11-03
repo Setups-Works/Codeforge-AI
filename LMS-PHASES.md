@@ -8,8 +8,8 @@ decisions). We build **one phase at a time**; each phase ships behind
 |---|---|---|---|
 | 0 | Decisions & foundation | Flag + schema + video abstraction + access rules | ✅ done |
 | 1 | Admin course CMS | Admin can create, structure and publish a course | ✅ deployed (flag off) |
-| 2 | Learn mode shell | Toggle, LMS sidebar, catalogue, product detail | 🟡 built, UI not yet clicked through |
-| 3 | Player & progress | Watch lessons, continue watching, resume | ⬜ |
+| 2 | Learn mode shell | Toggle, LMS sidebar, catalogue, product detail | ✅ committed |
+| 3 | Player & progress | Watch lessons, continue watching, resume | 🟡 built, UI not yet clicked through |
 | 4 | Purchase & entitlement | Buy a course with Razorpay, get access | ⬜ |
 | 5 | Unified billing | One Billing & Usage ledger in Settings | ⬜ |
 | 6 | Public SEO pages | `/courses` indexed with rich schema | ⬜ |
@@ -104,6 +104,20 @@ toggling back restores the Practice sidebar.
   `/learn` and the dashboard; `/learn/my-courses`.
 - Free-preview lessons playable without enrolment; admin can watch everything.
 - Overlay over the Drive pop-out control; clear message when Drive throttles.
+
+**Delivered:** `services/lms-learn.ts` (access resolution, enrolment, progress, my courses,
+continue watching, admin grant/revoke), `POST /api/learn/progress` (rate-limited, requires
+an enrolment), `/api/admin/courses/[id]/enrollments`, `/learn/watch/[courseSlug]/[lessonId]`
+(Drive iframe player with pop-out overlay, lesson rail with ticks/locks, mark complete/undo,
+prev/next, locked/drip states, text lessons), `/learn/my-courses`, a Continue watching
+rail on `/learn`, Start/Continue button on the course page (preview lessons link out),
+and a Learners tab in the admin editor to grant/revoke access. Differences from the
+plan: no separate `/play` API (the server page only builds the player URL after
+`canAccessLesson` passes); progress is per lesson, as Drive gives no playback events.
+**Verified:** 57 unit tests, a live-DB run of the whole learner flow (access rules,
+drip, preview, enrol, progress, completion and undo, archive hides it, revoke, cleanup),
+typecheck, lint, and a compiling production build. **Not yet verified:** clicking through
+the screens as a logged-in user, and a Drive video actually playing in the iframe.
 
 **Done when:** an enrolled user (granted manually by admin for now) watches,
 completes lessons, leaves, and resumes from Continue watching.

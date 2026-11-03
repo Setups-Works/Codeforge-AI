@@ -96,6 +96,7 @@ export const isLearnPath = (pathname: string): boolean =>
 export const LEARN_NAV_ITEMS: NavItem[] = [
   { title: "Home", href: "/learn", icon: GraduationCap, group: "Learn", exact: true },
   { title: "Browse courses", href: "/learn/courses", icon: BookOpen, group: "Learn" },
+  { title: "My courses", href: "/learn/my-courses", icon: ListChecks, group: "Learn" },
   { title: "Billing & orders", href: "/settings#billing", icon: CreditCard, group: "Account" },
   { title: "Back to Practice", href: "/dashboard", icon: LayoutDashboard, group: "Account" },
 ];
@@ -104,5 +105,6 @@ export const LEARN_NAV_ITEMS: NavItem[] = [
 export const LEARN_MOBILE_NAV_ITEMS: NavItem[] = [
   LEARN_NAV_ITEMS[0],
   LEARN_NAV_ITEMS[1],
-  LEARN_NAV_ITEMS[3],
+  LEARN_NAV_ITEMS[2],
+  LEARN_NAV_ITEMS[4],
 ];

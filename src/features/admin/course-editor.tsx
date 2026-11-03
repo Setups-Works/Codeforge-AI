@@ -39,6 +39,8 @@ import { api } from "@/lib/lms/api";
 import { COURSE_LEVELS, COURSE_LIMITS, LESSON_KINDS, type CourseStatus, type LessonKind } from "@/lib/lms/constants";
 import { STATUS_VARIANT } from "@/features/admin/courses-manager";
 import type { AdminCourse, AdminCourseDetail, AdminLesson, AdminSection } from "@/services/lms-courses";
+import type { AdminEnrollment } from "@/services/lms-learn";
+import { format } from "date-fns";
 
 const queryKey = (id: string) => ["admin-course", id] as const;
 
@@ -132,6 +134,7 @@ export function CourseEditor({ courseId }: { courseId: string }) {
           <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="pricing">Pricing & SEO</TabsTrigger>
+          <TabsTrigger value="learners">Learners</TabsTrigger>
         </TabsList>
         <TabsContent value="curriculum" className="mt-4">
           <Curriculum courseId={courseId} sections={sections} onChange={refresh} />
@@ -141,6 +144,9 @@ export function CourseEditor({ courseId }: { courseId: string }) {
         </TabsContent>
         <TabsContent value="pricing" className="mt-4">
           <PricingSeoForm key={course.updatedAt} course={course} onSaved={refresh} />
+        </TabsContent>
+        <TabsContent value="learners" className="mt-4">
+          <LearnersPanel courseId={courseId} />
         </TabsContent>
       </Tabs>
     </div>
@@ -771,5 +777,122 @@ function BulkImportDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ── Learners (manual access) ────────────────────────────────────────────
+
+interface FoundUser {
+  id: string;
+  name: string;
+  email: string | null;
+  username: string;
+}
+
+function LearnersPanel({ courseId }: { courseId: string }) {
+  const qc = useQueryClient();
+  const base = `/api/admin/courses/${courseId}/enrollments`;
+  const [q, setQ] = useState("");
+  const [term, setTerm] = useState("");
+
+  const enrollments = useQuery({
+    queryKey: ["admin-course-enrollments", courseId],
+    queryFn: () => api<{ enrollments: AdminEnrollment[] }>(base),
+  });
+  const found = useQuery({
+    queryKey: ["admin-user-search", term],
+    enabled: term.length >= 2,
+    queryFn: () => api<{ users: FoundUser[] }>(`/api/admin/users?q=${encodeURIComponent(term)}`),
+  });
+
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["admin-course-enrollments", courseId] });
+    qc.invalidateQueries({ queryKey: queryKey(courseId) });
+  };
+  const grant = useMutation({
+    mutationFn: (userId: string) => api(base, { method: "POST", json: { userId } }),
+    onSuccess: () => {
+      toast.success("Access granted");
+      refresh();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const revoke = useMutation({
+    mutationFn: (userId: string) => api(`${base}?userId=${userId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      toast.success("Access revoked");
+      refresh();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const list = enrollments.data?.enrollments ?? [];
+  const enrolledIds = new Set(list.map((e) => e.userId));
+
+  return (
+    <div className="space-y-5">
+      <section className="space-y-3 rounded-xl border bg-card p-5">
+        <h2 className="text-sm font-semibold">Grant access</h2>
+        <form
+          className="flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setTerm(q.trim());
+          }}
+        >
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search users by name, username or email" />
+          <Button type="submit" variant="outline" disabled={q.trim().length < 2}>Search</Button>
+        </form>
+        {found.isFetching && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
+        {found.data && (
+          <ul className="divide-y rounded-lg border">
+            {found.data.users.length === 0 && <li className="p-3 text-sm text-muted-foreground">No users found.</li>}
+            {found.data.users.slice(0, 10).map((u) => (
+              <li key={u.id} className="flex items-center gap-3 p-3 text-sm">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{u.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{u.email ?? `@${u.username}`}</p>
+                </div>
+                <Button size="sm" variant="outline" disabled={enrolledIds.has(u.id) || grant.isPending} onClick={() => grant.mutate(u.id)}>
+                  {enrolledIds.has(u.id) ? "Enrolled" : "Grant"}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="rounded-xl border bg-card">
+        <h2 className="border-b p-4 text-sm font-semibold">Enrolled learners ({list.length})</h2>
+        {enrollments.isLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="size-5 animate-spin text-muted-foreground" /></div>
+        ) : list.length === 0 ? (
+          <p className="p-4 text-sm text-muted-foreground">Nobody is enrolled yet.</p>
+        ) : (
+          <ul className="divide-y">
+            {list.map((e) => (
+              <li key={e.id} className="flex items-center gap-3 p-3 text-sm">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{e.userName ?? e.userId}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {e.userEmail ?? "—"} · {e.source} · {format(new Date(e.enrolledAt), "MMM d, yyyy")}
+                  </p>
+                </div>
+                {e.completedAt && <Badge variant="secondary">Completed</Badge>}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="size-8 text-muted-foreground hover:text-destructive"
+                  aria-label="Revoke access"
+                  onClick={() => confirm(`Revoke access for ${e.userName ?? "this learner"}? Their progress is kept.`) && revoke.mutate(e.userId)}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   );
 }

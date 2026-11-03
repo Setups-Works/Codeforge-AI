@@ -5,7 +5,9 @@ import { ArrowRight, GraduationCap } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { getSession } from "@/lib/session";
 import { CourseGrid } from "@/features/lms/course-card";
+import { EnrolledCourseCard } from "@/features/lms/enrolled-course-card";
 import { listPublishedCourses } from "@/services/lms-catalog";
+import { listContinueWatching } from "@/services/lms-learn";
 
 export const metadata: Metadata = { title: "Learn" };
 export const dynamic = "force-dynamic";
@@ -15,7 +17,10 @@ export default async function LearnHomePage() {
   if (!session?.user?.id) redirect("/login");
 
   const firstName = (session.user.name ?? "there").split(" ")[0];
-  const latest = await listPublishedCourses({ limit: 6 }).catch(() => ({ items: [], total: 0, page: 1, pages: 1 }));
+  const [latest, continuing] = await Promise.all([
+    listPublishedCourses({ limit: 6 }).catch(() => ({ items: [], total: 0, page: 1, pages: 1 })),
+    listContinueWatching(session.user.id).catch(() => []),
+  ]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-6 sm:px-6 sm:py-8">
@@ -32,6 +37,18 @@ export default async function LearnHomePage() {
           </Link>
         </Button>
       </div>
+
+      {continuing.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Continue watching</h2>
+            <Link href="/learn/my-courses" className="text-sm text-primary hover:underline">All my courses</Link>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {continuing.map((m) => <EnrolledCourseCard key={m.course.id} item={m} />)}
+          </div>
+        </section>
+      )}
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">{latest.total > 0 ? "New courses" : "Courses"}</h2>

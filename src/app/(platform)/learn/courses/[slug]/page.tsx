@@ -9,7 +9,8 @@ import { Curriculum } from "@/features/lms/curriculum";
 import { getSession } from "@/lib/session";
 import { formatPrice } from "@/lib/plans";
 import { discountPercent, formatDuration } from "@/lib/lms/format";
-import { getCourseBySlug, isEnrolled } from "@/services/lms-catalog";
+import { getCourseBySlug } from "@/services/lms-catalog";
+import { getEnrollment } from "@/services/lms-learn";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,14 @@ export default async function LearnCoursePage({ params }: Props) {
   const course = await getCourseBySlug(slug, { isAdmin });
   if (!course) notFound();
 
-  const enrolled = isAdmin ? false : await isEnrolled(session.user.id, course.id);
+  const enrollment = isAdmin ? null : await getEnrollment(session.user.id, course.id);
+  const enrolled = Boolean(enrollment && (!enrollment.expiresAt || enrollment.expiresAt > new Date()));
+
+  // Where "Start / Continue" goes: the last opened lesson, else the first one.
+  const firstLessonId = course.sections.flatMap((s) => s.lessons)[0]?.id ?? null;
+  const resumeLessonId = enrollment?.lastLessonId ?? firstLessonId;
+  const watchHref = (lessonId: string) => `/learn/watch/${course.slug}/${lessonId}`;
+  const canOpen = (lesson: { isFreePreview: boolean }) => isAdmin || enrolled || lesson.isFreePreview;
   const off = discountPercent(course.priceInr, course.compareAtInr);
   const duration = formatDuration(course.durationS);
 
@@ -90,7 +98,7 @@ export default async function LearnCoursePage({ params }: Props) {
 
           <section className="space-y-3">
             <h2 className="text-lg font-semibold">Curriculum</h2>
-            <Curriculum sections={course.sections} />
+            <Curriculum sections={course.sections} hrefFor={(l) => (canOpen(l) ? watchHref(l.id) : null)} />
           </section>
 
           {course.requirements.length > 0 && (
@@ -149,8 +157,16 @@ export default async function LearnCoursePage({ params }: Props) {
                 )}
               </div>
 
-              {enrolled ? (
-                <Badge variant="secondary" className="w-full justify-center py-2">You&apos;re enrolled</Badge>
+              {enrolled || isAdmin ? (
+                resumeLessonId ? (
+                  <Button asChild className="w-full">
+                    <Link href={watchHref(resumeLessonId)}>
+                      {isAdmin ? "Open course" : enrollment?.lastLessonId ? "Continue learning" : "Start learning"}
+                    </Link>
+                  </Button>
+                ) : (
+                  <Badge variant="secondary" className="w-full justify-center py-2">No lessons yet</Badge>
+                )
               ) : (
                 <>
                   {/* Purchase is wired in Phase 4. */}

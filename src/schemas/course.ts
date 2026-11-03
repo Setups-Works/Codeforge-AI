@@ -74,3 +74,9 @@ export const reorderSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("sections"), ids: z.array(z.uuid()).min(1).max(200) }),
   z.object({ type: z.literal("lessons"), sectionId: z.uuid(), ids: z.array(z.uuid()).min(1).max(500) }),
 ]);
+
+export const progressSchema = z
+  .object({ lessonId: z.uuid(), status: z.enum(["started", "completed"]) })
+  .strict();
+
+export const grantSchema = z.object({ userId: z.uuid() }).strict();
