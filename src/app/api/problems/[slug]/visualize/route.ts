@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-auth";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { enforceAiCredit } from "@/services/ai-credits";
 import { isAiConfigured } from "@/services/ai/groq";
 import { generateRunVisualization } from "@/services/ai/visualize";
 import { getQuestionBySlug } from "@/services/questions";
@@ -51,6 +52,9 @@ export async function POST(
 
   const question = await getQuestionBySlug(slug).catch(() => null);
   if (!question) return NextResponse.json({ error: "Problem not found" }, { status: 404 });
+
+  const credit = await enforceAiCredit(session.user.id, session.user.plan);
+  if (credit) return credit;
 
   const passed = test.passed === true;
   try {

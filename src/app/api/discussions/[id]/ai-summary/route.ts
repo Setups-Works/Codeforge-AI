@@ -1,16 +1,21 @@
 import { NextRequest,NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-auth";
 import { getGroqClient } from "@/services/ai/groq";
+import { enforceAiCredit } from "@/services/ai-credits";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { type SbReply } from "@/services/discussions-store";
 
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { error } = await requireUser();
+  const { session, error } = await requireUser();
   if (error) return error;
+
+  const limited = await enforceRateLimit("ai", req, session.user.id);
+  if (limited) return limited;
 
   const { id } = await params;
 
@@ -28,6 +33,9 @@ export async function POST(
     title = d.title;
     content = d.content;
     replyText = (d.replies ?? []).map((r) => r.content).join("\n---\n");}
+
+  const credit = await enforceAiCredit(session.user.id, session.user.plan);
+  if (credit) return credit;
 
   const prompt = `Summarize this coding discussion in 3-4 concise bullet points. Focus on key insights, solutions mentioned, and consensus.\n\nTitle: ${title}\n\nMain post: ${content}\n\nReplies:\n${replyText || "No replies yet."}`;
 

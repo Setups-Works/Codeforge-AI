@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-auth";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { enforceAiCredit } from "@/services/ai-credits";
 import { challengeSubmitSchema } from "@/schemas/challenge";
 import {
   recordToFiles,
@@ -72,9 +73,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Challenge not found" }, { status: 404 });
   }
 
-  // Grade the submission
+  // Grade the submission (AI grading spends one credit; plan limits apply)
   let review: AiReview;
   if (isAiConfigured()) {
+    const credit = await enforceAiCredit(session.user.id, session.user.plan);
+    if (credit) return credit;
     const filesBlock = Object.entries(parsed.data.files)
       .map(([path, content]) => `--- ${path} ---\n${content.slice(0, 12_000)}`)
       .join("\n\n");
