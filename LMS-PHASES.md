@@ -288,7 +288,7 @@ on them.
 - **Bundles:** `course_bundles` + items, one order that enrols every course (`source=bundle`), admin
   manager at `/admin/bundles` (publish needs >= 2 published courses), bundle page and strip on the
   catalogue, bundle orders appear in billing/invoices/receipts/admin orders.
-- **Emails (Vercel Cron, daily 09:00 UTC, `CRON_SECRET` required, fails closed):** drip-unlock notices
+- **Emails (Vercel Cron, daily 09:00 UTC; no secret — the job is idempotent and throttled to once per hour):** drip-unlock notices
   when a scheduled lesson opens. Claimed in `lms_email_log` before sending so nothing is sent twice;
   respects `email_opt_out`. (Abandoned-checkout reminders were removed on request.)
 - **Referrals:** `/invite/CODE` sets a 30-day cookie; the friend's first course purchase gets

@@ -50,6 +50,22 @@ async function sendOnce(kind: string, userId: string, refId: string, to: Recipie
   }
 }
 
+/**
+ * Run the drip job at most once per hour, however often the endpoint is hit.
+ * The endpoint has no secret, so this is what stops it being used to hammer the
+ * database; the per-email log already stops duplicate emails.
+ */
+export async function runDripJobThrottled(now: Date = new Date()): Promise<{ skipped: true } | { skipped: false; sent: number }> {
+  const bucket = now.toISOString().slice(0, 13); // e.g. 2026-11-05T09
+  if (!(await claim("cron_drip", "system", bucket))) return { skipped: true };
+  try {
+    return { skipped: false, sent: await sendDripUnlockEmails(now) };
+  } catch (e) {
+    await release("cron_drip", "system", bucket); // let the next hit retry
+    throw e;
+  }
+}
+
 /** Tell learners when a drip-scheduled lesson has just unlocked for them. */
 export async function sendDripUnlockEmails(now: Date = new Date()): Promise<number> {
   const client = sb();
