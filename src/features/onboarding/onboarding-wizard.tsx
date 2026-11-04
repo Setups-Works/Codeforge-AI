@@ -258,13 +258,14 @@ function StepWelcome({ name, onNext }: { name: string; onNext: () => void }) {
         initial={{ scale: 0, rotate: -12 }}
         animate={{ scale: 1, rotate: 0 }}
         transition={{ type: "spring", stiffness: 320, damping: 18, delay: 0.05 }}
-        className="flex size-20 items-center justify-center rounded-2xl bg-[#006bff] shadow-lg shadow-[#006bff]/25"
+        className="flex size-24 items-center justify-center overflow-hidden rounded-2xl border bg-white shadow-lg shadow-[#006bff]/15"
       >
         <motion.span
           animate={{ y: [0, -4, 0] }}
           transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
         >
-          <Flame className="size-10 text-white" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon-192.png" alt="Setups Works Lab" width={96} height={96} className="size-24" />
         </motion.span>
       </motion.div>
       <Pop>
