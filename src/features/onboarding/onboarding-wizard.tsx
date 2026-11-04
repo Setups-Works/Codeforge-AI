@@ -255,18 +255,14 @@ function StepWelcome({ name, onNext }: { name: string; onNext: () => void }) {
   return (
     <Stagger className="flex flex-col items-center text-center gap-6">
       <motion.div
-        initial={{ scale: 0, rotate: -12 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: "spring", stiffness: 320, damping: 18, delay: 0.05 }}
-        className="flex size-24 items-center justify-center overflow-hidden rounded-2xl border bg-white shadow-lg shadow-[#006bff]/15"
+        initial={{ scale: 0.85, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 320, damping: 22, delay: 0.05 }}
       >
-        <motion.span
-          animate={{ y: [0, -4, 0] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon-192.png" alt="Setups Works Lab" width={96} height={96} className="size-24" />
-        </motion.span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="Setups Works Labs" width={956} height={223} className="h-16 w-auto dark:hidden" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-dark.png" alt="Setups Works Labs" width={956} height={223} className="hidden h-16 w-auto dark:inline-block" />
       </motion.div>
       <Pop>
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
