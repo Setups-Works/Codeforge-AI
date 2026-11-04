@@ -49,7 +49,7 @@ body{font-family:'Geist',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:
 .sheet{max-width:720px;margin:0 auto;background:#fff;border:1px solid ${BORDER};border-radius:16px;padding:48px;box-shadow:0 2px 2px rgba(0,0,0,.04)}
 .top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px}
 .brand{font-size:22px;font-weight:700;letter-spacing:-0.5px}
-.brand span{color:${BLUE}}
+.brand img{height:44px;width:auto;display:block}
 .tag{font-size:13px;color:${MUTED};margin-top:4px}
 .inv{text-align:right}
 .inv h1{font-size:26px;font-weight:600;letter-spacing:-0.8px}
@@ -72,7 +72,7 @@ td.r,th.r{text-align:right}
   <div class="sheet">
     <div class="top">
       <div>
-        <div class="brand">Setups Works<span>AI</span></div>
+        <div class="brand"><img src="${SITE_URL}/logo.png" alt="${esc(APP_NAME)}"/></div>
         <div class="tag">labs.setups.works</div>
       </div>
       <div class="inv">
