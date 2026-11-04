@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { GROWTH } from "@/lib/lms/growth";
 import { requireUser } from "@/lib/api-auth";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { lmsEnabled } from "@/lib/lms/flag";
@@ -18,7 +19,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   if (!isUuid(id)) return notFound();
 
-  const result = await createCheckout(session.user.id, id);
+  // Optional body: { couponCode }. An empty or missing body just means no coupon.
+  const raw = (await req.json().catch(() => ({}))) as { couponCode?: unknown };
+  const couponCode = typeof raw.couponCode === "string" ? raw.couponCode.slice(0, 40) : null;
+
+  const referralCode = req.cookies.get(GROWTH.referral.cookie)?.value ?? null;
+  const result = await createCheckout(session.user.id, id, couponCode, referralCode);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
   if (result.free) return NextResponse.json({ free: true });
   return NextResponse.json({

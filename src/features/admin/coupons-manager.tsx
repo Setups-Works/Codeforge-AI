@@ -37,6 +37,7 @@ interface Coupon {
   usedCount: number;
   oncePerUser: boolean;
   plans: string[];
+  appliesTo: "plan" | "course" | "all";
   expiresAt: string | null;
   active: boolean;
   createdAt: string;
@@ -50,6 +51,7 @@ const EMPTY = {
   minAmount: "",
   maxRedemptions: "",
   oncePerUser: true,
+  appliesTo: "plan" as "plan" | "course" | "all",
   expiresAt: "",
 };
 
@@ -79,6 +81,7 @@ export function CouponsManager() {
           minAmount: form.minAmount ? Number(form.minAmount) : 0,
           maxRedemptions: form.maxRedemptions ? Number(form.maxRedemptions) : -1,
           oncePerUser: form.oncePerUser,
+          appliesTo: form.appliesTo,
           expiresAt: form.expiresAt || null,
         }),
       });
@@ -160,6 +163,16 @@ export function CouponsManager() {
           <Field label="Max redemptions (blank = ∞)">
             <Input type="number" value={form.maxRedemptions} onChange={(e) => setForm((f) => ({ ...f, maxRedemptions: e.target.value }))} placeholder="∞" />
           </Field>
+          <Field label="Applies to">
+            <Select value={form.appliesTo} onValueChange={(v) => setForm((f) => ({ ...f, appliesTo: v as "plan" | "course" | "all" }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="plan">Subscription plans</SelectItem>
+                <SelectItem value="course">Courses</SelectItem>
+                <SelectItem value="all">Plans and courses</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
           <Field label="Expires (optional)">
             <Input type="date" value={form.expiresAt} onChange={(e) => setForm((f) => ({ ...f, expiresAt: e.target.value }))} />
           </Field>
@@ -193,6 +206,7 @@ export function CouponsManager() {
               <TableRow>
                 <TableHead>Code</TableHead>
                 <TableHead>Discount</TableHead>
+                <TableHead>For</TableHead>
                 <TableHead>Used</TableHead>
                 <TableHead>Expires</TableHead>
                 <TableHead>Active</TableHead>
@@ -210,6 +224,7 @@ export function CouponsManager() {
                     {c.type === "percent" ? `${c.value}%` : `₹${c.value}`}
                     {c.oncePerUser && <span className="ml-1 text-[11px] text-muted-foreground">· 1/user</span>}
                   </TableCell>
+                  <TableCell className="text-xs capitalize text-muted-foreground">{c.appliesTo === "all" ? "Plans + courses" : c.appliesTo === "course" ? "Courses" : "Plans"}</TableCell>
                   <TableCell className="text-sm tabular-nums">
                     {c.usedCount}{c.maxRedemptions >= 0 ? ` / ${c.maxRedemptions}` : ""}
                   </TableCell>

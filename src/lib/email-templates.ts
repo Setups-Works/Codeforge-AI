@@ -397,6 +397,39 @@ export function courseReceiptEmailSubject(courseTitle: string): string {
   return `You're enrolled in ${courseTitle}`;
 }
 
+/** A drip-scheduled lesson just unlocked. */
+export function dripUnlockedEmailHtml({ name, courseTitle, lessonTitle, lessonUrl }: { name: string; courseTitle: string; lessonTitle: string; lessonUrl: string }): string {
+  return base(`
+    ${eyebrow("New lesson unlocked")}
+    <h1 style="${H1}">${lessonTitle}</h1>
+    <p style="${COPY}">
+      Hi ${name}, a new lesson in <strong>${courseTitle}</strong> is now available.
+    </p>
+    ${btn("Start the lesson", lessonUrl)}
+  `);
+}
+
+export function dripUnlockedEmailSubject(courseTitle: string, lessonTitle: string): string {
+  return `New in ${courseTitle}: ${lessonTitle}`;
+}
+
+/** The referrer's reward after a friend's first purchase. */
+export function referralRewardEmailHtml({ name, code, percent, validDays, url }: { name: string; code: string; percent: number; validDays: number; url: string }): string {
+  return base(`
+    ${eyebrow("Thanks for sharing")}
+    <h1 style="${H1}">A friend joined through you, ${name}</h1>
+    <p style="${COPY}">
+      Here's ${percent}% off your next purchase. The code works once and is valid for ${validDays} days.
+    </p>
+    ${summaryCard(summaryRow("Your code", code, true))}
+    ${btn("Browse courses", url)}
+  `);
+}
+
+export function referralRewardEmailSubject(): string {
+  return "Your referral reward is here";
+}
+
 /** A recurring charge failed / the subscription was halted. */
 export function paymentFailedEmailHtml({
   name,

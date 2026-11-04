@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { formatPrice } from "@/lib/plans";
 import { api } from "@/lib/lms/api";
 import { APP_NAME } from "@/lib/constants";
 
@@ -32,29 +34,56 @@ interface Props {
   isFree: boolean;
   priceLabel: string;
   paymentsAvailable: boolean;
+  /** Set when the learner's plan already includes this course. */
+  includedPlanName?: string | null;
+  /** Buy a bundle instead of a single course (no coupons, lands on My courses). */
+  bundle?: boolean;
   prefill: { name: string; email: string };
 }
 
 /** Buy (Razorpay) or enrol (free) in a course, then drop the learner into lesson one. */
-export function BuyCourseButton({ courseId, courseSlug, isFree, priceLabel, paymentsAvailable, prefill }: Props) {
+export function BuyCourseButton({ courseId, courseSlug, isFree, priceLabel, paymentsAvailable, includedPlanName, bundle = false, prefill }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const base = `/api/learn/courses/${courseId}`;
+  const [showCoupon, setShowCoupon] = useState(false);
+  const [code, setCode] = useState("");
+  const [applied, setApplied] = useState<{ code: string; discount: number; finalAmount: number } | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+  const base = `/api/learn/${bundle ? "bundles" : "courses"}/${courseId}`;
 
   const enter = (lessonId: string | null) =>
-    router.push(lessonId ? `/learn/watch/${courseSlug}/${lessonId}` : `/learn/courses/${courseSlug}`);
+    router.push(bundle ? "/learn/my-courses" : lessonId ? `/learn/watch/${courseSlug}/${lessonId}` : `/learn/courses/${courseSlug}`);
+
+  async function applyCoupon() {
+    setChecking(true);
+    setCouponError(null);
+    try {
+      const res = await api<{ ok: boolean; code?: string; discount?: number; finalAmount?: number; reason?: string }>(`${base}/coupon`, { method: "POST", json: { code } });
+      if (res.ok) setApplied({ code: res.code!, discount: res.discount!, finalAmount: res.finalAmount! });
+      else {
+        setApplied(null);
+        setCouponError(res.reason ?? "That coupon can't be used here");
+      }
+    } catch (e) {
+      setCouponError(e instanceof Error ? e.message : "Couldn't check the coupon");
+    } finally {
+      setChecking(false);
+    }
+  }
 
   async function start() {
     setBusy(true);
     try {
       const order = await api<{ free: boolean; orderId?: string; amount?: number; currency?: string; key?: string; name?: string }>(
         `${base}/checkout`,
-        { method: "POST" },
+        { method: "POST", json: applied ? { couponCode: applied.code } : {} },
       );
 
       if (order.free) {
         toast.success("You're enrolled");
-        router.refresh();
+        if (bundle) enter(null);
+        else router.refresh();
         return;
       }
 
@@ -94,14 +123,34 @@ export function BuyCourseButton({ courseId, courseSlug, isFree, priceLabel, paym
     }
   }
 
-  const disabled = busy || (!isFree && !paymentsAvailable);
+  const disabled = busy || (!isFree && !includedPlanName && !paymentsAvailable);
 
   return (
     <div className="space-y-2">
       <Button className="w-full" onClick={start} disabled={disabled}>
         {busy && <Loader2 className="size-4 animate-spin" />}
-        {isFree ? "Enrol for free" : `Buy for ${priceLabel}`}
+        {includedPlanName ? `Start free with your ${includedPlanName} plan` : isFree ? "Enrol for free" : applied ? `Buy for ${formatPrice(applied.finalAmount)}` : `Buy for ${priceLabel}`}
       </Button>
+      {!isFree && !includedPlanName && !bundle && (
+        applied ? (
+          <p className="text-center text-xs text-muted-foreground">
+            {applied.code} applied — you save {formatPrice(applied.discount)}.{" "}
+            <button type="button" className="underline" onClick={() => { setApplied(null); setCode(""); }}>Remove</button>
+          </p>
+        ) : showCoupon ? (
+          <div className="space-y-1">
+            <div className="flex gap-2">
+              <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="Coupon code" maxLength={40} className="h-9" aria-label="Coupon code" />
+              <Button type="button" variant="outline" size="sm" onClick={applyCoupon} disabled={checking || !code.trim()}>
+                {checking ? <Loader2 className="size-4 animate-spin" /> : "Apply"}
+              </Button>
+            </div>
+            {couponError && <p className="text-xs text-destructive">{couponError}</p>}
+          </div>
+        ) : (
+          <button type="button" className="mx-auto block text-xs text-muted-foreground underline" onClick={() => setShowCoupon(true)}>Have a coupon?</button>
+        )
+      )}
       {!isFree && !paymentsAvailable && <p className="text-center text-xs text-muted-foreground">Payments aren&apos;t available yet.</p>}
     </div>
   );

@@ -38,6 +38,7 @@ import {
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/lms/api";
 import { COURSE_LEVELS, COURSE_LIMITS, LESSON_KINDS, type CourseStatus, type LessonKind } from "@/lib/lms/constants";
+import { INCLUDABLE_PLANS } from "@/lib/lms/growth";
 import { STATUS_VARIANT } from "@/features/admin/courses-manager";
 import type { AdminCourse, AdminCourseDetail, AdminLesson, AdminSection } from "@/services/lms-courses";
 import type { AdminEnrollment } from "@/services/lms-learn";
@@ -333,6 +334,7 @@ function PricingSeoForm({ course, onSaved }: { course: AdminCourse; onSaved: () 
   const [f, setF] = useState({
     slug: course.slug,
     isFree: course.isFree,
+    includedInPlans: course.includedInPlans,
     priceInr: String(course.priceInr),
     compareAtInr: course.compareAtInr == null ? "" : String(course.compareAtInr),
     seoTitle: course.seoTitle ?? "",
@@ -361,6 +363,22 @@ function PricingSeoForm({ course, onSaved }: { course: AdminCourse; onSaved: () 
             </Field>
           </>
         )}
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label className="text-xs">Included in subscription plans</Label>
+          <div className="flex flex-wrap gap-4">
+            {INCLUDABLE_PLANS.map((p) => (
+              <label key={p} className="flex items-center gap-2 text-sm capitalize">
+                <input
+                  type="checkbox"
+                  checked={f.includedInPlans.includes(p)}
+                  onChange={(e) => set("includedInPlans")(e.target.checked ? [...f.includedInPlans, p] : f.includedInPlans.filter((x) => x !== p))}
+                />
+                {p}
+              </label>
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground">Subscribers on a ticked plan get this course without paying. Access ends when their plan does.</p>
+        </div>
         <Field label="SEO title" className="sm:col-span-2">
           <Input value={f.seoTitle} maxLength={70} onChange={(e) => set("seoTitle")(e.target.value)} />
         </Field>
@@ -377,6 +395,7 @@ function PricingSeoForm({ course, onSaved }: { course: AdminCourse; onSaved: () 
           save.mutate({
             slug: f.slug.trim(),
             isFree: f.isFree,
+            includedInPlans: f.includedInPlans,
             ...(f.isFree ? {} : { priceInr: Number(f.priceInr) || 0 }),
             compareAtInr: f.isFree || !f.compareAtInr ? null : Number(f.compareAtInr),
             seoTitle: orNull(f.seoTitle),

@@ -15,7 +15,7 @@ export async function getBillingLedger(userId: string, limit = 50): Promise<Ledg
   const client = supabaseAdmin();
   const { data, error } = await client
     .from("course_orders")
-    .select("id,course_id,amount_inr,currency,status,paid_at")
+    .select("id,course_id,bundle_id,amount_inr,currency,status,paid_at")
     .eq("user_id", userId)
     .in("status", ["paid", "refunded"])
     .order("paid_at", { ascending: false })
@@ -24,18 +24,22 @@ export async function getBillingLedger(userId: string, limit = 50): Promise<Ledg
 
   const orders = (data ?? []) as {
     id: string;
-    course_id: string;
+    course_id: string | null;
+    bundle_id: string | null;
     amount_inr: number;
     currency: string;
     status: "paid" | "refunded";
     paid_at: string | null;
   }[];
 
-  const courseIds = [...new Set(orders.map((o) => o.course_id))];
-  const { data: courses } = courseIds.length
-    ? await client.from("courses").select("id,title,slug").in("id", courseIds)
-    : { data: [] };
+  const courseIds = [...new Set(orders.flatMap((o) => (o.course_id ? [o.course_id] : [])))];
+  const bundleIds = [...new Set(orders.flatMap((o) => (o.bundle_id ? [o.bundle_id] : [])))];
+  const [{ data: courses }, { data: bundles }] = await Promise.all([
+    courseIds.length ? client.from("courses").select("id,title,slug").in("id", courseIds) : Promise.resolve({ data: [] }),
+    bundleIds.length ? client.from("course_bundles").select("id,title").in("id", bundleIds) : Promise.resolve({ data: [] }),
+  ]);
   const byId = new Map(((courses ?? []) as { id: string; title: string; slug: string }[]).map((c) => [c.id, c]));
+  const bundleTitle = new Map(((bundles ?? []) as { id: string; title: string }[]).map((b) => [b.id, b.title]));
   const now = new Date();
 
   const courseRows = orders.map((o) => {
@@ -43,8 +47,8 @@ export async function getBillingLedger(userId: string, limit = 50): Promise<Ledg
     const deadline = paidAt ? refundDeadline(paidAt) : null;
     return courseRow({
       id: o.id,
-      courseTitle: byId.get(o.course_id)?.title ?? "Course",
-      courseSlug: byId.get(o.course_id)?.slug ?? null,
+      courseTitle: o.course_id ? (byId.get(o.course_id)?.title ?? "Course") : `${bundleTitle.get(o.bundle_id!) ?? "Course"} (bundle)`,
+      courseSlug: o.course_id ? (byId.get(o.course_id)?.slug ?? null) : null,
       amount: o.amount_inr,
       currency: o.currency,
       status: o.status,
@@ -96,14 +100,15 @@ export async function getCourseInvoice(userId: string, orderId: string): Promise
   const client = supabaseAdmin();
   const { data } = await client
     .from("course_orders")
-    .select("id,course_id,amount_inr,currency,status,paid_at,razorpay_payment_id")
+    .select("id,course_id,bundle_id,amount_inr,currency,status,paid_at,razorpay_payment_id")
     .eq("id", orderId)
     .eq("user_id", userId)
     .in("status", ["paid", "refunded"])
     .maybeSingle();
   const o = data as {
     id: string;
-    course_id: string;
+    course_id: string | null;
+    bundle_id: string | null;
     amount_inr: number;
     currency: string;
     status: "paid" | "refunded";
@@ -111,7 +116,9 @@ export async function getCourseInvoice(userId: string, orderId: string): Promise
     razorpay_payment_id: string | null;
   } | null;
   if (!o || !o.paid_at) return null;
-  const { data: course } = await client.from("courses").select("title").eq("id", o.course_id).maybeSingle();
+  const { data: course } = o.course_id
+    ? await client.from("courses").select("title").eq("id", o.course_id).maybeSingle()
+    : await client.from("course_bundles").select("title").eq("id", o.bundle_id!).maybeSingle();
   return {
     id: o.id,
     amount: o.amount_inr,
@@ -119,6 +126,6 @@ export async function getCourseInvoice(userId: string, orderId: string): Promise
     status: o.status,
     paidAt: new Date(o.paid_at),
     paymentId: o.razorpay_payment_id,
-    courseTitle: (course as { title: string } | null)?.title ?? "Course",
+    courseTitle: `${(course as { title: string } | null)?.title ?? "Course"}${o.bundle_id ? " (bundle)" : ""}`,
   };
 }

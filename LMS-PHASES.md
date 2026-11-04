@@ -15,7 +15,7 @@ decisions). We build **one phase at a time**; each phase ships behind
 | 6 | Public SEO pages | `/courses` indexed with rich schema | ✅ committed |
 | 7 | Engagement | Reviews, Q&A, notes, certificates | ✅ committed and deployed |
 | 8 | Practice integration | Problem lessons, quizzes, AI mentor, XP | ✅ committed; migration applied, live-DB verified |
-| 9 | Growth & commerce | Course coupons, bundles, referrals, emails | ⬜ |
+| 9 | Growth & commerce | Course coupons, bundles, referrals, emails | ✅ committed; migrations 0020 + 0021 applied, live-DB verified |
 | 10 | Analytics & hardening | Admin analytics, refunds, invoices, video host upgrade, tests | ⬜ |
 | 11 | Landing page | Home page showcases the full LMS (after all phases) | ⬜ |
 
@@ -275,8 +275,30 @@ on them.
 **Goal:** convert and retain.
 
 - Coupons scoped to courses; bundles; "included in Plus" access source.
-- Referral/affiliate links with attribution; abandoned-checkout and drip emails;
+- Referral/affiliate links with attribution; drip emails;
   drip-released lessons.
+
+**Delivered (code only; needs migrations `0020_course_coupons.sql` and `0021_lms_growth.sql`):**
+- **Course coupons:** `applies_to` plan/course/all, optional per-course restriction (schema + rules; no
+  admin picker yet), server re-check at checkout, 100%-off enrols directly, plan checkout rejects
+  course-only coupons, "Have a coupon?" on the Buy button, admin "Applies to".
+- **Plan-included courses:** per-course "Included in plans" (Go/Plus). Eligible subscribers enrol
+  with no payment (`source=plan`); access lasts only while their plan covers the course (checked
+  on read, expired plans lose it); buying a course later upgrades a plan enrolment to a purchase.
+- **Bundles:** `course_bundles` + items, one order that enrols every course (`source=bundle`), admin
+  manager at `/admin/bundles` (publish needs >= 2 published courses), bundle page and strip on the
+  catalogue, bundle orders appear in billing/invoices/receipts/admin orders.
+- **Emails (Vercel Cron, daily 09:00 UTC, `CRON_SECRET` required, fails closed):** drip-unlock notices
+  when a scheduled lesson opens. Claimed in `lms_email_log` before sending so nothing is sent twice;
+  respects `email_opt_out`. (Abandoned-checkout reminders were removed on request.)
+- **Referrals:** `/invite/CODE` sets a 30-day cookie; the friend's first course purchase gets
+  10% off (not stacked with a coupon); once paid, the referrer gets a one-time 15% coupon by email.
+  Share link and rewards shown in Settings -> Billing. Percentages/windows live in
+  `lib/lms/growth.ts`.
+**Defaults I chose (change in `lib/lms/growth.ts` / admin):** referee 10%, referrer 15%, reward valid
+90 days, no payout in cash.
+**Verified:** typecheck, lint, full jest suite (243); pure rules for coupons, plan coverage, drip
+schedule and referral codes are unit-tested. **Live-DB run:** coupon rules and redemption, 100%-off enrolment, plan access starting/lapsing and upgrading to a purchase, bundle publish rules/enrolment/ledger/invoice/delete guard, referral eligibility and one-time reward (idempotent), drip emails sent once.
 
 **Done when:** a bundle and a referral purchase complete with correct pricing and
 attribution.

@@ -45,6 +45,7 @@ export interface CatalogSection {
 
 export interface CourseDetail extends CourseCard {
   status: CourseStatus;
+  includedInPlans: string[];
   description: string;
   tags: string[];
   outcomes: string[];
@@ -172,7 +173,7 @@ export async function getCourseBySlug(slug: string, opts: { isAdmin?: boolean } 
   let q = client
     .from("courses")
     .select(
-      `${CARD_COLS},status,description,tags,outcomes,requirements,instructor_bio,instructor_image,promo_video,seo_title,seo_description,seo_keywords,updated_at`,
+      `${CARD_COLS},status,included_in_plans,description,tags,outcomes,requirements,instructor_bio,instructor_image,promo_video,seo_title,seo_description,seo_keywords,updated_at`,
     )
     .eq("slug", slug);
   if (!opts.isAdmin) q = q.eq("status", "published");
@@ -182,6 +183,7 @@ export async function getCourseBySlug(slug: string, opts: { isAdmin?: boolean } 
 
   const row = course as unknown as CardRow & {
     status: CourseStatus;
+    included_in_plans: string[] | null;
     description: string;
     tags: string[];
     outcomes: string[];
@@ -216,6 +218,7 @@ export async function getCourseBySlug(slug: string, opts: { isAdmin?: boolean } 
   return {
     ...cardFromRow(row),
     status: row.status,
+    includedInPlans: row.included_in_plans ?? [],
     description: row.description,
     tags: row.tags ?? [],
     outcomes: row.outcomes ?? [],

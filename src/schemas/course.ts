@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { INCLUDABLE_PLANS } from "@/lib/lms/growth";
 import { COURSE_LEVELS, COURSE_LIMITS, COURSE_STATUSES, LESSON_KINDS, QUIZ_LIMITS } from "@/lib/lms/constants";
 
 const L = COURSE_LIMITS;
@@ -23,6 +24,7 @@ export const coursePatchSchema = z
     priceInr: z.number().int().min(0).max(10_000_000),
     compareAtInr: z.number().int().min(0).max(10_000_000).nullable(),
     isFree: z.boolean(),
+    includedInPlans: z.array(z.enum(INCLUDABLE_PLANS)).max(INCLUDABLE_PLANS.length),
     status: z.enum(COURSE_STATUSES),
     instructorName: z.string().trim().max(120).nullable(),
     instructorBio: z.string().trim().max(2000).nullable(),
@@ -140,4 +142,19 @@ export const quizSubmitSchema = z
     lessonId: z.uuid(),
     answers: z.array(z.number().int().min(0).nullable()).max(QUIZ_LIMITS.questions),
   })
+  .strict();
+
+export const bundleCreateSchema = z.object({ title: z.string().trim().min(3).max(COURSE_LIMITS.title) }).strict();
+
+export const bundlePatchSchema = z
+  .object({
+    title: z.string().trim().min(3).max(COURSE_LIMITS.title),
+    slug: z.string().trim().min(3).max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    description: z.string().max(COURSE_LIMITS.description),
+    thumbnailUrl: z.string().trim().url().max(1000).nullable(),
+    priceInr: z.number().int().min(0).max(10_000_000),
+    status: z.enum(COURSE_STATUSES),
+    courseIds: z.array(z.uuid()).max(30),
+  })
+  .partial()
   .strict();

@@ -5,6 +5,7 @@ import { issueCertificate } from "@/services/lms-certificates";
 import { canAccessLesson, computeGatedIds, type AccessDecision } from "@/lib/lms/access";
 import { XP_COURSE_COMPLETE, XP_LESSON_COMPLETE } from "@/lib/lms/constants";
 import { awardLearningXp } from "@/services/gamification";
+import { planCoversCourse } from "@/lib/lms/growth";
 import type { CourseCard } from "@/services/lms-catalog";
 
 /**
@@ -61,7 +62,23 @@ export async function getEnrollment(userId: string, courseId: string): Promise<E
     .eq("course_id", courseId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return data ? enrollmentFromRow(data as EnrollmentRow) : null;
+  if (!data) return null;
+  const enrollment = enrollmentFromRow(data as EnrollmentRow);
+  // Plan-included access lasts only while the subscription still covers the course.
+  if (enrollment.source === "plan" && !(await planStillCovers(userId, courseId))) return null;
+  return enrollment;
+}
+
+/** Does the user's current paid plan include this course? */
+export async function planStillCovers(userId: string, courseId: string): Promise<boolean> {
+  const client = sb();
+  const [{ data: user }, { data: course }] = await Promise.all([
+    client.from("users").select("plan,plan_expires_at").eq("id", userId).maybeSingle(),
+    client.from("courses").select("included_in_plans").eq("id", courseId).maybeSingle(),
+  ]);
+  const u = user as { plan: string | null; plan_expires_at: string | null } | null;
+  const c = course as { included_in_plans: string[] | null } | null;
+  return planCoversCourse(u?.plan, u?.plan_expires_at, c?.included_in_plans ?? []);
 }
 
 /** A lesson with everything the player needs. Only call after an access check. */
@@ -379,7 +396,14 @@ export async function listMyCourses(userId: string): Promise<MyCourse[]> {
   if (error) throw new Error(error.message);
 
   const now = new Date();
-  const enrollments = ((enr ?? []) as EnrollmentRow[]).map(enrollmentFromRow).filter((e) => !e.expiresAt || e.expiresAt > now);
+  let enrollments = ((enr ?? []) as EnrollmentRow[]).map(enrollmentFromRow).filter((e) => !e.expiresAt || e.expiresAt > now);
+  // Drop plan-included courses the current plan no longer covers.
+  const planOnes = enrollments.filter((e) => e.source === "plan");
+  if (planOnes.length) {
+    const checks = await Promise.all(planOnes.map(async (e) => [e.courseId, await planStillCovers(userId, e.courseId)] as const));
+    const lapsed = new Set(checks.filter(([, ok]) => !ok).map(([id]) => id));
+    enrollments = enrollments.filter((e) => !(e.source === "plan" && lapsed.has(e.courseId)));
+  }
   if (!enrollments.length) return [];
 
   const courseIds = enrollments.map((e) => e.courseId);

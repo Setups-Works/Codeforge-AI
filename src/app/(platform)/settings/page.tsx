@@ -18,6 +18,8 @@ import { BillingPanel } from "@/features/subscription/billing-panel";
 import { UsagePanel } from "@/features/subscription/usage-panel";
 import { MyPurchases } from "@/features/subscription/my-purchases";
 import { CouponHistory } from "@/features/subscription/coupon-history";
+import { ReferralCard } from "@/features/subscription/referral-card";
+import { getReferralOverview } from "@/services/lms-referrals";
 import { listCouponRedemptions } from "@/services/billing-ledger";
 import { lmsEnabled } from "@/lib/lms/flag";
 import { listMyCourses } from "@/services/lms-learn";
@@ -34,6 +36,7 @@ export default async function SettingsPage() {
 
   const plan = user.plan;
   const redemptions = await listCouponRedemptions(session.user.id).catch(() => []);
+  const referral = lmsEnabled() ? await getReferralOverview(session.user.id).catch(() => null) : null;
   const purchases = lmsEnabled() ? await listMyCourses(session.user.id).catch(() => []) : null;
   const paymentsEnabled = !!(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
 
@@ -128,6 +131,7 @@ export default async function SettingsPage() {
           {purchases && <MyPurchases courses={purchases} />}
           <UsagePanel plan={plan} />
           <CouponHistory redemptions={redemptions} />
+          {referral && <ReferralCard overview={JSON.parse(JSON.stringify(referral))} />}
         </>
       ),
     },

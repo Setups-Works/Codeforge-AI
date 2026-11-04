@@ -26,6 +26,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.minAmount != null) update.minAmount = Math.max(0, Number(body.minAmount));
   if (body.maxRedemptions != null) update.maxRedemptions = Number(body.maxRedemptions);
   if (typeof body.oncePerUser === "boolean") update.oncePerUser = body.oncePerUser;
+  if (body.appliesTo === "plan" || body.appliesTo === "course" || body.appliesTo === "all") update.appliesTo = body.appliesTo;
   if (Array.isArray(body.plans)) update.plans = body.plans.filter((p) => p === "go" || p === "plus");
   if ("expiresAt" in body) update.expiresAt = body.expiresAt ? new Date(String(body.expiresAt)) : null;
 

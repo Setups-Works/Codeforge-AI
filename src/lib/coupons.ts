@@ -68,11 +68,13 @@ export async function validateCoupon(opts: {
   if (!code) return { ok: false, reason: "Enter a coupon code" };
 
   let coupon: (CouponDoc & { _id: string }) | null;
+  let couponAppliesTo = "plan";
   let alreadyRedeemed: () => Promise<boolean>;
 
   {    const sb = supabaseAdmin();
     const { data } = await sb.from("coupons").select("*").eq("code", code).maybeSingle();
     coupon = data ? toCouponDoc(data as SbCouponRow) : null;
+    couponAppliesTo = (data as { applies_to?: string } | null)?.applies_to ?? "plan";
     const couponId = data ? (data as SbCouponRow).id : null;
     alreadyRedeemed = async () => {
       if (!couponId) return false;
@@ -86,6 +88,7 @@ export async function validateCoupon(opts: {
     };}
 
   if (!coupon || !coupon.active) return { ok: false, reason: "Invalid or inactive coupon" };
+  if (couponAppliesTo === "course") return { ok: false, reason: "This coupon is for courses, not subscription plans" };
 
   if (coupon.expiresAt && new Date(coupon.expiresAt).getTime() < Date.now()) {
     return { ok: false, reason: "This coupon has expired" };
@@ -166,6 +169,7 @@ export interface AdminCoupon {
   usedCount: number;
   oncePerUser: boolean;
   plans: string[];
+  appliesTo: "plan" | "course" | "all";
   expiresAt: Date | null;
   active: boolean;
   createdAt: Date;
@@ -183,6 +187,7 @@ export async function adminListCoupons(): Promise<AdminCoupon[]> {
       type: c.type as string, value: c.value as number, minAmount: (c.min_amount as number) ?? 0,
       maxRedemptions: (c.max_redemptions as number) ?? -1, usedCount: (c.used_count as number) ?? 0,
       oncePerUser: Boolean(c.once_per_user), plans: (c.plans as string[]) ?? [],
+      appliesTo: ((c.applies_to as string) ?? "plan") as "plan" | "course" | "all",
       expiresAt: c.expires_at ? new Date(c.expires_at as string) : null,
       active: Boolean(c.active), createdAt: new Date(c.created_at as string),
     }));
@@ -197,6 +202,7 @@ export interface CreateCoupon {
   maxRedemptions: number;
   oncePerUser: boolean;
   plans: string[];
+  appliesTo?: "plan" | "course" | "all";
   expiresAt: Date | null;
   active: boolean;
 }
@@ -209,7 +215,7 @@ export async function createCoupon(input: CreateCoupon): Promise<string | null> 
     const { data, error } = await sb.from("coupons").insert({
       code: input.code, description: input.description, type: input.type, value: input.value,
       min_amount: input.minAmount, max_redemptions: input.maxRedemptions, once_per_user: input.oncePerUser,
-      plans: input.plans, expires_at: input.expiresAt ? input.expiresAt.toISOString() : null, active: input.active,
+      plans: input.plans, applies_to: input.appliesTo ?? "plan", expires_at: input.expiresAt ? input.expiresAt.toISOString() : null, active: input.active,
     }).select("id").single();
     if (error) throw new Error(error.message);
     return (data as { id: string }).id;
@@ -224,13 +230,14 @@ export interface CouponPatch {
   maxRedemptions?: number;
   oncePerUser?: boolean;
   plans?: string[];
+  appliesTo?: "plan" | "course" | "all";
   expiresAt?: Date | null;
 }
 
 const COUPON_FIELD_MAP: Record<keyof CouponPatch, string> = {
   active: "active", description: "description", value: "value", type: "type",
   minAmount: "min_amount", maxRedemptions: "max_redemptions", oncePerUser: "once_per_user",
-  plans: "plans", expiresAt: "expires_at",
+  plans: "plans", appliesTo: "applies_to", expiresAt: "expires_at",
 };
 
 /** Admin: update a coupon (never its code or usedCount). */

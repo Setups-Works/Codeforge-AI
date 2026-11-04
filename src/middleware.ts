@@ -14,6 +14,8 @@ const PUBLIC_PREFIXES = [
   "/forum", // public forum — posting/commenting requires auth (handled in page)
   "/pricing", // public pricing page
   "/courses", // public course catalogue + course pages (SEO)
+  "/invite", // referral share links (/invite/CODE) set a cookie and redirect
+  "/api/cron", // scheduled jobs: authenticated by CRON_SECRET inside the route
   "/certificate", // public certificate verification (the code is the credential)
   "/join", // public campaign / offer landing page
   "/forgot-password",

@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
     maxRedemptions: body.maxRedemptions == null ? -1 : Number(body.maxRedemptions),
     oncePerUser: body.oncePerUser !== false,
     plans,
+    appliesTo: body.appliesTo === "course" || body.appliesTo === "all" ? body.appliesTo : "plan",
     expiresAt: body.expiresAt ? new Date(String(body.expiresAt)) : null,
     active: body.active !== false,
   });

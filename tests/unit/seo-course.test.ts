@@ -5,7 +5,7 @@ const course = (over: Partial<CourseDetail> = {}): CourseDetail => ({
   id: "c1", slug: "dsa-masterclass", title: "DSA Masterclass", subtitle: "Crack interviews", thumbnailUrl: "https://img.example/t.png",
   level: "Intermediate", category: "Algorithms", language: "en", priceInr: 499, compareAtInr: 999, isFree: false,
   instructorName: "Asha Rao", lessonCount: 2, durationS: 4800, students: 12, ratingAvg: null, ratingCount: 0,
-  status: "published", description: "# Learn\nSolve **hard** problems.", tags: ["arrays", "graphs"], outcomes: ["Solve DP"], requirements: ["Basic coding"],
+  status: "published", includedInPlans: [], description: "# Learn\nSolve **hard** problems.", tags: ["arrays", "graphs"], outcomes: ["Solve DP"], requirements: ["Basic coding"],
   instructorBio: "Engineer", instructorImage: null, hasPromo: true, seoTitle: null, seoDescription: null, seoKeywords: "dsa course india",
   updatedAt: "2026-11-01T00:00:00.000Z",
   sections: [{ id: "s1", title: "Basics", lessons: [{ id: "l1", title: "Arrays", kind: "video", durationS: 600, isFreePreview: true, gateNext: false }, { id: "l2", title: "Hashing", kind: "video", durationS: 900, isFreePreview: false, gateNext: false }] }],

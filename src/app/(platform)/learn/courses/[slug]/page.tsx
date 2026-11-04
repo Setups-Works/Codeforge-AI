@@ -12,6 +12,9 @@ import { getSession } from "@/lib/session";
 import { formatPrice } from "@/lib/plans";
 import { getCourseBySlug } from "@/services/lms-catalog";
 import { getEnrollment } from "@/services/lms-learn";
+import { getUserPlan } from "@/services/user-store";
+import { planCoversCourse } from "@/lib/lms/growth";
+import { PLANS, type PlanId } from "@/lib/plans";
 import { getMyReview, isWishlisted, listVisibleReviews } from "@/services/lms-engagement";
 import { ReviewsSection } from "@/features/lms/reviews-section";
 import { WishlistButton } from "@/features/lms/wishlist-button";
@@ -43,6 +46,8 @@ export default async function LearnCoursePage({ params }: Props) {
   const enrollment = isAdmin ? null : await getEnrollment(session.user.id, course.id);
   const enrolled = Boolean(enrollment && (!enrollment.expiresAt || enrollment.expiresAt > new Date()));
 
+  const userPlan = await getUserPlan(session.user.id).catch(() => "free");
+  const planIncluded = planCoversCourse(userPlan, null, course.includedInPlans);
   const [reviews, myReview, wishlisted] = await Promise.all([
     listVisibleReviews(course.id).catch(() => []),
     getMyReview(session.user.id, course.id).catch(() => null),
@@ -74,6 +79,7 @@ export default async function LearnCoursePage({ params }: Props) {
           isFree={course.isFree}
           priceLabel={formatPrice(course.priceInr)}
           paymentsAvailable={paymentsEnabled()}
+          includedPlanName={planIncluded ? PLANS[userPlan as PlanId]?.name ?? null : null}
           prefill={{ name: session.user.name ?? "", email: session.user.email ?? "" }}
         />
         {!course.isFree && (

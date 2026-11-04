@@ -33,6 +33,7 @@ export interface AdminCourse {
   priceInr: number;
   compareAtInr: number | null;
   isFree: boolean;
+  includedInPlans: string[];
   status: CourseStatus;
   publishedAt: string | null;
   instructorName: string | null;
@@ -99,6 +100,7 @@ interface CourseRow {
   price_inr: number;
   compare_at_inr: number | null;
   is_free: boolean;
+  included_in_plans: string[] | null;
   status: CourseStatus;
   published_at: string | null;
   instructor_name: string | null;
@@ -138,7 +140,7 @@ interface SectionRow {
 }
 
 const COURSE_COLS =
-  "id,slug,title,subtitle,description,thumbnail_url,promo_video,level,language,category,tags,price_inr,compare_at_inr,is_free,status,published_at,instructor_name,instructor_bio,instructor_image,outcomes,requirements,seo_title,seo_description,seo_keywords,stats,created_at,updated_at";
+  "id,slug,title,subtitle,description,thumbnail_url,promo_video,level,language,category,tags,price_inr,compare_at_inr,is_free,included_in_plans,status,published_at,instructor_name,instructor_bio,instructor_image,outcomes,requirements,seo_title,seo_description,seo_keywords,stats,created_at,updated_at";
 const LESSON_COLS = "id,course_id,section_id,title,position,kind,video,duration_s,body_md,is_free_preview,drip_days,problem_slug,gate_next,pass_percent";
 
 const courseFromRow = (r: CourseRow): AdminCourse => ({
@@ -156,6 +158,7 @@ const courseFromRow = (r: CourseRow): AdminCourse => ({
   priceInr: r.price_inr,
   compareAtInr: r.compare_at_inr,
   isFree: r.is_free,
+  includedInPlans: r.included_in_plans ?? [],
   status: r.status,
   publishedAt: r.published_at,
   instructorName: r.instructor_name,
@@ -276,6 +279,7 @@ export async function updateCourse(id: string, patch: CoursePatch): Promise<Serv
     priceInr: "price_inr",
     compareAtInr: "compare_at_inr",
     isFree: "is_free",
+    includedInPlans: "included_in_plans",
     status: "status",
     instructorName: "instructor_name",
     instructorBio: "instructor_bio",

@@ -248,7 +248,7 @@ for learning activity; spaced-repetition cards from lesson notes.
 lesson Q&A threads (reusing `discussions`), timestamped notes, wishlist.
 
 **Commerce**: coupons per course, bundles, "included in Plus" access source,
-referral/affiliate links, abandoned-checkout and drip emails, payment invoices,
+referral/affiliate links, drip emails, payment invoices,
 refunds and revocation.
 
 **Admin**: curriculum builder with drag-reorder, bulk Drive-link import (paste a

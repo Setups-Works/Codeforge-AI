@@ -8,5 +8,6 @@
     "src/app/api/ai/interview-feedback/route.ts": { "maxDuration": 60 },
     "src/app/api/admin/questions/generate/route.ts": { "maxDuration": 120 },
     "src/app/api/challenges/submit/route.ts": { "maxDuration": 60 }
-  }
+  },
+  "crons": [{ "path": "/api/cron/lms-emails", "schedule": "0 9 * * *" }]
 }
