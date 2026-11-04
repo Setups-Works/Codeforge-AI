@@ -211,7 +211,7 @@ export function MentorPanel({
         </div>
       )}
 
-      <ScrollArea className="min-h-0 flex-1">
+      <ScrollArea className="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]>div]:!block">
         <div className="space-y-3 p-3">
           {messages.length === 0 && (
             <div className="py-8 text-center">
@@ -227,7 +227,7 @@ export function MentorPanel({
             <div
               key={index}
               className={cn(
-                "rounded-lg px-3 py-2 text-sm",
+                "min-w-0 rounded-lg px-3 py-2 text-sm",
                 message.role === "user"
                   ? "ml-6 bg-primary/10"
                   : "mr-2 border bg-card",
@@ -235,7 +235,7 @@ export function MentorPanel({
             >
               {message.role === "assistant" ? (
                 message.content ? (
-                  <Markdown>{message.content}</Markdown>
+                  <Markdown className="break-words [&_pre]:max-w-full [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto [&_td]:min-w-24 [&_td]:align-top">{message.content}</Markdown>
                 ) : (
                   <Loader2 className="size-4 animate-spin text-muted-foreground" />
                 )
