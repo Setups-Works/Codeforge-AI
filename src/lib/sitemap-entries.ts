@@ -6,6 +6,7 @@ import { listDiscussionsForSitemap } from "@/services/discussions-store";
 import type { SitemapEntry } from "@/lib/sitemap-xml";
 import { lmsEnabled } from "@/lib/lms/flag";
 import { listPublishedCourseSlugs } from "@/services/lms-catalog";
+import { listPublishedBundleSlugs } from "@/services/lms-bundles";
 
 /** Every public URL, in one list: static pages, help, careers, then DB-backed
  *  problems, blog posts and forum threads. DB failures drop just that section
@@ -52,7 +53,7 @@ export async function allSitemapEntries(base: string): Promise<SitemapEntry[]> {
     priority: 0.5,
   }));
 
-  const [problems, posts, threads, courses] = await Promise.all([
+  const [problems, posts, threads, courses, bundles] = await Promise.all([
     listPublishedQuestionSlugs()
       .then((rows) =>
         rows.map((p): SitemapEntry => ({ loc: `${base}/problems/${p.slug}`, lastmod: p.updatedAt ?? now, changefreq: "weekly", priority: 0.7 })),
@@ -75,7 +76,14 @@ export async function allSitemapEntries(base: string): Promise<SitemapEntry[]> {
           )
           .catch(() => [] as SitemapEntry[])
       : Promise.resolve([] as SitemapEntry[]),
+    lmsEnabled()
+      ? listPublishedBundleSlugs()
+          .then((rows) =>
+            rows.map((b): SitemapEntry => ({ loc: `${base}/bundles/${b.slug}`, lastmod: b.updatedAt, changefreq: "weekly", priority: 0.7 })),
+          )
+          .catch(() => [] as SitemapEntry[])
+      : Promise.resolve([] as SitemapEntry[]),
   ]);
 
-  return [...pages, ...problems, ...courses, ...posts, ...threads, ...help, ...careers];
+  return [...pages, ...problems, ...courses, ...bundles, ...posts, ...threads, ...help, ...careers];
 }

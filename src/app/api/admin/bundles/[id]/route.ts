@@ -3,6 +3,7 @@ import { isUuid, notFound, requireLmsAdmin } from "@/lib/lms/guard";
 import { parseBody } from "@/lib/lms/route";
 import { bundlePatchSchema } from "@/schemas/course";
 import { adminGetBundle, deleteBundle, updateBundle } from "@/services/lms-bundles";
+import { pingIndexNow } from "@/lib/indexnow";
 
 export const runtime = "nodejs";
 type Ctx = { params: Promise<{ id: string }> };
@@ -24,6 +25,10 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   const body = await parseBody(req, bundlePatchSchema);
   if (body.error) return body.error;
   const result = await updateBundle(id, body.data);
+  if (result.ok) {
+    const bundle = await adminGetBundle(id);
+    if (bundle?.status === "published" || body.data.status) await pingIndexNow([`/bundles/${bundle?.slug}`, "/courses"]);
+  }
   return result.ok ? NextResponse.json({ ok: true }) : NextResponse.json({ error: result.error }, { status: result.status });
 }
 

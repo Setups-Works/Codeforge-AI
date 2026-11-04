@@ -7,6 +7,9 @@ import { auth } from "@/lib/auth";
 import { lmsEnabled } from "@/lib/lms/flag";
 import { BRAND_KEYWORDS, CORE_KEYWORDS, SITE_URL, courseListGraph, mergeKeywords } from "@/lib/seo";
 import { listPublishedCourses } from "@/services/lms-catalog";
+import { listPublishedBundles } from "@/services/lms-bundles";
+import { formatPrice } from "@/lib/plans";
+import Link from "next/link";
 
 const TITLE = "Online Coding Courses";
 const DESCRIPTION =
@@ -25,6 +28,7 @@ export default async function PublicCoursesPage({ searchParams }: { searchParams
   if (!lmsEnabled()) notFound();
   const session = await auth();
   const featured = await listPublishedCourses({ limit: 20 }).catch(() => ({ items: [], total: 0 }));
+  const bundles = await listPublishedBundles().catch(() => []);
 
   return (
     <div className="min-h-svh bg-background">
@@ -35,6 +39,23 @@ export default async function PublicCoursesPage({ searchParams }: { searchParams
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{TITLE}</h1>
           <p className="max-w-2xl text-muted-foreground">{DESCRIPTION}</p>
         </header>
+        {bundles.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold">Bundles</h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {bundles.map((b) => (
+                <Link key={b.id} href={`/bundles/${b.slug}`} className="rounded-2xl border bg-card p-4 transition-colors hover:border-[#006bff]/50">
+                  <p className="text-xs text-muted-foreground">{b.courses.length} courses</p>
+                  <p className="mt-1 font-semibold">{b.title}</p>
+                  <p className="mt-2 flex items-baseline gap-2">
+                    <span className="text-lg font-semibold text-[#006bff]">{formatPrice(b.priceInr)}</span>
+                    {b.savingsInr > 0 && <span className="text-xs text-muted-foreground">save {formatPrice(b.savingsInr)}</span>}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
         <CatalogView searchParams={await searchParams} basePath="/courses" />
       </div>
     </div>

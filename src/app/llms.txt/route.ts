@@ -5,6 +5,7 @@ import { FOUNDER } from "@/lib/founder";
 import { listPublishedPosts } from "@/services/blog-store";
 import { lmsEnabled } from "@/lib/lms/flag";
 import { listPublishedCourses } from "@/services/lms-catalog";
+import { listPublishedBundles } from "@/services/lms-bundles";
 import { COURSE_REFUND_DAYS } from "@/lib/lms/constants";
 
 export const dynamic = "force-dynamic";
@@ -32,12 +33,13 @@ export async function GET() {
   if (lmsEnabled()) {
     try {
       const { items } = await listPublishedCourses({ limit: 48 });
+      const bundles = await listPublishedBundles().catch(() => []);
       if (items.length) {
         courseSection = `## Courses
 
 ${APP_NAME} sells video courses with lessons, coding-problem exercises, quizzes, progress tracking and verifiable completion certificates. Some courses are included with the Go and Plus plans, and bundles are available. Refunds are available for ${COURSE_REFUND_DAYS} days after purchase; prices include no extra taxes or fees. Catalogue: ${base}/courses
 
-${items.map((c) => `- [${c.title}](${base}/courses/${c.slug})${c.subtitle ? `: ${c.subtitle}` : ""}`).join("\n")}
+${items.map((c) => `- [${c.title}](${base}/courses/${c.slug})${c.subtitle ? `: ${c.subtitle}` : ""}`).join("\n")}${bundles.length ? `\n\nBundles:\n${bundles.map((b) => `- [${b.title}](${base}/bundles/${b.slug}): ${b.courses.length} courses together`).join("\n")}` : ""}
 
 ---
 

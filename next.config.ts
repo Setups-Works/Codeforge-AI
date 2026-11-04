@@ -18,6 +18,14 @@ const ADS_CONNECT_SRC =
 // 'unsafe-inline' required for Next.js inline styles/scripts and analytics
 // 'unsafe-eval' only in dev (Next.js hot reload uses eval)
 // va.vercel-scripts.com serves the Vercel Speed Insights script.
+// Hosts the custom course player may load media from (empty = only same-origin).
+const VIDEO_HOSTS = (process.env.NEXT_PUBLIC_VIDEO_HOSTS ?? "")
+  .split(",")
+  .map((h) => h.trim())
+  .filter(Boolean)
+  .map((h) => `https://${h}`)
+  .join(" ");
+
 const CSP = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline' blob:${isDev ? " 'unsafe-eval'" : ""} https://www.googletagmanager.com https://www.clarity.ms https://us-assets.i.posthog.com https://cdn.jsdelivr.net https://checkout.razorpay.com https://va.vercel-scripts.com https://www.google.com https://www.gstatic.com https://accounts.google.com ${ADS_SCRIPT_SRC}`,
@@ -26,7 +34,8 @@ const CSP = [
   "img-src 'self' data: blob: https:",
   `connect-src 'self' https://api.groq.com https://vitals.vercel-insights.com https://va.vercel-scripts.com https://us.i.posthog.com https://us-assets.i.posthog.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.clarity.ms https://cdn.jsdelivr.net https://*.razorpay.com https://lumberjack.razorpay.com https://blob.vercel-storage.com https://*.public.blob.vercel-storage.com https://*.private.blob.vercel-storage.com https://*.codesandbox.io wss://*.codesandbox.io https://www.google.com https://accounts.google.com ${ADS_CONNECT_SRC}`,
   "worker-src 'self' blob:",
-  "media-src 'self'",
+  // Course videos on the hosts you allow-list in NEXT_PUBLIC_VIDEO_HOSTS (video files and WebVTT captions).
+  `media-src 'self' ${VIDEO_HOSTS}`,
   "object-src 'none'",
   // Razorpay Checkout renders inside an iframe — allow only its domains.
   // Sandpack (compiler Web mode + frontend challenges) runs its bundler and

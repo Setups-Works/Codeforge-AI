@@ -2,6 +2,8 @@ import { APP_NAME } from "@/lib/constants";
 import { PLANS } from "@/lib/plans";
 import type { QuestionDetail } from "@/services/questions";
 import type { CourseCard, CourseDetail } from "@/services/lms-catalog";
+import type { BundleDetail } from "@/services/lms-bundles";
+import type { Certificate } from "@/services/lms-certificates";
 import { lmsEnabled } from "@/lib/lms/flag";
 
 /**
@@ -602,6 +604,10 @@ export function courseGraph(c: CourseDetail, reviews: { authorName: string; rati
       ...(instructor ? { instructor } : {}),
     },
     offers: offer,
+    // A finished course earns a certificate that anyone can verify.
+    educationalCredentialAwarded: "Certificate of completion",
+    audience: { "@type": "EducationalAudience", educationalRole: "student" },
+    ...(c.publishedAt ? { datePublished: c.publishedAt } : {}),
     dateModified: c.updatedAt,
     ...(c.ratingCount > 0 && reviews.length
       ? {
@@ -660,5 +666,77 @@ export function courseListGraph(items: CourseCard[], total: number) {
           numberOfItems: total,
         }
       : null,
+  );
+}
+
+/** A bundle page: a Product with one Offer whose parts are the courses, plus breadcrumbs. */
+export function bundleGraph(b: BundleDetail) {
+  const url = `${SITE_URL}/bundles/${b.slug}`;
+  const summary = plainText(b.description, 300) || `${b.title}: ${b.courses.length} courses together at one price.`;
+  const keywords = mergeKeywords([b.title, `${b.title} bundle`, "course bundle", "coding course bundle", "online courses bundle"], b.courses.map((c) => c.title), BRAND_KEYWORDS);
+  const orgRef = { "@id": ids.org };
+
+  return graph(
+    ...pageNodes({
+      url,
+      name: `${b.title} — Course Bundle`,
+      description: summary,
+      keywords,
+      mainEntity: { "@id": `${url}#bundle` },
+      breadcrumb: [
+        { name: "Home", url: SITE_URL },
+        { name: "Courses", url: "/courses" },
+        { name: b.title, url },
+      ],
+    }),
+    {
+      "@type": "Product",
+      "@id": `${url}#bundle`,
+      name: b.title,
+      description: summary,
+      url,
+      brand: { "@type": "Brand", name: APP_NAME },
+      category: "Online course bundle",
+      keywords: keywords.join(", "),
+      ...(b.thumbnailUrl ? { image: b.thumbnailUrl } : {}),
+      isRelatedTo: b.courses.map((c) => ({ "@type": "Course", name: c.title, url: `${SITE_URL}/courses/${c.slug}`, provider: orgRef })),
+      offers: {
+        "@type": "Offer",
+        "@id": `${url}#offer`,
+        url,
+        price: String(b.priceInr),
+        priceCurrency: "INR",
+        availability: "https://schema.org/InStock",
+        seller: orgRef,
+      },
+    },
+    itemListLd(
+      "Courses in this bundle",
+      b.courses.map((c) => ({ name: c.title, url: `/courses/${c.slug}`, image: c.thumbnailUrl ?? undefined })),
+      `${url}#courses`,
+    ),
+  );
+}
+
+/** A verifiable completion certificate as an EducationalOccupationalCredential. */
+export function certificateGraph(cert: Certificate) {
+  const url = `${SITE_URL}/certificate/${cert.code}`;
+  return graph(
+    ...pageNodes({
+      url,
+      name: `Certificate of completion — ${cert.courseTitle}`,
+      description: `${cert.learnerName} completed ${cert.courseTitle} on ${APP_NAME}.`,
+    }),
+    {
+      "@type": "EducationalOccupationalCredential",
+      "@id": `${url}#credential`,
+      name: `${cert.courseTitle} — Certificate of completion`,
+      credentialCategory: "certificate",
+      identifier: cert.code,
+      dateCreated: cert.issuedAt.toISOString(),
+      url,
+      recognizedBy: { "@id": ids.org },
+      about: { "@type": "Course", name: cert.courseTitle },
+    },
   );
 }

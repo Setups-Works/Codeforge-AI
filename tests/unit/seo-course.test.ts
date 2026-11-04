@@ -1,4 +1,5 @@
-import { courseGraph, courseKeywords, courseListGraph, isoDuration, primaryNav } from "@/lib/seo";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { bundleGraph, certificateGraph, courseGraph, courseKeywords, courseListGraph, isoDuration, primaryNav } from "@/lib/seo";
 import type { CourseDetail } from "@/services/lms-catalog";
 
 const course = (over: Partial<CourseDetail> = {}): CourseDetail => ({
@@ -7,6 +8,7 @@ const course = (over: Partial<CourseDetail> = {}): CourseDetail => ({
   instructorName: "Asha Rao", lessonCount: 2, durationS: 4800, students: 12, ratingAvg: null, ratingCount: 0,
   status: "published", includedInPlans: [], description: "# Learn\nSolve **hard** problems.", tags: ["arrays", "graphs"], outcomes: ["Solve DP"], requirements: ["Basic coding"],
   instructorBio: "Engineer", instructorImage: null, hasPromo: true, seoTitle: null, seoDescription: null, seoKeywords: "dsa course india",
+  publishedAt: "2026-10-01T00:00:00.000Z",
   updatedAt: "2026-11-01T00:00:00.000Z",
   sections: [{ id: "s1", title: "Basics", lessons: [{ id: "l1", title: "Arrays", kind: "video", durationS: 600, isFreePreview: true, gateNext: false }, { id: "l2", title: "Hashing", kind: "video", durationS: 900, isFreePreview: false, gateNext: false }] }],
   ...over,
@@ -87,5 +89,40 @@ describe("primaryNav", () => {
     expect(primaryNav().some((n) => n.url === "/courses")).toBe(false);
     process.env.NEXT_PUBLIC_LMS_ENABLED = "true";
     expect(primaryNav().some((n) => n.url === "/courses")).toBe(true);
+  });
+});
+
+describe("courseGraph extras", () => {
+  it("declares the certificate credential, audience and dates", () => {
+    const c = find(courseGraph(course()), "Course");
+    expect(c.educationalCredentialAwarded).toBe("Certificate of completion");
+    expect(c.audience).toMatchObject({ "@type": "EducationalAudience" });
+    expect(c.datePublished).toBe("2026-10-01T00:00:00.000Z");
+    expect(c.dateModified).toBe("2026-11-01T00:00:00.000Z");
+  });
+});
+
+describe("bundleGraph", () => {
+  const bundle = {
+    id: "b1", slug: "interview-bundle", title: "Interview Bundle", description: "Everything **you** need", thumbnailUrl: null, priceInr: 500, status: "published" as const, createdAt: new Date(),
+    courses: [{ id: "c1", slug: "dsa", title: "DSA", thumbnailUrl: null, priceInr: 300 }, { id: "c2", slug: "sd", title: "System Design", thumbnailUrl: null, priceInr: 400 }],
+    valueInr: 700, savingsInr: 200,
+  };
+  it("emits a Product with an INR offer, the courses it contains and breadcrumbs", () => {
+    const g = bundleGraph(bundle);
+    const p = find(g, "Product");
+    expect(p.offers).toMatchObject({ price: "500", priceCurrency: "INR" });
+    expect(p.isRelatedTo.map((c: any) => c.url)).toEqual(["https://labs.setups.works/courses/dsa", "https://labs.setups.works/courses/sd"]);
+    expect(find(g, "ItemList").numberOfItems).toBe(2);
+    expect(find(g, "BreadcrumbList").itemListElement.map((i: any) => i.name)).toEqual(["Home", "Courses", "Interview Bundle"]);
+  });
+});
+
+describe("certificateGraph", () => {
+  it("describes the credential with its code and issuer", () => {
+    const g = certificateGraph({ id: "x", code: "SW-AAAA-BBBB-CCCC", userId: "u", courseId: "c", learnerName: "Asha Rao", courseTitle: "DSA", instructorName: null, issuedAt: new Date("2026-11-02T00:00:00Z") });
+    const cred = find(g, "EducationalOccupationalCredential");
+    expect(cred).toMatchObject({ identifier: "SW-AAAA-BBBB-CCCC", credentialCategory: "certificate" });
+    expect(cred.dateCreated).toBe("2026-11-02T00:00:00.000Z");
   });
 });

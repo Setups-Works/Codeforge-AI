@@ -330,7 +330,21 @@ handling, noindex certificate 404s, the sitemap, `llms.txt` and the landing Cour
 cleans up afterwards. Run locally with `E2E_PORT=3120 E2E_CHROME=1 npx playwright test` (own dev
 server on its own port, installed Chrome). Signed-in flows (checkout, player, quizzes) are covered
 by service-level tests, not the browser, since they need real credentials.
-**Not started:** host upgrade, coupon-redemption reversal on refund.
+**Custom player + SEO pass (added later):** `features/lms/custom-player.tsx` plays direct `.mp4/.webm`
+files (Drive can't be controlled): play/pause, seek with buffered bar and hover time, ±10s, volume,
+speed (0.5x-2x), captions (WebVTT, remembered), picture-in-picture, fullscreen, double-tap skip,
+full keyboard shortcuts (space/k, j/l, arrows, m, f, c, p, < >, 0-9, Home/End), resume from the saved
+position with "Start over", auto-complete at 90% watched (position saved every 15s to
+`lesson_progress.seconds_watched` via `POST /api/learn/lessons/[id]/position`), up-next countdown,
+buffering/error+retry, viewer-email watermark, and notes that use/seek to the playhead. Enabled by
+adding allowed hosts to `NEXT_PUBLIC_VIDEO_HOSTS` (also widens the CSP `media-src`); lessons accept a
+Drive link or a direct file link, with optional subtitles in the admin editor. Drive lessons keep the
+embedded Drive player. Not built: adaptive quality (needs HLS/hls.js) and DRM/signed URLs.
+**SEO:** public `/bundles/[slug]` (`Product` + `Offer` + courses `ItemList` + breadcrumbs), bundles in
+the sitemap and `llms.txt` and linked from `/courses`; richer `Course` schema (certificate credential,
+audience, published/modified dates); `EducationalOccupationalCredential` on certificate pages;
+IndexNow ping when a course or bundle is published/changed; `/learn` disallowed in robots.
+**Not started:** host upgrade beyond the above, coupon-redemption reversal on refund.
 
 **Done when:** E2E green in CI, refunds verified in test mode, host-upgrade path
 proven with one course.

@@ -40,9 +40,11 @@ async function rest(path: string, init: RequestInit = {}) {
 const run = randomUUID().slice(0, 8);
 const live = { slug: `e2e-live-${run}`, title: `E2E Live Course ${run}`, id: "" };
 const draft = { slug: `e2e-draft-${run}`, title: `E2E Draft Course ${run}`, id: "" };
+const second = { slug: `e2e-second-${run}`, title: `E2E Second Course ${run}`, id: "" };
+const bundle = { slug: `e2e-bundle-${run}`, title: `E2E Bundle ${run}`, id: "" };
 
 test.beforeAll(async () => {
-  for (const c of [live, draft]) {
+  for (const c of [live, draft, second]) {
     const [course] = await rest("courses", {
       method: "POST",
       body: JSON.stringify({
@@ -54,8 +56,8 @@ test.beforeAll(async () => {
         level: "Beginner",
         price_inr: 499,
         compare_at_inr: 999,
-        status: c === live ? "published" : "draft",
-        published_at: c === live ? new Date().toISOString() : null,
+        status: c === draft ? "draft" : "published",
+        published_at: c === draft ? null : new Date().toISOString(),
         outcomes: ["Learn the thing"],
         instructor_name: "Eddie Tester",
       }),
@@ -72,8 +74,18 @@ test.beforeAll(async () => {
   }
 });
 
+test.beforeAll(async () => {
+  const [b] = await rest("course_bundles", {
+    method: "POST",
+    body: JSON.stringify({ slug: bundle.slug, title: bundle.title, description: "Two courses together", price_inr: 599, status: "published" }),
+  });
+  bundle.id = b.id;
+  await rest("course_bundle_items", { method: "POST", body: JSON.stringify([{ bundle_id: b.id, course_id: live.id, position: 0 }, { bundle_id: b.id, course_id: second.id, position: 1 }]) });
+});
+
 test.afterAll(async () => {
-  for (const c of [live, draft]) if (c.id) await rest(`courses?id=eq.${c.id}`, { method: "DELETE" }).catch(() => {});
+  if (bundle.id) await rest(`course_bundles?id=eq.${bundle.id}`, { method: "DELETE" }).catch(() => {});
+  for (const c of [live, draft, second]) if (c.id) await rest(`courses?id=eq.${c.id}`, { method: "DELETE" }).catch(() => {});
 });
 
 test.describe("public course catalogue", () => {
@@ -120,6 +132,7 @@ test.describe("public course page", () => {
     };
     expect(course.name).toBe(live.title);
     expect(course.offers).toMatchObject({ price: "499", priceCurrency: "INR" });
+    expect((course as unknown as Record<string, unknown>).educationalCredentialAwarded).toBe("Certificate of completion");
     expect(course.syllabusSections[0].description).toContain("Free intro lesson");
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", new RegExp(`/courses/${live.slug}$`));
   });
@@ -186,7 +199,44 @@ test.describe("growth links", () => {
   });
 });
 
+test.describe("bundles", () => {
+  test("the public bundle page lists its courses and ships Product schema", async ({ page }) => {
+    await page.goto(`/bundles/${bundle.slug}`);
+    await expect(page.getByRole("heading", { level: 1, name: bundle.title })).toBeVisible();
+    await expect(page.getByRole("link", { name: new RegExp(live.title) }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: new RegExp(second.title) }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /sign in to buy/i })).toBeVisible();
+    const blocks = await page.locator('script[type="application/ld+json"]').allTextContents();
+    const nodes = blocks.map((b) => JSON.parse(b)["@graph"] as { "@type": string }[]).flat();
+    const product = nodes.find((n) => n["@type"] === "Product") as unknown as { offers: Record<string, string>; isRelatedTo: unknown[] };
+    expect(product.offers).toMatchObject({ price: "599", priceCurrency: "INR" });
+    expect(product.isRelatedTo).toHaveLength(2);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", new RegExp(`/bundles/${bundle.slug}$`));
+  });
+
+  test("the catalogue links to the bundle", async ({ page }) => {
+    await page.goto("/courses");
+    await expect(page.locator(`a[href="/bundles/${bundle.slug}"]`)).toBeVisible();
+  });
+});
+
 test.describe("discovery", () => {
+  test("the sitemap lists the bundle", async ({ request }) => {
+    const xml = await (await request.get("/sitemap.xml")).text();
+    expect(xml).toContain(`/bundles/${bundle.slug}`);
+  });
+
+  test("robots keeps crawlers out of the signed-in app", async ({ request }) => {
+    const txt = await (await request.get("/robots.txt")).text();
+    expect(txt).toMatch(/Disallow: \/learn/);
+    expect(txt).not.toMatch(/Disallow: \/courses/);
+  });
+
+  test("llms.txt lists the bundle", async ({ request }) => {
+    const text = await (await request.get("/llms.txt")).text();
+    expect(text).toContain(`/bundles/${bundle.slug}`);
+  });
+
   test("the sitemap lists the published course, not the draft", async ({ request }) => {
     const xml = await (await request.get("/sitemap.xml")).text();
     expect(xml).toContain(`/courses/${live.slug}`);

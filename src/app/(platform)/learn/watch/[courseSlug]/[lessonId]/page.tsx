@@ -15,11 +15,13 @@ import { isUuid } from "@/lib/lms/guard";
 import { toEmbed } from "@/lib/lms/video";
 import { getSession } from "@/lib/session";
 import { getCourseBySlug } from "@/services/lms-catalog";
-import { getCourseProgress, getGatedLessonIds, recordLessonOpened, resolveLessonAccess } from "@/services/lms-learn";
+import { getCourseProgress, getGatedLessonIds, getLessonPosition, recordLessonOpened, resolveLessonAccess } from "@/services/lms-learn";
 import { getLearnerQuiz } from "@/services/lms-quiz";
 import { getQuestionBySlug } from "@/services/questions";
 import { Workspace } from "@/features/workspace/workspace";
 import { MentorPanel } from "@/features/ai-mentor/mentor-panel";
+import { CustomPlayer } from "@/features/lms/custom-player";
+import { LessonPlayerProvider } from "@/features/lms/player-context";
 import { QuizRunner } from "@/features/lms/quiz-runner";
 import { ProblemLessonStatus } from "@/features/lms/problem-lesson-status";
 
@@ -80,6 +82,8 @@ export default async function WatchPage({ params }: Props) {
   const embed = decision.allowed && lesson.video ? toEmbed(lesson.video) : null;
 
   if (decision.allowed && enrollment) await recordLessonOpened(user.id, course.id, lesson.id);
+  const startAt = decision.allowed && enrollment && lesson.kind === "video" ? await getLessonPosition(user.id, lesson.id) : 0;
+  const nextLesson = next && index < ordered.length - 1 ? { href: next, title: ordered[index + 1].title } : null;
 
   // Kind-specific data, loaded only after access is confirmed.
   const quiz = decision.allowed && lesson.kind === "quiz" ? await getLearnerQuiz(user.id, lesson.id, lesson.passPercent) : null;
@@ -93,11 +97,25 @@ export default async function WatchPage({ params }: Props) {
         <ArrowLeft className="size-4" /> {course.title}
       </Link>
 
+      <LessonPlayerProvider>
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="min-w-0 space-y-4">
           {decision.allowed ? (
             lesson.kind === "video" ? (
-              embed ? (
+              embed?.kind === "video" ? (
+                <CustomPlayer
+                  src={embed.src}
+                  mime={embed.mime}
+                  captions={embed.captions}
+                  title={lesson.title}
+                  poster={course.thumbnailUrl}
+                  lessonId={lesson.id}
+                  startAt={startAt}
+                  track={Boolean(enrollment)}
+                  watermark={isAdmin ? null : (session.user.email ?? null)}
+                  next={nextLesson ? { href: nextLesson.href, title: nextLesson.title } : null}
+                />
+              ) : embed?.kind === "iframe" ? (
                 <div className="relative aspect-video overflow-hidden rounded-xl border bg-black">
                   <iframe
                     src={embed.src}
@@ -211,6 +229,7 @@ export default async function WatchPage({ params }: Props) {
           />
         </aside>
       </div>
+      </LessonPlayerProvider>
     </div>
   );
 }

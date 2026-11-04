@@ -530,3 +530,12 @@
 .swagger-wrapper .swagger-ui .response-col_status { color: var(--foreground); font-weight: 600; }
 .swagger-wrapper .swagger-ui table.responses-table td { color: var(--muted-foreground); }
 .swagger-wrapper .swagger-ui .filter-container .operation-filter-input { background: var(--background); border: 1px solid var(--border); border-radius: var(--radius); color: var(--foreground); }
+
+/* Slow drift for the player's viewer watermark. */
+@keyframes swl-wm {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(55vw, 18vh); }
+  50% { transform: translate(20vw, 45vh); }
+  75% { transform: translate(60vw, 30vh); }
+  100% { transform: translate(0, 0); }
+}

@@ -635,6 +635,7 @@ function LessonRow({
     title: lesson.title,
     kind: lesson.kind,
     videoUrl: lesson.videoUrl,
+    captions: lesson.captionsText,
     durationMin: String(lesson.durationMin),
     bodyMd: lesson.bodyMd ?? "",
     isFreePreview: lesson.isFreePreview,
@@ -653,6 +654,7 @@ function LessonRow({
           title: f.title.trim(),
           kind: f.kind,
           videoUrl: f.kind === "video" ? f.videoUrl.trim() : "",
+          captions: f.kind === "video" ? f.captions : "",
           durationMin: Number(f.durationMin) || 0,
           bodyMd: f.bodyMd || null,
           isFreePreview: f.isFreePreview,
@@ -725,11 +727,16 @@ function LessonRow({
           </Field>
           {f.kind === "video" && (
             <Field
-              label="Google Drive video link"
-              hint="Share the file as “Anyone with the link”. Folders are not accepted."
+              label="Video link"
+              hint="A Google Drive file shared as “Anyone with the link”, or a direct .mp4/.webm link on an allowed video host (plays in the custom player with speed, resume and subtitles)."
               className="sm:col-span-2"
             >
-              <Input value={f.videoUrl} onChange={(e) => set("videoUrl")(e.target.value)} placeholder="https://drive.google.com/file/d/…/view" />
+              <Input value={f.videoUrl} onChange={(e) => set("videoUrl")(e.target.value)} placeholder="https://drive.google.com/file/d/…/view or https://cdn.example.com/lesson.mp4" />
+            </Field>
+          )}
+          {f.kind === "video" && f.videoUrl && !f.videoUrl.includes("drive.google.com") && (
+            <Field label="Subtitles (optional)" hint="One per line: Label | language code | link to a .vtt file. Example: English | en | https://cdn.example.com/lesson-en.vtt" className="sm:col-span-2">
+              <Textarea rows={3} value={f.captions} onChange={(e) => set("captions")(e.target.value)} />
             </Field>
           )}
           {f.kind === "problem" && (

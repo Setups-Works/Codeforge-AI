@@ -56,6 +56,7 @@ export interface CourseDetail extends CourseCard {
   seoTitle: string | null;
   seoDescription: string | null;
   seoKeywords: string | null;
+  publishedAt: string | null;
   updatedAt: string;
   sections: CatalogSection[];
 }
@@ -180,7 +181,7 @@ export async function getCourseBySlug(slug: string, opts: { isAdmin?: boolean } 
   let q = client
     .from("courses")
     .select(
-      `${CARD_COLS},status,included_in_plans,description,tags,outcomes,requirements,instructor_bio,instructor_image,promo_video,seo_title,seo_description,seo_keywords,updated_at`,
+      `${CARD_COLS},status,included_in_plans,description,tags,outcomes,requirements,instructor_bio,instructor_image,promo_video,seo_title,seo_description,seo_keywords,published_at,updated_at`,
     )
     .eq("slug", slug);
   if (!opts.isAdmin) q = q.eq("status", "published");
@@ -201,6 +202,7 @@ export async function getCourseBySlug(slug: string, opts: { isAdmin?: boolean } 
     seo_title: string | null;
     seo_description: string | null;
     seo_keywords: string | null;
+    published_at: string | null;
     updated_at: string;
   };
 
@@ -236,6 +238,7 @@ export async function getCourseBySlug(slug: string, opts: { isAdmin?: boolean } 
     seoTitle: row.seo_title,
     seoDescription: row.seo_description,
     seoKeywords: row.seo_keywords,
+    publishedAt: row.published_at,
     updatedAt: row.updated_at,
     sections: ((sections.data ?? []) as { id: string; title: string }[]).map((s) => ({
       id: s.id,

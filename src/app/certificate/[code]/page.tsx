@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { Logo } from "@/components/shared/logo";
+import { JsonLd } from "@/components/json-ld";
+import { certificateGraph } from "@/lib/seo";
 import { PrintButton } from "@/features/lms/print-button";
 import { normalizeCertificateCode } from "@/lib/lms/certificate";
 import { lmsEnabled } from "@/lib/lms/flag";
@@ -25,6 +27,7 @@ export default async function CertificatePage({ params }: Props) {
 
   return (
     <div className="min-h-svh bg-muted/30 px-4 py-8 print:bg-white print:p-0">
+      <JsonLd data={certificateGraph(cert)} />
       <div className="mx-auto max-w-3xl space-y-4">
         <div className="flex items-center justify-between print:hidden">
           <Logo href="/" />

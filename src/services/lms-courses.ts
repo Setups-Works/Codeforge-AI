@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { slugify, uniqueSlug } from "@/lib/slug";
-import { parseDriveLink, toShareUrl, type VideoRef } from "@/lib/lms/video";
+import { parseDriveLink, parseVideoLink, toShareUrl, type VideoRef } from "@/lib/lms/video";
+import { captionsToText, parseCaptionLines } from "@/lib/lms/player";
 import { DEFAULT_PASS_PERCENT, type CourseStatus, type LessonKind } from "@/lib/lms/constants";
 import type { CoursePatch } from "@/schemas/course";
 
@@ -57,6 +58,8 @@ export interface AdminLesson {
   position: number;
   kind: LessonKind;
   videoUrl: string;
+  /** Subtitle lines ("Label | lang | link"); only for direct video files. */
+  captionsText: string;
   durationMin: number;
   bodyMd: string | null;
   isFreePreview: boolean;
@@ -188,6 +191,7 @@ const lessonFromRow = (r: LessonRow): AdminLesson => ({
   position: r.position,
   kind: r.kind,
   videoUrl: r.video ? toShareUrl(r.video) : "",
+  captionsText: captionsToText(r.video?.captions),
   durationMin: Math.round((r.duration_s / 60) * 10) / 10,
   bodyMd: r.body_md,
   isFreePreview: r.is_free_preview,
@@ -394,6 +398,7 @@ export interface LessonInput {
   title: string;
   kind?: LessonKind;
   videoUrl?: string;
+  captions?: string;
   durationMin?: number;
   bodyMd?: string | null;
   isFreePreview?: boolean;
@@ -403,11 +408,20 @@ export interface LessonInput {
   passPercent?: number;
 }
 
-/** Empty input clears the video; anything else must be a valid Drive file link. */
-function lessonVideo(videoUrl: string | undefined): ServiceResult<VideoRef | null> {
+/**
+ * Empty input clears the video. Otherwise it must be a Google Drive file link,
+ * or a direct video file on an allowed host (played by the custom player, which
+ * can also carry subtitles).
+ */
+function lessonVideo(videoUrl: string | undefined, captionsText?: string): ServiceResult<VideoRef | null> {
   if (!videoUrl) return { ok: true, data: null };
-  const video = parseDriveLink(videoUrl);
-  if (!video) return fail(400, "Video must be a Google Drive file link (not a folder)");
+  const video = parseVideoLink(videoUrl);
+  if (!video) return fail(400, "Video must be a Google Drive file link, or a direct .mp4/.webm link on an allowed video host");
+  if (video.provider === "file" && captionsText?.trim()) {
+    const { captions, errors } = parseCaptionLines(captionsText);
+    if (errors.length) return fail(400, errors[0]);
+    video.captions = captions;
+  }
   return { ok: true, data: video };
 }
 
@@ -427,7 +441,7 @@ async function sectionBelongs(courseId: string, sectionId: string): Promise<bool
 export async function createLesson(courseId: string, input: LessonInput): Promise<ServiceResult<AdminLesson>> {
   if (!(await sectionBelongs(courseId, input.sectionId))) return fail(404, "Section not found");
   const kind = input.kind ?? "video";
-  const video = lessonVideo(kind === "video" ? input.videoUrl : "");
+  const video = lessonVideo(kind === "video" ? input.videoUrl : "", input.captions);
   if (!video.ok) return video;
   const badProblem = await checkProblemSlug(kind, input.problemSlug);
   if (badProblem) return badProblem;
@@ -470,7 +484,7 @@ export async function updateLesson(
   if (patch.dripDays !== undefined) row.drip_days = patch.dripDays;
   if (patch.durationMin !== undefined) row.duration_s = Math.round(patch.durationMin * 60);
   if (patch.videoUrl !== undefined) {
-    const video = lessonVideo(patch.videoUrl);
+    const video = lessonVideo(patch.videoUrl, patch.captions);
     if (!video.ok) return video;
     row.video = video.data;
   }
@@ -531,10 +545,10 @@ export async function bulkCreateLessons(
 
   const parsed = entries.map((entry, i) => {
     const { title, link } = parseBulkEntry(entry, i + 1);
-    return { title, video: parseDriveLink(link), line: i + 1 };
+    return { title, video: parseVideoLink(link), line: i + 1 };
   });
   const bad = parsed.filter((p) => !p.video);
-  if (bad.length) return fail(400, `Line ${bad.map((b) => b.line).join(", ")}: not a valid Google Drive file link`);
+  if (bad.length) return fail(400, `Line ${bad.map((b) => b.line).join(", ")}: not a valid video link`);
 
   const start = await nextPosition("course_lessons", { section_id: sectionId });
   const { data, error } = await sb()

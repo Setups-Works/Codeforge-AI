@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { openApiSpec } from "@/lib/openapi";
 
 const METHODS = ["get", "post", "put", "patch", "delete"];

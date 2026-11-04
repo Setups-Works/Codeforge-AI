@@ -170,6 +170,13 @@ export async function deleteBundle(id: string): Promise<{ ok: true } | Fail> {
   return error ? fail(500, error.message) : { ok: true };
 }
 
+/** Published bundle slugs + last-modified, for the sitemap. */
+export async function listPublishedBundleSlugs(): Promise<{ slug: string; updatedAt: Date }[]> {
+  const { data, error } = await sb().from("course_bundles").select("slug,updated_at").eq("status", "published");
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as { slug: string; updated_at: string }[]).map((r) => ({ slug: r.slug, updatedAt: new Date(r.updated_at) }));
+}
+
 export async function listPublishedBundles(): Promise<BundleDetail[]> {
   const { data, error } = await sb().from("course_bundles").select(COLS).eq("status", "published").order("created_at", { ascending: false });
   if (error) throw new Error(error.message);

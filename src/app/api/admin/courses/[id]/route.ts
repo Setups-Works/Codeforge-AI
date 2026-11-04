@@ -3,6 +3,7 @@ import { isUuid, notFound, requireLmsAdmin } from "@/lib/lms/guard";
 import { parseBody, respond } from "@/lib/lms/route";
 import { coursePatchSchema } from "@/schemas/course";
 import { adminGetCourse, deleteCourse, updateCourse } from "@/services/lms-courses";
+import { pingIndexNow } from "@/lib/indexnow";
 
 export const runtime = "nodejs";
 
@@ -24,7 +25,10 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (!isUuid(id)) return notFound();
   const body = await parseBody(req, coursePatchSchema);
   if (body.error) return body.error;
-  return respond(await updateCourse(id, body.data), (course) => ({ course }));
+  const result = await updateCourse(id, body.data);
+  // Tell search engines when a course goes live, changes, or is withdrawn.
+  if (result.ok && (result.data.status === "published" || body.data.status)) await pingIndexNow([`/courses/${result.data.slug}`, "/courses"]);
+  return respond(result, (course) => ({ course }));
 }
 
 export async function DELETE(_req: NextRequest, { params }: Ctx) {

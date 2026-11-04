@@ -45,6 +45,7 @@ const lessonFields = {
   kind: z.enum(LESSON_KINDS),
   /** Share link or bare id; empty string clears the video. */
   videoUrl: z.string().trim().max(1000),
+  captions: z.string().max(4000),
   durationMin: z.number().min(0).max(1000),
   bodyMd: z.string().max(L.description).nullable(),
   isFreePreview: z.boolean(),
@@ -57,7 +58,7 @@ const lessonFields = {
 export const lessonCreateSchema = z
   .object({ sectionId: z.uuid() })
   .extend({ ...lessonFields })
-  .partial({ kind: true, videoUrl: true, durationMin: true, bodyMd: true, isFreePreview: true, dripDays: true, problemSlug: true, gateNext: true, passPercent: true })
+  .partial({ kind: true, videoUrl: true, captions: true, durationMin: true, bodyMd: true, isFreePreview: true, dripDays: true, problemSlug: true, gateNext: true, passPercent: true })
   .strict();
 
 export const lessonPatchSchema = z
@@ -157,4 +158,11 @@ export const bundlePatchSchema = z
     courseIds: z.array(z.uuid()).max(30),
   })
   .partial()
+  .strict();
+
+export const positionSchema = z
+  .object({
+    seconds: z.number().min(0).max(86_400),
+    duration: z.number().min(0).max(86_400),
+  })
   .strict();

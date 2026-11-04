@@ -3,7 +3,8 @@ import { getEffectiveConfig } from "@/lib/site-config";
 import { AI_CRAWLER_AGENTS } from "@/lib/crawlers";
 
 /** Paths no crawler should fetch. */
-const DISALLOW = ["/admin", "/dashboard", "/api/", "/settings"];
+// /learn is the signed-in app; /certificate pages are noindex and personal.
+const DISALLOW = ["/admin", "/dashboard", "/api/", "/settings", "/learn"];
 
 // Render at request time so the build never has to reach the DB to prerender.
 export const dynamic = "force-dynamic";

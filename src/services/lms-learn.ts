@@ -6,6 +6,7 @@ import { canAccessLesson, computeGatedIds, type AccessDecision } from "@/lib/lms
 import { XP_COURSE_COMPLETE, XP_LESSON_COMPLETE } from "@/lib/lms/constants";
 import { awardLearningXp } from "@/services/gamification";
 import { planCoversCourse } from "@/lib/lms/growth";
+import { shouldAutoComplete } from "@/lib/lms/player";
 import type { CourseCard } from "@/services/lms-catalog";
 
 /**
@@ -272,6 +273,39 @@ export async function completeProblemLessons(userId: string, problemSlug: string
     completed++;
   }
   return completed;
+}
+
+/** Last saved playback position (seconds) for resume; 0 when nothing is saved. */
+export async function getLessonPosition(userId: string, lessonId: string): Promise<number> {
+  const { data } = await sb().from("lesson_progress").select("seconds_watched").eq("user_id", userId).eq("lesson_id", lessonId).maybeSingle();
+  return (data as { seconds_watched: number } | null)?.seconds_watched ?? 0;
+}
+
+/**
+ * Save where the learner is in a video, and complete the lesson once they have
+ * watched enough of it. Never downgrades a completed lesson.
+ */
+export async function saveLessonPosition(
+  userId: string,
+  courseId: string,
+  lessonId: string,
+  seconds: number,
+  duration: number,
+): Promise<{ completed: boolean; xpEarned: number }> {
+  const client = sb();
+  const { data: existing } = await client.from("lesson_progress").select("status").eq("user_id", userId).eq("lesson_id", lessonId).maybeSingle();
+  const status = (existing as { status: string } | null)?.status;
+  const position = Math.max(0, Math.floor(seconds));
+
+  if (!existing) {
+    await client.from("lesson_progress").insert({ user_id: userId, lesson_id: lessonId, course_id: courseId, status: "started", seconds_watched: position });
+  } else {
+    await client.from("lesson_progress").update({ seconds_watched: position, updated_at: new Date().toISOString() }).eq("user_id", userId).eq("lesson_id", lessonId);
+  }
+  if (status === "completed" || !shouldAutoComplete(seconds, duration)) return { completed: status === "completed", xpEarned: 0 };
+
+  const result = await setLessonStatus(userId, courseId, lessonId, "completed");
+  return { completed: true, xpEarned: result.xpEarned };
 }
 
 export async function isLessonCompleted(userId: string, lessonId: string): Promise<boolean> {
