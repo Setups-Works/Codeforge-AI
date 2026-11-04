@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export interface SubmittableQuestion {
   id: string;
+  slug: string;
   testCases: QuestionTestCase[];
   difficulty: string;
   tags: string[];
@@ -16,13 +17,14 @@ export async function getSubmittableQuestion(
 ): Promise<SubmittableQuestion | null> {
     const { data } = await supabaseAdmin()
       .from("questions")
-      .select("id,test_cases,difficulty,tags,category")
+      .select("id,slug,test_cases,difficulty,tags,category")
       .eq("id", questionId)
       .eq("is_published", true)
       .maybeSingle();
     if (!data) return null;
     const q = data as {
       id: string;
+      slug: string;
       test_cases: QuestionTestCase[] | null;
       difficulty: string;
       tags: string[] | null;
@@ -30,6 +32,7 @@ export async function getSubmittableQuestion(
     };
     return {
       id: q.id,
+      slug: q.slug,
       testCases: q.test_cases ?? [],
       difficulty: q.difficulty,
       tags: q.tags ?? [],

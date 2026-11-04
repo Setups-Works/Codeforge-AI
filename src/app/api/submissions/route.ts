@@ -18,6 +18,8 @@ import {
   listUserSubmissions,
 } from "@/services/submissions";
 import { getPostHogServer } from "@/lib/posthog-server";
+import { lmsEnabled } from "@/lib/lms/flag";
+import { completeProblemLessons } from "@/services/lms-learn";
 
 export const maxDuration = 120;
 
@@ -117,6 +119,11 @@ export async function POST(req: NextRequest) {
       xpBonus: isDaily && firstAccept ? XP_DAILY_CHALLENGE_BONUS : 0,
       tags: [...question.tags, question.category],
     });
+  }
+
+  // An accepted solve also completes any course lesson built on this problem.
+  if (accepted && lmsEnabled()) {
+    await completeProblemLessons(session.user.id, question.slug).catch((e) => console.error("[lms] problem lesson", e));
   }
 
   const posthog = getPostHogServer();

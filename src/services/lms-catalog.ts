@@ -34,6 +34,7 @@ export interface CatalogLesson {
   kind: LessonKind;
   durationS: number;
   isFreePreview: boolean;
+  gateNext: boolean;
 }
 
 export interface CatalogSection {
@@ -197,7 +198,7 @@ export async function getCourseBySlug(slug: string, opts: { isAdmin?: boolean } 
   const [sections, lessons] = await Promise.all([
     client.from("course_sections").select("id,title,position").eq("course_id", row.id).order("position"),
     // No `video` column here, by design.
-    client.from("course_lessons").select("id,section_id,title,kind,duration_s,is_free_preview,position").eq("course_id", row.id).order("position"),
+    client.from("course_lessons").select("id,section_id,title,kind,duration_s,is_free_preview,gate_next,position").eq("course_id", row.id).order("position"),
   ]);
   if (sections.error) throw new Error(sections.error.message);
   if (lessons.error) throw new Error(lessons.error.message);
@@ -209,6 +210,7 @@ export async function getCourseBySlug(slug: string, opts: { isAdmin?: boolean } 
     kind: LessonKind;
     duration_s: number;
     is_free_preview: boolean;
+    gate_next: boolean;
   }[];
 
   return {
@@ -236,6 +238,7 @@ export async function getCourseBySlug(slug: string, opts: { isAdmin?: boolean } 
           kind: l.kind,
           durationS: l.duration_s,
           isFreePreview: l.is_free_preview,
+          gateNext: l.gate_next,
         })),
     })),
   };

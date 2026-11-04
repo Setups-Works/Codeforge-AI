@@ -11,6 +11,8 @@ type ChatMessage,
 import { getPrompt } from "@/services/ai/prompts";
 import { isOnTopic,OFF_TOPIC_REPLY } from "@/services/ai/topic-guard";
 import { getPostHogServer } from "@/lib/posthog-server";
+import { lmsEnabled } from "@/lib/lms/flag";
+import { authorizeLessonParticipation } from "@/services/lms-learn";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
 findOrCreateAiChat,
@@ -89,6 +91,30 @@ export async function POST(req: NextRequest) {
       contextBlock += `Current frontend challenge: "${challenge.title}" (${challenge.difficulty}, ${challenge.tech})\n\nBrief:\n${challenge.description.slice(0, 3000)}\n`;
     }
   }
+  if (input.lessonId) {
+    // Lesson-aware help is for enrolled learners (and admins) only.
+    if (!lmsEnabled()) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const auth = await authorizeLessonParticipation(session.user, input.lessonId);
+    if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    const { data } = await supabaseAdmin()
+      .from("course_lessons")
+      .select("title,kind,body_md,courses(title,description)")
+      .eq("id", input.lessonId)
+      .maybeSingle();
+    const lesson = data as unknown as {
+      title: string;
+      kind: string;
+      body_md: string | null;
+      courses: { title: string; description: string } | { title: string; description: string }[] | null;
+    } | null;
+    const course = Array.isArray(lesson?.courses) ? lesson?.courses[0] : lesson?.courses;
+    if (lesson && course) {
+      contextBlock += `The learner is taking the course "${course.title}" and is on the ${lesson.kind} lesson "${lesson.title}".\n`;
+      if (lesson.body_md) contextBlock += `\nLesson notes:\n${lesson.body_md.slice(0, 5000)}\n`;
+      if (course.description) contextBlock += `\nAbout the course:\n${course.description.slice(0, 1500)}\n`;
+      contextBlock += "\nHelp them understand this lesson. If the lesson is a quiz, never state or hint at the correct answers; guide their thinking instead.\n";
+    }
+  }
   if (input.code) {
     contextBlock += `\nUser's current ${input.language ?? ""} code:\n\`\`\`\n${input.code.slice(0, 8000)}\n\`\`\`\n`;
   }
@@ -113,6 +139,7 @@ export async function POST(req: NextRequest) {
     context: input.context,
     questionId: input.questionId,
     challengeId: input.challengeId,
+    lessonId: input.lessonId,
   });
 
   const history: ChatMessage[] = chat.messages
@@ -134,6 +161,7 @@ export async function POST(req: NextRequest) {
       context: input.context,
       has_question: !!input.questionId,
       has_challenge: !!input.challengeId,
+      has_lesson: !!input.lessonId,
     },
   });
 
@@ -207,12 +235,14 @@ export async function GET(req: NextRequest) {
   const questionId = req.nextUrl.searchParams.get("questionId");
   const challengeId = req.nextUrl.searchParams.get("challengeId");
   const context = req.nextUrl.searchParams.get("context") ?? "general";
+  const lessonId = req.nextUrl.searchParams.get("lessonId");
 
   const messages = await getAiChatMessages({
     userId: session.user.id,
     context,
     questionId,
     challengeId,
+    lessonId,
   });
 
   return NextResponse.json({ messages });

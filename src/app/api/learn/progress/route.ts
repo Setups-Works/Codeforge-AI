@@ -23,10 +23,15 @@ export async function POST(req: NextRequest) {
   const found = await getLessonCourse(lessonId);
   if (!found) return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
 
-  const { decision, enrollment } = await resolveLessonAccess(session.user, found.courseId, lessonId);
+  const { decision, enrollment, lesson } = await resolveLessonAccess(session.user, found.courseId, lessonId);
   if (!decision.allowed) return NextResponse.json({ error: "You don't have access to this lesson" }, { status: 403 });
   // Previews and admin viewing don't create progress; only real enrolments do.
   if (!enrollment) return NextResponse.json({ error: "Enrol in this course to track progress" }, { status: 403 });
+
+  // Quizzes and coding problems complete themselves when passed / accepted; no self-service shortcut.
+  if (status === "completed" && lesson && (lesson.kind === "quiz" || lesson.kind === "problem")) {
+    return NextResponse.json({ error: lesson.kind === "quiz" ? "Pass the quiz to complete this lesson" : "Solve the problem to complete this lesson" }, { status: 403 });
+  }
 
   const progress = await setLessonStatus(session.user.id, found.courseId, lessonId, status);
   return NextResponse.json({ progress });

@@ -139,6 +139,34 @@ export async function recordAcceptedSolve(
   };
 }
 
+/**
+ * Grant XP for learning activity (course lessons / completions). Counts toward
+ * the daily streak and level like a solve does, but never touches solved
+ * counters or the submissions heatmap. Callers must guarantee once-only awards.
+ */
+export async function awardLearningXp(userId: string, xp: number): Promise<{ xpEarned: number; newLevel: number | null }> {
+  const stats = await loadSolveStats(userId);
+  if (!stats || xp <= 0) return { xpEarned: 0, newLevel: null };
+
+  stats.xp += xp;
+  const today = todayUTC();
+  if (stats.streak.lastActiveDate !== today) {
+    stats.streak.current = stats.streak.lastActiveDate === yesterdayUTC() ? stats.streak.current + 1 : 1;
+    stats.streak.lastActiveDate = today;
+    stats.streak.longest = Math.max(stats.streak.longest, stats.streak.current);
+  }
+  const previousLevel = stats.level;
+  stats.level = levelForXp(stats.xp);
+  await saveSolveStats(userId, stats);
+
+  try {
+    await checkAndAwardBadges({ id: userId, stats });
+  } catch {
+    // badge failures must never fail a lesson completion
+  }
+  return { xpEarned: xp, newLevel: stats.level > previousLevel ? stats.level : null };
+}
+
 /** Load the mutable stats block for a user from the active backend. */
 async function loadSolveStats(userId: string): Promise<SolveStats | null> {
     const { data } = await supabaseAdmin()

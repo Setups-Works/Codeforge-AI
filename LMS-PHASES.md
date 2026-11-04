@@ -13,8 +13,8 @@ decisions). We build **one phase at a time**; each phase ships behind
 | 4 | Purchase & entitlement | Buy a course with Razorpay, get access | ✅ committed (UI/Razorpay popup not yet clicked through) |
 | 5 | Unified billing | One Billing & Usage ledger in Settings | ✅ committed (UI not yet clicked through) |
 | 6 | Public SEO pages | `/courses` indexed with rich schema | ✅ committed |
-| 7 | Engagement | Reviews, Q&A, notes, certificates | 🟡 built, migration applied, live-DB verified; not committed |
-| 8 | Practice integration | Problem lessons, quizzes, AI mentor, XP | ⬜ |
+| 7 | Engagement | Reviews, Q&A, notes, certificates | ✅ committed and deployed |
+| 8 | Practice integration | Problem lessons, quizzes, AI mentor, XP | ✅ committed; migration applied, live-DB verified |
 | 9 | Growth & commerce | Course coupons, bundles, referrals, emails | ⬜ |
 | 10 | Analytics & hardening | Admin analytics, refunds, invoices, video host upgrade, tests | ⬜ |
 | 11 | Landing page | Home page showcases the full LMS (after all phases) | ⬜ |
@@ -239,6 +239,34 @@ course rating counters.
 - Quiz lessons (MCQ) with pass mark; unlock rules.
 - AI mentor receives lesson context; AI summary/quiz generation from a transcript.
 - XP, streaks and leaderboard credit for learning; notes → spaced-repetition cards.
+
+**Delivered:** `0019_lms_practice.sql`
+(`course_lessons.pass_percent/gate_next`, `lesson_progress.xp_awarded`, `quiz_questions`,
+`quiz_attempts`, `ai_chats.lesson_id` + `lesson` context).
+- **Problem lessons:** `kind=problem` + `problem_slug` (validated against published problems);
+  the watch page embeds the real workspace; an accepted submission (`/api/submissions`)
+  completes every matching lesson in the user's enrolled, published courses; a poller
+  refreshes the page when it flips.
+- **Quizzes:** admin quiz editor (questions, options, correct answer, explanation, pass mark),
+  learner `QuizRunner`; answers are graded server-side only and correct options/explanations
+  are revealed only after passing; passing completes the lesson.
+- **Gating:** per-lesson "must be completed before later lessons unlock" (any kind); rail
+  and access rules lock everything after the first unfinished gate; admins and preview
+  visitors are never gated.
+- **No shortcuts:** quiz and problem lessons cannot be self-marked complete.
+- **XP:** +5 per lesson and +50 per course (constants in `lib/lms/constants`), each awarded
+  once (atomic claim on `xp_awarded`, certificate `created` flag); counts toward streak/level/
+  badges, not solved counters.
+- **AI mentor:** `context: "lesson"` chats scoped to a lesson (history per lesson, lesson
+  notes + course summary as context, quiz answers never exposed), "AI mentor" tab on the
+  watch page with Summarise / Explain simply / Quiz me.
+**Verified:** full jest suite (224) and a live-DB run: gating (open/locked/admin exempt), quiz
+authoring validation, no answers or explanations in the learner payload, fail-then-pass at the
+pass mark, XP paid once across undo/redo and quiz retakes, bad problem slugs rejected, problem
+lesson completion for enrolled learners only, course-completion XP once, lesson-scoped AI chats.
+Not yet clicked through as a logged-in user.
+Deferred: AI-generated quizzes/summaries from a transcript, and notes -> spaced-repetition
+cards (the revision system is keyed to coding problems, so it needs its own design).
 
 **Done when:** a course can mix video, quiz and coding lessons and gate progress
 on them.

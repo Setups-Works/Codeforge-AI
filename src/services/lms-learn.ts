@@ -2,7 +2,9 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { LessonKind } from "@/lib/lms/constants";
 import type { VideoRef } from "@/lib/lms/video";
 import { issueCertificate } from "@/services/lms-certificates";
-import { canAccessLesson, type AccessDecision } from "@/lib/lms/access";
+import { canAccessLesson, computeGatedIds, type AccessDecision } from "@/lib/lms/access";
+import { XP_COURSE_COMPLETE, XP_LESSON_COMPLETE } from "@/lib/lms/constants";
+import { awardLearningXp } from "@/services/gamification";
 import type { CourseCard } from "@/services/lms-catalog";
 
 /**
@@ -73,12 +75,15 @@ export interface LessonContent {
   bodyMd: string | null;
   isFreePreview: boolean;
   dripDays: number | null;
+  problemSlug: string | null;
+  gateNext: boolean;
+  passPercent: number;
 }
 
 export async function getLessonContent(courseId: string, lessonId: string): Promise<LessonContent | null> {
   const { data, error } = await sb()
     .from("course_lessons")
-    .select("id,course_id,section_id,title,kind,video,body_md,is_free_preview,drip_days")
+    .select("id,course_id,section_id,title,kind,video,body_md,is_free_preview,drip_days,problem_slug,gate_next,pass_percent")
     .eq("id", lessonId)
     .eq("course_id", courseId)
     .maybeSingle();
@@ -94,6 +99,9 @@ export async function getLessonContent(courseId: string, lessonId: string): Prom
     body_md: string | null;
     is_free_preview: boolean;
     drip_days: number | null;
+    problem_slug: string | null;
+    gate_next: boolean;
+    pass_percent: number;
   };
   return {
     id: r.id,
@@ -105,6 +113,9 @@ export async function getLessonContent(courseId: string, lessonId: string): Prom
     bodyMd: r.body_md,
     isFreePreview: r.is_free_preview,
     dripDays: r.drip_days,
+    problemSlug: r.problem_slug,
+    gateNext: r.gate_next,
+    passPercent: r.pass_percent,
   };
 }
 
@@ -170,7 +181,7 @@ export async function setLessonStatus(
   courseId: string,
   lessonId: string,
   status: "started" | "completed",
-): Promise<CourseProgress & { courseCompleted: boolean }> {
+): Promise<CourseProgress & { courseCompleted: boolean; xpEarned: number }> {
   const client = sb();
   const now = new Date().toISOString();
   const { error } = await client.from("lesson_progress").upsert(
@@ -186,6 +197,20 @@ export async function setLessonStatus(
   );
   if (error) throw new Error(error.message);
 
+  // XP is claimed atomically (the row flips xp_awarded false -> true once), so
+  // undo + redo, or two concurrent completions, can only ever pay out once.
+  let xp = 0;
+  if (status === "completed") {
+    const { data: claimed } = await client
+      .from("lesson_progress")
+      .update({ xp_awarded: true })
+      .eq("user_id", userId)
+      .eq("lesson_id", lessonId)
+      .eq("xp_awarded", false)
+      .select("lesson_id");
+    if (claimed?.length) xp += XP_LESSON_COMPLETE;
+  }
+
   const progress = await getCourseProgress(userId, courseId);
   const courseCompleted = progress.total > 0 && progress.completed >= progress.total;
   await client
@@ -195,9 +220,65 @@ export async function setLessonStatus(
     .eq("course_id", courseId);
   if (courseCompleted) {
     // Certificates are earned, not revoked: undoing a lesson later keeps this one.
-    await issueCertificate(userId, courseId).catch((e) => console.error("[certificate]", e));
+    const issued = await issueCertificate(userId, courseId).catch((e) => {
+      console.error("[certificate]", e);
+      return null;
+    });
+    if (issued?.created) xp += XP_COURSE_COMPLETE;
   }
-  return { ...progress, courseCompleted };
+
+  if (xp > 0) await awardLearningXp(userId, xp).catch((e) => console.error("[learning-xp]", e));
+  return { ...progress, courseCompleted, xpEarned: xp };
+}
+
+/**
+ * An accepted submission completes every "problem" lesson that points at that
+ * problem, in each published course the user is actively enrolled in.
+ */
+export async function completeProblemLessons(userId: string, problemSlug: string): Promise<number> {
+  const client = sb();
+  const { data, error } = await client.from("course_lessons").select("id,course_id").eq("kind", "problem").eq("problem_slug", problemSlug);
+  if (error) throw new Error(error.message);
+  const lessons = (data ?? []) as { id: string; course_id: string }[];
+  if (!lessons.length) return 0;
+
+  const courseIds = [...new Set(lessons.map((l) => l.course_id))];
+  const { data: published } = await client.from("courses").select("id").in("id", courseIds).eq("status", "published");
+  const open = new Set(((published ?? []) as { id: string }[]).map((c) => c.id));
+
+  let completed = 0;
+  for (const lesson of lessons) {
+    if (!open.has(lesson.course_id)) continue;
+    const enrollment = await getEnrollment(userId, lesson.course_id);
+    if (!enrollment || (enrollment.expiresAt && enrollment.expiresAt <= new Date())) continue;
+    await setLessonStatus(userId, lesson.course_id, lesson.id, "completed");
+    completed++;
+  }
+  return completed;
+}
+
+export async function isLessonCompleted(userId: string, lessonId: string): Promise<boolean> {
+  const { data } = await sb().from("lesson_progress").select("status").eq("user_id", userId).eq("lesson_id", lessonId).maybeSingle();
+  return (data as { status: string } | null)?.status === "completed";
+}
+
+/** Ids of lessons currently locked behind an unfinished "must complete" lesson, for one learner. */
+export async function getGatedLessonIds(userId: string, courseId: string): Promise<Set<string>> {
+  const client = sb();
+  const [sections, lessons, done] = await Promise.all([
+    client.from("course_sections").select("id,position").eq("course_id", courseId),
+    client.from("course_lessons").select("id,section_id,position,gate_next").eq("course_id", courseId),
+    client.from("lesson_progress").select("lesson_id").eq("user_id", userId).eq("course_id", courseId).eq("status", "completed"),
+  ]);
+  if (sections.error) throw new Error(sections.error.message);
+  if (lessons.error) throw new Error(lessons.error.message);
+  if (done.error) throw new Error(done.error.message);
+
+  const sectionPos = new Map(((sections.data ?? []) as { id: string; position: number }[]).map((x) => [x.id, x.position]));
+  const ordered = ((lessons.data ?? []) as { id: string; section_id: string; position: number; gate_next: boolean }[])
+    .sort((a, b) => (sectionPos.get(a.section_id) ?? 0) - (sectionPos.get(b.section_id) ?? 0) || a.position - b.position)
+    .map((l) => ({ id: l.id, gateNext: l.gate_next }));
+  return computeGatedIds(ordered, new Set(((done.data ?? []) as { lesson_id: string }[]).map((r) => r.lesson_id)));
 }
 
 export interface ResolvedLesson {
@@ -227,11 +308,14 @@ export async function resolveLessonAccess(
   if (!lesson || !courseStatus) {
     return { decision: { allowed: false, reason: "unpublished" }, lesson: null, enrollment, courseStatus };
   }
+  // Gating only applies to learners with progress to speak of: not admins or preview visitors.
+  const gated = user && enrollment && user.role !== "admin" ? (await getGatedLessonIds(user.id, courseId)).has(lessonId) : false;
   const decision = canAccessLesson({
     course: { status: courseStatus },
     lesson: { isFreePreview: lesson.isFreePreview, dripDays: lesson.dripDays },
     user,
     enrollment: enrollment ? { enrolledAt: enrollment.enrolledAt, expiresAt: enrollment.expiresAt } : null,
+    gated,
   });
   return { decision, lesson, enrollment, courseStatus };
 }

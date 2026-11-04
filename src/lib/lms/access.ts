@@ -14,7 +14,8 @@ export type AccessReason =
   | "not-enrolled"
   | "expired"
   | "unpublished"
-  | "drip-locked";
+  | "drip-locked"
+  | "gated";
 
 export interface AccessDecision {
   allowed: boolean;
@@ -28,12 +29,14 @@ export interface AccessInput {
   lesson: { isFreePreview: boolean; dripDays: number | null };
   user: { id: string; role?: string | null } | null;
   enrollment: { enrolledAt: Date; expiresAt: Date | null } | null;
+  /** True when an earlier "must complete" lesson is still unfinished (see computeGatedIds). */
+  gated?: boolean;
   now?: Date;
 }
 
 const DAY_MS = 86_400_000;
 
-export function canAccessLesson({ course, lesson, user, enrollment, now = new Date() }: AccessInput): AccessDecision {
+export function canAccessLesson({ course, lesson, user, enrollment, gated = false, now = new Date() }: AccessInput): AccessDecision {
   if (user?.role === "admin") return { allowed: true, reason: "admin" };
 
   // Drafts and archived courses are never watchable by non-admins — not even
@@ -46,10 +49,27 @@ export function canAccessLesson({ course, lesson, user, enrollment, now = new Da
   if (!enrollment) return { allowed: false, reason: "not-enrolled" };
   if (enrollment.expiresAt && enrollment.expiresAt <= now) return { allowed: false, reason: "expired" };
 
+  if (gated) return { allowed: false, reason: "gated" };
+
   if (lesson.dripDays && lesson.dripDays > 0) {
     const unlocksAt = new Date(enrollment.enrolledAt.getTime() + lesson.dripDays * DAY_MS);
     if (unlocksAt > now) return { allowed: false, reason: "drip-locked", unlocksAt };
   }
 
   return { allowed: true, reason: "enrolled" };
+}
+
+/**
+ * Lessons locked behind an unfinished "must complete" lesson. `ordered` is the
+ * curriculum in watch order. Every lesson after the first incomplete gate is
+ * locked; the gate itself and everything before it stay open.
+ */
+export function computeGatedIds(ordered: { id: string; gateNext: boolean }[], completed: Set<string>): Set<string> {
+  const locked = new Set<string>();
+  let blocked = false;
+  for (const lesson of ordered) {
+    if (blocked) locked.add(lesson.id);
+    else if (lesson.gateNext && !completed.has(lesson.id)) blocked = true;
+  }
+  return locked;
 }

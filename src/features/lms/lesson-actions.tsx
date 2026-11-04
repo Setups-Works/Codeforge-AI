@@ -14,10 +14,12 @@ interface Props {
   completed: boolean | null;
   prevHref: string | null;
   nextHref: string | null;
+  /** Quizzes and coding problems complete themselves, so there is no manual button. */
+  auto?: boolean;
 }
 
 /** Mark-complete toggle plus previous/next navigation under the player. */
-export function LessonActions({ lessonId, completed, prevHref, nextHref }: Props) {
+export function LessonActions({ lessonId, completed, prevHref, nextHref, auto = false }: Props) {
   const router = useRouter();
   const [done, setDone] = useState(completed);
   const [busy, setBusy] = useState(false);
@@ -26,13 +28,13 @@ export function LessonActions({ lessonId, completed, prevHref, nextHref }: Props
     const next = !done;
     setBusy(true);
     try {
-      const { progress } = await api<{ progress: { courseCompleted: boolean } }>("/api/learn/progress", {
+      const { progress } = await api<{ progress: { courseCompleted: boolean; xpEarned?: number } }>("/api/learn/progress", {
         method: "POST",
         json: { lessonId, status: next ? "completed" : "started" },
       });
       setDone(next);
       if (next && progress.courseCompleted) toast.success("Course complete — well done!");
-      else if (next) toast.success("Lesson completed");
+      else if (next) toast.success(progress.xpEarned ? `Lesson completed — +${progress.xpEarned} XP` : "Lesson completed");
       router.refresh();
       if (next && nextHref) router.push(nextHref);
     } catch (e) {
@@ -44,7 +46,7 @@ export function LessonActions({ lessonId, completed, prevHref, nextHref }: Props
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {done !== null && (
+      {done !== null && !auto && (
         <Button onClick={toggle} disabled={busy} variant={done ? "outline" : "default"}>
           {busy ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
           {done ? "Completed — undo" : "Mark complete"}

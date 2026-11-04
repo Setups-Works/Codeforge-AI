@@ -43,11 +43,11 @@ const fromRow = (r: CertRow): Certificate => ({
   issuedAt: new Date(r.issued_at),
 });
 
-/** Issue a certificate once per (user, course). Safe to call repeatedly. */
-export async function issueCertificate(userId: string, courseId: string): Promise<Certificate | null> {
+/** Issue a certificate once per (user, course). Safe to call repeatedly; `created` is true only for the call that issued it. */
+export async function issueCertificate(userId: string, courseId: string): Promise<{ certificate: Certificate; created: boolean } | null> {
   const client = sb();
   const { data: existing } = await client.from("course_certificates").select(COLS).eq("user_id", userId).eq("course_id", courseId).maybeSingle();
-  if (existing) return fromRow(existing as CertRow);
+  if (existing) return { certificate: fromRow(existing as CertRow), created: false };
 
   const [{ data: user }, { data: course }] = await Promise.all([
     client.from("users").select("name,username").eq("id", userId).maybeSingle(),
@@ -65,11 +65,11 @@ export async function issueCertificate(userId: string, courseId: string): Promis
       .insert({ code: generateCertificateCode(), user_id: userId, course_id: courseId, learner_name: learnerName, course_title: c.title, instructor_name: c.instructor_name })
       .select(COLS)
       .single();
-    if (!error) return fromRow(data as CertRow);
+    if (!error) return { certificate: fromRow(data as CertRow), created: true };
     if (error.code === "23505") {
       // Either the code collided or a concurrent call already issued this user's certificate.
       const { data: raced } = await client.from("course_certificates").select(COLS).eq("user_id", userId).eq("course_id", courseId).maybeSingle();
-      if (raced) return fromRow(raced as CertRow);
+      if (raced) return { certificate: fromRow(raced as CertRow), created: false };
       continue;
     }
     throw new Error(error.message);

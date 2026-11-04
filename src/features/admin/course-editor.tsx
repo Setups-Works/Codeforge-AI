@@ -17,6 +17,7 @@ import {
   Trash2,
   Upload,
   Video,
+  X,
 } from "@/components/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -620,6 +621,8 @@ function LessonRow({
     isFreePreview: lesson.isFreePreview,
     dripDays: lesson.dripDays == null ? "" : String(lesson.dripDays),
     sectionId: lesson.sectionId,
+    problemSlug: lesson.problemSlug ?? "",
+    gateNext: lesson.gateNext,
   });
   const set = <K extends keyof typeof f>(k: K) => (v: (typeof f)[K]) => setF((s) => ({ ...s, [k]: v }));
 
@@ -635,6 +638,8 @@ function LessonRow({
           bodyMd: f.bodyMd || null,
           isFreePreview: f.isFreePreview,
           dripDays: f.dripDays === "" ? null : Number(f.dripDays),
+          problemSlug: f.kind === "problem" ? f.problemSlug.trim() || null : null,
+          gateNext: f.gateNext,
           ...(f.sectionId !== lesson.sectionId ? { sectionId: f.sectionId } : {}),
         },
       }),
@@ -708,6 +713,16 @@ function LessonRow({
               <Input value={f.videoUrl} onChange={(e) => set("videoUrl")(e.target.value)} placeholder="https://drive.google.com/file/d/…/view" />
             </Field>
           )}
+          {f.kind === "problem" && (
+            <Field label="Problem slug" hint="The slug of a published problem, e.g. two-sum. Completes when the learner's solution is accepted." className="sm:col-span-2">
+              <Input value={f.problemSlug} onChange={(e) => set("problemSlug")(e.target.value)} placeholder="two-sum" />
+            </Field>
+          )}
+          {f.kind === "quiz" && (
+            <div className="sm:col-span-2">
+              <QuizEditor courseId={courseId} lessonId={lesson.id} passPercent={lesson.passPercent} />
+            </div>
+          )}
           <Field label="Duration (minutes)" hint="Drive can't report length, so enter it here.">
             <Input type="number" min={0} step="0.5" value={f.durationMin} onChange={(e) => set("durationMin")(e.target.value)} />
           </Field>
@@ -717,6 +732,10 @@ function LessonRow({
           <Field label="Notes / text content (Markdown)" className="sm:col-span-2">
             <Textarea rows={5} value={f.bodyMd} onChange={(e) => set("bodyMd")(e.target.value)} />
           </Field>
+          <div className="flex items-center gap-2 sm:col-span-2">
+            <Switch id={`gate-${lesson.id}`} checked={f.gateNext} onCheckedChange={set("gateNext")} />
+            <Label htmlFor={`gate-${lesson.id}`} className="text-xs">Must be completed before later lessons unlock</Label>
+          </div>
           <div className="flex items-center gap-2 sm:col-span-2">
             <Switch id={`preview-${lesson.id}`} checked={f.isFreePreview} onCheckedChange={set("isFreePreview")} />
             <Label htmlFor={`preview-${lesson.id}`} className="text-xs">Free preview (anyone can watch)</Label>
@@ -955,5 +974,105 @@ function ReviewsPanel({ courseId, onChanged }: { courseId: string; onChanged: ()
         </ul>
       )}
     </section>
+  );
+}
+
+// ── Quiz editor ─────────────────────────────────────────────────────────
+
+interface DraftQuestion {
+  prompt: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+const blankQuestion = (): DraftQuestion => ({ prompt: "", options: ["", ""], correctIndex: 0, explanation: "" });
+
+function QuizEditor({ courseId, lessonId, passPercent }: { courseId: string; lessonId: string; passPercent: number }) {
+  const url = `/api/admin/courses/${courseId}/lessons/${lessonId}/quiz`;
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-quiz", lessonId],
+    queryFn: () => api<{ quiz: { passPercent: number; questions: (DraftQuestion & { id: string })[] } }>(url),
+  });
+  if (isLoading || !data) return <Loader2 className="size-4 animate-spin text-muted-foreground" />;
+  return <QuizForm url={url} lessonId={lessonId} initialPass={data.quiz.passPercent ?? passPercent} initial={data.quiz.questions} />;
+}
+
+function QuizForm({ url, lessonId, initialPass, initial }: { url: string; lessonId: string; initialPass: number; initial: DraftQuestion[] }) {
+  const qc = useQueryClient();
+  const [pass, setPass] = useState(String(initialPass));
+  const [qs, setQs] = useState<DraftQuestion[]>(
+    initial.length ? initial.map((q) => ({ ...q, explanation: q.explanation ?? "" })) : [blankQuestion()],
+  );
+
+  const patch = (i: number, p: Partial<DraftQuestion>) => setQs((all) => all.map((q, j) => (j === i ? { ...q, ...p } : q)));
+
+  const save = useMutation({
+    mutationFn: () =>
+      api(url, {
+        method: "PUT",
+        json: {
+          passPercent: Number(pass) || 70,
+          questions: qs.map((q) => ({ prompt: q.prompt, options: q.options, correctIndex: q.correctIndex, explanation: q.explanation || null })),
+        },
+      }),
+    onSuccess: () => {
+      toast.success("Quiz saved");
+      qc.invalidateQueries({ queryKey: ["admin-quiz", lessonId] });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div className="space-y-3 rounded-lg border bg-background p-3">
+      <div className="flex items-center gap-2">
+        <Label className="text-xs">Pass mark (%)</Label>
+        <Input type="number" min={1} max={100} value={pass} onChange={(e) => setPass(e.target.value)} className="h-8 w-20" />
+      </div>
+      {qs.map((q, i) => (
+        <div key={i} className="space-y-2 rounded-md border p-3">
+          <div className="flex items-start gap-2">
+            <span className="mt-2 text-xs font-medium text-muted-foreground">{i + 1}.</span>
+            <Textarea rows={2} value={q.prompt} onChange={(e) => patch(i, { prompt: e.target.value })} placeholder="Question" />
+            <Button size="icon" variant="ghost" className="size-8 shrink-0 text-muted-foreground hover:text-destructive" aria-label="Remove question" onClick={() => setQs((all) => all.filter((_, j) => j !== i))}>
+              <Trash2 className="size-4" />
+            </Button>
+          </div>
+          {q.options.map((o, oi) => (
+            <div key={oi} className="flex items-center gap-2 pl-5">
+              <input type="radio" name={`correct-${lessonId}-${i}`} checked={q.correctIndex === oi} onChange={() => patch(i, { correctIndex: oi })} aria-label={`Option ${oi + 1} is correct`} />
+              <Input value={o} onChange={(e) => patch(i, { options: q.options.map((x, k) => (k === oi ? e.target.value : x)) })} placeholder={`Option ${oi + 1}`} className="h-8" />
+              {q.options.length > 2 && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="size-7 shrink-0"
+                  aria-label="Remove option"
+                  onClick={() => patch(i, { options: q.options.filter((_, k) => k !== oi), correctIndex: q.correctIndex > oi ? q.correctIndex - 1 : q.correctIndex >= q.options.length - 1 ? 0 : q.correctIndex })}
+                >
+                  <X className="size-3.5" />
+                </Button>
+              )}
+            </div>
+          ))}
+          <div className="flex items-center gap-2 pl-5">
+            {q.options.length < 6 && (
+              <Button size="sm" variant="ghost" onClick={() => patch(i, { options: [...q.options, ""] })}>
+                <Plus className="size-3.5" /> Option
+              </Button>
+            )}
+          </div>
+          <Input value={q.explanation} onChange={(e) => patch(i, { explanation: e.target.value })} placeholder="Explanation shown after passing (optional)" className="ml-5 h-8 w-[calc(100%-1.25rem)]" />
+        </div>
+      ))}
+      <div className="flex gap-2">
+        <Button size="sm" variant="outline" onClick={() => setQs((all) => [...all, blankQuestion()])}>
+          <Plus className="size-4" /> Add question
+        </Button>
+        <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
+          {save.isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />} Save quiz
+        </Button>
+      </div>
+    </div>
   );
 }

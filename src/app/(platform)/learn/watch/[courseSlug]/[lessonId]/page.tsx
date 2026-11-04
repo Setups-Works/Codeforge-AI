@@ -15,7 +15,13 @@ import { isUuid } from "@/lib/lms/guard";
 import { toEmbed } from "@/lib/lms/video";
 import { getSession } from "@/lib/session";
 import { getCourseBySlug } from "@/services/lms-catalog";
-import { getCourseProgress, recordLessonOpened, resolveLessonAccess } from "@/services/lms-learn";
+import { getCourseProgress, getGatedLessonIds, recordLessonOpened, resolveLessonAccess } from "@/services/lms-learn";
+import { getLearnerQuiz } from "@/services/lms-quiz";
+import { getQuestionBySlug } from "@/services/questions";
+import { Workspace } from "@/features/workspace/workspace";
+import { MentorPanel } from "@/features/ai-mentor/mentor-panel";
+import { QuizRunner } from "@/features/lms/quiz-runner";
+import { ProblemLessonStatus } from "@/features/lms/problem-lesson-status";
 
 export const metadata: Metadata = { title: "Lesson" };
 export const dynamic = "force-dynamic";
@@ -26,6 +32,7 @@ const LOCKED: Partial<Record<AccessReason, string>> = {
   "not-enrolled": "Enrol in this course to watch this lesson.",
   expired: "Your access to this course has expired.",
   unpublished: "This course isn't available right now.",
+  gated: "Complete the previous required lesson to unlock this one.",
 };
 
 export default async function WatchPage({ params }: Props) {
@@ -48,6 +55,7 @@ export default async function WatchPage({ params }: Props) {
 
   // Which lessons the rail should let this viewer open (drip is enforced on open).
   const ordered = course.sections.flatMap((s) => s.lessons);
+  const gatedIds = enrollment && !isAdmin ? await getGatedLessonIds(user.id, course.id) : new Set<string>();
   const openableIds = new Set(
     ordered
       .filter(
@@ -57,6 +65,7 @@ export default async function WatchPage({ params }: Props) {
             lesson: { isFreePreview: l.isFreePreview, dripDays: null },
             user,
             enrollment: enrollment ? { enrolledAt: enrollment.enrolledAt, expiresAt: enrollment.expiresAt } : null,
+            gated: gatedIds.has(l.id),
           }).allowed,
       )
       .map((l) => l.id),
@@ -71,6 +80,12 @@ export default async function WatchPage({ params }: Props) {
   const embed = decision.allowed && lesson.video ? toEmbed(lesson.video) : null;
 
   if (decision.allowed && enrollment) await recordLessonOpened(user.id, course.id, lesson.id);
+
+  // Kind-specific data, loaded only after access is confirmed.
+  const quiz = decision.allowed && lesson.kind === "quiz" ? await getLearnerQuiz(user.id, lesson.id, lesson.passPercent) : null;
+  const question = decision.allowed && lesson.kind === "problem" && lesson.problemSlug ? await getQuestionBySlug(lesson.problemSlug).catch(() => null) : null;
+  const autoCompletes = lesson.kind === "quiz" || lesson.kind === "problem";
+  const lessonDone = completedIds.has(lesson.id);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
@@ -122,6 +137,7 @@ export default async function WatchPage({ params }: Props) {
               completed={enrollment ? completedIds.has(lesson.id) : null}
               prevHref={prev}
               nextHref={next}
+              auto={autoCompletes}
             />
           )}
           {decision.allowed && !enrollment && (
@@ -130,12 +146,44 @@ export default async function WatchPage({ params }: Props) {
             </p>
           )}
 
+          {decision.allowed && lesson.kind === "quiz" && quiz && (
+            <QuizRunner
+              lessonId={lesson.id}
+              passPercent={quiz.passPercent}
+              questions={quiz.questions}
+              alreadyPassed={lessonDone}
+              lastPercent={quiz.lastAttempt?.percent ?? null}
+              nextHref={next}
+            />
+          )}
+
+          {decision.allowed && lesson.kind === "problem" && (
+            <>
+              <ProblemLessonStatus lessonId={lesson.id} completed={lessonDone} />
+              {question ? (
+                <div className="h-[80svh] overflow-hidden rounded-xl border">
+                  <Workspace question={question} signedIn />
+                </div>
+              ) : (
+                <p className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">The problem for this lesson isn&apos;t available right now.</p>
+              )}
+            </>
+          )}
+
           {decision.allowed && (enrollment || isAdmin) && (
             <Tabs defaultValue="notes">
               <TabsList>
                 <TabsTrigger value="notes">My notes</TabsTrigger>
                 <TabsTrigger value="qa">Q&amp;A</TabsTrigger>
+                {lesson.kind !== "problem" && <TabsTrigger value="mentor">AI mentor</TabsTrigger>}
               </TabsList>
+              {lesson.kind !== "problem" && (
+                <TabsContent value="mentor" className="mt-4">
+                  <div className="h-[28rem] overflow-hidden rounded-xl border">
+                    <MentorPanel context="lesson" lessonId={lesson.id} />
+                  </div>
+                </TabsContent>
+              )}
               <TabsContent value="notes" className="mt-4"><LessonNotes lessonId={lesson.id} /></TabsContent>
               <TabsContent value="qa" className="mt-4"><LessonQuestions lessonId={lesson.id} /></TabsContent>
             </Tabs>

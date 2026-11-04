@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ChevronDown, Eye, FileText, Video } from "@/components/icons";
+import { ChevronDown, Eye } from "@/components/icons";
+import { LESSON_KIND_ICON } from "@/features/lms/lesson-kind";
 import { Badge } from "@/components/ui/badge";
 import { formatDuration } from "@/lib/lms/format";
 import type { CatalogLesson, CatalogSection } from "@/services/lms-catalog";
@@ -36,11 +37,10 @@ export function Curriculum({
                 const cls = `flex items-center gap-3 px-4 py-2.5 text-sm ${href ? "hover:bg-accent/60" : ""}`;
                 const row = (
                   <>
-                    {lesson.kind === "video" ? (
-                      <Video className="size-4 shrink-0 text-muted-foreground" />
-                    ) : (
-                      <FileText className="size-4 shrink-0 text-muted-foreground" />
-                    )}
+                    {(() => {
+                      const Icon = LESSON_KIND_ICON[lesson.kind];
+                      return <Icon className="size-4 shrink-0 text-muted-foreground" />;
+                    })()}
                     <span className="min-w-0 flex-1 truncate">{lesson.title}</span>
                     {lesson.isFreePreview && (
                       <Badge variant="outline">

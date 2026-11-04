@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { slugify, uniqueSlug } from "@/lib/slug";
 import { parseDriveLink, toShareUrl, type VideoRef } from "@/lib/lms/video";
-import type { CourseStatus, LessonKind } from "@/lib/lms/constants";
+import { DEFAULT_PASS_PERCENT, type CourseStatus, type LessonKind } from "@/lib/lms/constants";
 import type { CoursePatch } from "@/schemas/course";
 
 /**
@@ -60,6 +60,9 @@ export interface AdminLesson {
   bodyMd: string | null;
   isFreePreview: boolean;
   dripDays: number | null;
+  problemSlug: string | null;
+  gateNext: boolean;
+  passPercent: number;
 }
 
 export interface AdminSection {
@@ -78,7 +81,8 @@ export type ServiceResult<T = undefined> =
   | { ok: true; data: T }
   | { ok: false; status: number; error: string };
 
-const fail = (status: number, error: string): { ok: false; status: number; error: string } => ({ ok: false, status, error });
+type Fail = { ok: false; status: number; error: string };
+const fail = (status: number, error: string): Fail => ({ ok: false, status, error });
 
 interface CourseRow {
   id: string;
@@ -122,6 +126,9 @@ interface LessonRow {
   body_md: string | null;
   is_free_preview: boolean;
   drip_days: number | null;
+  problem_slug: string | null;
+  gate_next: boolean;
+  pass_percent: number;
 }
 
 interface SectionRow {
@@ -132,7 +139,7 @@ interface SectionRow {
 
 const COURSE_COLS =
   "id,slug,title,subtitle,description,thumbnail_url,promo_video,level,language,category,tags,price_inr,compare_at_inr,is_free,status,published_at,instructor_name,instructor_bio,instructor_image,outcomes,requirements,seo_title,seo_description,seo_keywords,stats,created_at,updated_at";
-const LESSON_COLS = "id,course_id,section_id,title,position,kind,video,duration_s,body_md,is_free_preview,drip_days";
+const LESSON_COLS = "id,course_id,section_id,title,position,kind,video,duration_s,body_md,is_free_preview,drip_days,problem_slug,gate_next,pass_percent";
 
 const courseFromRow = (r: CourseRow): AdminCourse => ({
   id: r.id,
@@ -182,6 +189,9 @@ const lessonFromRow = (r: LessonRow): AdminLesson => ({
   bodyMd: r.body_md,
   isFreePreview: r.is_free_preview,
   dripDays: r.drip_days,
+  problemSlug: r.problem_slug,
+  gateNext: r.gate_next,
+  passPercent: r.pass_percent,
 });
 
 const sb = () => supabaseAdmin();
@@ -384,6 +394,9 @@ export interface LessonInput {
   bodyMd?: string | null;
   isFreePreview?: boolean;
   dripDays?: number | null;
+  problemSlug?: string | null;
+  gateNext?: boolean;
+  passPercent?: number;
 }
 
 /** Empty input clears the video; anything else must be a valid Drive file link. */
@@ -394,6 +407,14 @@ function lessonVideo(videoUrl: string | undefined): ServiceResult<VideoRef | nul
   return { ok: true, data: video };
 }
 
+/** A problem lesson must point at a real, published problem. */
+async function checkProblemSlug(kind: LessonKind, slug: string | null | undefined): Promise<Fail | null> {
+  if (kind !== "problem") return null;
+  if (!slug) return fail(400, "Choose the problem this lesson uses");
+  const { data } = await sb().from("questions").select("id").eq("slug", slug).eq("is_published", true).maybeSingle();
+  return data ? null : fail(400, `No published problem with slug "${slug}"`);
+}
+
 async function sectionBelongs(courseId: string, sectionId: string): Promise<boolean> {
   const { data } = await sb().from("course_sections").select("id").eq("id", sectionId).eq("course_id", courseId).maybeSingle();
   return Boolean(data);
@@ -402,8 +423,10 @@ async function sectionBelongs(courseId: string, sectionId: string): Promise<bool
 export async function createLesson(courseId: string, input: LessonInput): Promise<ServiceResult<AdminLesson>> {
   if (!(await sectionBelongs(courseId, input.sectionId))) return fail(404, "Section not found");
   const kind = input.kind ?? "video";
-  const video = lessonVideo(input.videoUrl);
+  const video = lessonVideo(kind === "video" ? input.videoUrl : "");
   if (!video.ok) return video;
+  const badProblem = await checkProblemSlug(kind, input.problemSlug);
+  if (badProblem) return badProblem;
 
   const position = await nextPosition("course_lessons", { section_id: input.sectionId });
   const { data, error } = await sb()
@@ -419,6 +442,9 @@ export async function createLesson(courseId: string, input: LessonInput): Promis
       body_md: input.bodyMd ?? null,
       is_free_preview: input.isFreePreview ?? false,
       drip_days: input.dripDays ?? null,
+      problem_slug: kind === "problem" ? input.problemSlug : null,
+      gate_next: input.gateNext ?? false,
+      pass_percent: input.passPercent ?? DEFAULT_PASS_PERCENT,
     })
     .select(LESSON_COLS)
     .single();
@@ -444,6 +470,14 @@ export async function updateLesson(
     if (!video.ok) return video;
     row.video = video.data;
   }
+  if (patch.problemSlug !== undefined) row.problem_slug = patch.problemSlug || null;
+  if (patch.gateNext !== undefined) row.gate_next = patch.gateNext;
+  if (patch.passPercent !== undefined) row.pass_percent = patch.passPercent;
+  if (patch.kind === "problem" || patch.problemSlug) {
+    const bad = await checkProblemSlug(patch.kind ?? "problem", patch.problemSlug);
+    if (bad) return bad;
+  }
+  if (patch.kind !== undefined && patch.kind !== "problem") row.problem_slug = null;
   if (patch.sectionId !== undefined) {
     if (!(await sectionBelongs(courseId, patch.sectionId))) return fail(404, "Section not found");
     row.section_id = patch.sectionId;

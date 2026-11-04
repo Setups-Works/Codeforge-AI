@@ -31,9 +31,16 @@ const QUESTION_ACTIONS: QuickAction[] = [
   { key: "similar-questions", label: "Similar", message: "Suggest similar questions" },
 ];
 
+const LESSON_ACTIONS = [
+  { label: "Summarise", message: "Summarise this lesson in a few bullet points" },
+  { label: "Explain simply", message: "Explain the main idea of this lesson in simple terms" },
+  { label: "Quiz me", message: "Ask me three short questions to check my understanding of this lesson, one at a time" },
+];
+
 interface MentorPanelProps {
-  context: "question" | "challenge" | "interview" | "general";
+  context: "question" | "challenge" | "interview" | "general" | "lesson";
   questionId?: string;
+  lessonId?: string;
   challengeId?: string;
   code?: string;
   language?: string;
@@ -45,6 +52,7 @@ export function MentorPanel({
   context,
   questionId,
   challengeId,
+  lessonId,
   code,
   language,
   failureContext,
@@ -58,11 +66,12 @@ export function MentorPanel({
 
   // Hydrate persisted conversation
   const { data: existing } = useQuery<{ messages: MentorMessage[] }>({
-    queryKey: ["ai-chat", context, questionId ?? "", challengeId ?? ""],
+    queryKey: ["ai-chat", context, questionId ?? "", challengeId ?? "", lessonId ?? ""],
     queryFn: async () => {
       const params = new URLSearchParams({ context });
       if (questionId) params.set("questionId", questionId);
       if (challengeId) params.set("challengeId", challengeId);
+      if (lessonId) params.set("lessonId", lessonId);
       const res = await fetch(`/api/ai/chat?${params.toString()}`);
       if (!res.ok) return { messages: [] };
       return res.json();
@@ -100,6 +109,7 @@ export function MentorPanel({
           context,
           questionId,
           challengeId,
+          lessonId,
           code: code || undefined,
           language,
           failureContext: failureContext || undefined,
@@ -164,6 +174,21 @@ export function MentorPanel({
         )}
       </div>
 
+      {context === "lesson" && (
+        <div className="flex shrink-0 flex-wrap gap-1 border-b p-2">
+          {LESSON_ACTIONS.map((action) => (
+            <button
+              key={action.label}
+              disabled={streaming}
+              onClick={() => send("chat", action.message)}
+              className="rounded-full border bg-background px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground disabled:opacity-50"
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {context === "question" && (
         <div className="flex shrink-0 flex-wrap gap-1 border-b p-2">
           {QUESTION_ACTIONS.map((action) => (
@@ -192,8 +217,9 @@ export function MentorPanel({
             <div className="py-8 text-center">
               <Sparkles className="mx-auto mb-2 size-6 text-primary/60" />
               <p className="text-xs text-muted-foreground">
-                Ask anything about this problem — hints, debugging help,
-                complexity analysis, or interview tips.
+                {context === "lesson"
+                  ? "Ask anything about this lesson — explanations, examples, or a quick check of your understanding."
+                  : "Ask anything about this problem — hints, debugging help, complexity analysis, or interview tips."}
               </p>
             </div>
           )}

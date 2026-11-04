@@ -3,10 +3,12 @@ import { z } from "zod";
 export const aiChatRequestSchema = z.object({
   message: z.string().min(1).max(8_000),
   context: z
-    .enum(["question", "challenge", "interview", "general"])
+    .enum(["question", "challenge", "interview", "general", "lesson"])
     .default("general"),
   questionId: z.string().regex(/^[0-9a-f]{24}$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i).optional(),
   challengeId: z.string().regex(/^[0-9a-f]{24}$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i).optional(),
+  /** Course lesson the learner is watching (context "lesson") */
+  lessonId: z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i).optional(),
   /** User's current editor code, sent for context-aware help */
   code: z.string().max(64_000).optional(),
   language: z.string().max(20).optional(),

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { COURSE_LEVELS, COURSE_LIMITS, COURSE_STATUSES, LESSON_KINDS } from "@/lib/lms/constants";
+import { COURSE_LEVELS, COURSE_LIMITS, COURSE_STATUSES, LESSON_KINDS, QUIZ_LIMITS } from "@/lib/lms/constants";
 
 const L = COURSE_LIMITS;
 const list = z.array(z.string().trim().min(1).max(L.listItemLength)).max(L.listItems);
@@ -47,12 +47,15 @@ const lessonFields = {
   bodyMd: z.string().max(L.description).nullable(),
   isFreePreview: z.boolean(),
   dripDays: z.number().int().min(0).max(3650).nullable(),
+  problemSlug: z.string().trim().max(160).nullable(),
+  gateNext: z.boolean(),
+  passPercent: z.number().int().min(1).max(100),
 };
 
 export const lessonCreateSchema = z
   .object({ sectionId: z.uuid() })
   .extend({ ...lessonFields })
-  .partial({ kind: true, videoUrl: true, durationMin: true, bodyMd: true, isFreePreview: true, dripDays: true })
+  .partial({ kind: true, videoUrl: true, durationMin: true, bodyMd: true, isFreePreview: true, dripDays: true, problemSlug: true, gateNext: true, passPercent: true })
   .strict();
 
 export const lessonPatchSchema = z
@@ -113,5 +116,28 @@ export const questionSchema = z
     lessonId: z.uuid(),
     parentId: z.uuid().optional(),
     body: z.string().trim().min(1).max(2000),
+  })
+  .strict();
+
+export const quizSaveSchema = z
+  .object({
+    passPercent: z.number().int().min(1).max(100),
+    questions: z
+      .array(
+        z.object({
+          prompt: z.string().trim().max(QUIZ_LIMITS.prompt),
+          options: z.array(z.string().trim().max(QUIZ_LIMITS.option)).max(QUIZ_LIMITS.options.max),
+          correctIndex: z.number().int().min(0),
+          explanation: z.string().trim().max(QUIZ_LIMITS.explanation).nullable().optional(),
+        }),
+      )
+      .max(QUIZ_LIMITS.questions),
+  })
+  .strict();
+
+export const quizSubmitSchema = z
+  .object({
+    lessonId: z.uuid(),
+    answers: z.array(z.number().int().min(0).nullable()).max(QUIZ_LIMITS.questions),
   })
   .strict();

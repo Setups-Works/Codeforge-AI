@@ -17,6 +17,7 @@ interface ChatKey {
   context: string;
   questionId?: string | null;
   challengeId?: string | null;
+  lessonId?: string | null;
 }
 
 /** Find (or create) the AiChat row for a context and return id + messages. */
@@ -29,6 +30,7 @@ export async function findOrCreateAiChat(key: ChatKey): Promise<AiChatRecord> {
       .eq("context", key.context);
     q = key.questionId ? q.eq("question_id", key.questionId) : q.is("question_id", null);
     q = key.challengeId ? q.eq("challenge_id", key.challengeId) : q.is("challenge_id", null);
+    q = key.lessonId ? q.eq("lesson_id", key.lessonId) : q.is("lesson_id", null);
     const { data } = await q.maybeSingle();
     if (data) {
       const row = data as { id: string; messages: StoredChatMessage[] | null };
@@ -41,6 +43,7 @@ export async function findOrCreateAiChat(key: ChatKey): Promise<AiChatRecord> {
         context: key.context,
         question_id: key.questionId ?? null,
         challenge_id: key.challengeId ?? null,
+        lesson_id: key.lessonId ?? null,
         messages: [],
       })
       .select("id,messages")
@@ -72,6 +75,7 @@ export async function getAiChatMessages(key: ChatKey): Promise<{ role: string; c
       .eq("context", key.context);
     q = key.questionId ? q.eq("question_id", key.questionId) : q.is("question_id", null);
     q = key.challengeId ? q.eq("challenge_id", key.challengeId) : q.is("challenge_id", null);
+    q = key.lessonId ? q.eq("lesson_id", key.lessonId) : q.is("lesson_id", null);
     const { data } = await q.maybeSingle();
     const messages = (data as { messages: StoredChatMessage[] | null } | null)?.messages ?? [];
     return messages.map((m) => ({ role: m.role, content: m.content }));

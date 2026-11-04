@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Check, ChevronDown, Lock, Video, FileText } from "@/components/icons";
+import { Check, ChevronDown, Lock } from "@/components/icons";
+import { LESSON_KIND_ICON } from "@/features/lms/lesson-kind";
 import { cn } from "@/lib/utils";
 import { formatDuration } from "@/lib/lms/format";
 import type { CatalogSection } from "@/services/lms-catalog";
@@ -30,7 +31,7 @@ export function LessonRail({ courseSlug, sections, currentLessonId, completedIds
                 const current = lesson.id === currentLessonId;
                 const done = completedIds.has(lesson.id);
                 const openable = openableIds.has(lesson.id);
-                const Icon = lesson.kind === "video" ? Video : FileText;
+                const Icon = LESSON_KIND_ICON[lesson.kind];
                 const row = (
                   <>
                     <span
