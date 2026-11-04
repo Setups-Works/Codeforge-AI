@@ -102,11 +102,12 @@ export default async function WatchPage({ params }: Props) {
         <div className="min-w-0 space-y-4">
           {decision.allowed ? (
             lesson.kind === "video" ? (
-              embed?.kind === "video" ? (
+              embed ? (
                 <CustomPlayer
-                  src={embed.src}
-                  mime={embed.mime}
-                  captions={embed.captions}
+                  // Drive videos stream through our own access-checked route, so no Drive link reaches the browser.
+                  src={embed.kind === "video" ? embed.src : `/api/learn/lessons/${lesson.id}/stream`}
+                  mime={embed.kind === "video" ? embed.mime : "video/mp4"}
+                  captions={embed.kind === "video" ? embed.captions : []}
                   title={lesson.title}
                   poster={course.thumbnailUrl}
                   lessonId={lesson.id}
@@ -115,18 +116,6 @@ export default async function WatchPage({ params }: Props) {
                   watermark={isAdmin ? null : (session.user.email ?? null)}
                   next={nextLesson ? { href: nextLesson.href, title: nextLesson.title } : null}
                 />
-              ) : embed?.kind === "iframe" ? (
-                <div className="relative aspect-video overflow-hidden rounded-xl border bg-black">
-                  <iframe
-                    src={embed.src}
-                    allow={embed.allow}
-                    allowFullScreen
-                    title={lesson.title}
-                    className="absolute inset-0 size-full"
-                  />
-                  {/* Covers the host's pop-out button so the player stays on this page. */}
-                  <div className="absolute right-0 top-0 size-14" aria-hidden />
-                </div>
               ) : (
                 <div className="flex aspect-video items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
                   The video for this lesson hasn&apos;t been added yet.
