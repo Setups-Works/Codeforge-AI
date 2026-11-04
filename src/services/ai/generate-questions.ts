@@ -78,11 +78,10 @@ async function generateQuestionsImpl(
 
     try {
       const created = await saveQuestionDraft(
-        options.publish
-          ? { ...parsed.data, isPublished: true }
-          : parsed.data,
+        parsed.data,
         creatorId,
         "ai-generated",
+        { publish: options.publish === true },
       );
       outcome.created.push(created);
     } catch (saveError) {
@@ -106,6 +105,7 @@ export async function saveQuestionDraft(
   input: QuestionInput,
   creatorId: string,
   source: "manual" | "json-import" | "ai-generated",
+  options: { publish?: boolean } = {},
 ): Promise<{ slug: string; title: string; category: string; difficulty: string }> {
     const sb = supabaseAdmin();
     const slug = await uniqueSlug(input.title, async (candidate) => {
@@ -131,7 +131,7 @@ export async function saveQuestionDraft(
       solution: input.solution,
       editorial: input.editorial,
       hints: input.hints,
-      is_published: false,
+      is_published: options.publish === true,
       source,
       created_by: toUuidOrNull(creatorId),
     });

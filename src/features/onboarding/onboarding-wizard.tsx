@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -25,6 +25,9 @@ import {
   Coffee,
   Sprout,
   Star,
+  Sparkles,
+  Loader2,
+  ExternalLink,
 } from "@/components/icons";
 
 /* ── data ──────────────────────────────────────────────────────── */
@@ -212,6 +215,7 @@ export function OnboardingWizard({ name }: { name: string }) {
             )}
             {step === 3 && (
               <StepTopics
+                level={level}
                 value={topics}
                 onToggle={toggleTopic}
                 onBack={() => go(2)}
@@ -384,23 +388,73 @@ function StepLevel({
   );
 }
 
+type GenState =
+  | { status: "loading" }
+  | { status: "done"; slug: string; title: string; difficulty: string; category: string }
+  | { status: "error" };
+
+const LEVEL_DIFFICULTY: Record<string, string> = { beginner: "Easy", intermediate: "Medium", advanced: "Hard" };
+
 function StepTopics({
+  level,
   value,
   onToggle,
   onBack,
   onNext,
 }: {
+  level: string;
   value: string[];
   onToggle: (t: string) => void;
   onBack: () => void;
   onNext: () => void;
 }) {
+  const [gen, setGen] = useState<Record<string, GenState>>({});
+  const [active, setActive] = useState<string | null>(null);
+  const started = useRef(new Set<string>());
+
+  async function generateFor(topic: string) {
+    if (started.current.has(topic)) return;
+    started.current.add(topic);
+    setGen((g) => ({ ...g, [topic]: { status: "loading" } }));
+    try {
+      const res = await fetch("/api/ai/generate-questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: `Create a practice coding question about ${topic}`,
+          count: 1,
+          difficulty: LEVEL_DIFFICULTY[level] ?? "Easy",
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      const q = data?.created?.[0];
+      if (!res.ok || !q) throw new Error("failed");
+      setGen((g) => ({ ...g, [topic]: { status: "done", ...q } }));
+    } catch {
+      started.current.delete(topic);
+      setGen((g) => ({ ...g, [topic]: { status: "error" } }));
+    }
+  }
+
+  function pick(topic: string) {
+    const selecting = !value.includes(topic);
+    onToggle(topic);
+    if (selecting) {
+      setActive(topic);
+      void generateFor(topic);
+    } else if (active === topic) {
+      setActive(null);
+    }
+  }
+
+  const current = active ? gen[active] : undefined;
+
   return (
     <div className="space-y-6">
       <StepHeader
         step={3}
         title="Which topics do you want to focus on?"
-        desc="Pick at least 1. You can change this any time from your settings."
+        desc="Pick at least 1 — tap a topic and we'll create a practice question for it live. You can change this any time from your settings."
       />
       <Stagger className="flex flex-wrap gap-2">
         {TOPICS.map((t) => {
@@ -408,7 +462,7 @@ function StepTopics({
           return (
             <Pop key={t} className="inline-block">
               <button
-                onClick={() => onToggle(t)}
+                onClick={() => pick(t)}
                 className={cn(
                   "rounded-full border-2 px-3.5 py-1.5 text-sm font-medium transition-all",
                   sel
@@ -423,6 +477,71 @@ function StepTopics({
           );
         })}
       </Stagger>
+      <AnimatePresence mode="wait">
+        {active && current && (
+          <motion.div
+            key={active + current.status}
+            initial={{ opacity: 0, y: 12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ type: "spring", stiffness: 300, damping: 24 }}
+            className="relative overflow-hidden rounded-xl border bg-muted/30 p-4"
+          >
+            {current.status === "loading" && (
+              <div className="flex items-center gap-3">
+                <motion.span animate={{ rotate: [0, 15, -15, 0] }} transition={{ duration: 1.4, repeat: Infinity }}>
+                  <Sparkles className="size-5 text-primary" />
+                </motion.span>
+                <div className="flex-1 space-y-2">
+                  <p className="text-sm font-medium">Creating a {active} question for you…</p>
+                  <motion.div
+                    className="h-1.5 rounded-full bg-primary/20 overflow-hidden"
+                  >
+                    <motion.div
+                      className="h-full w-1/3 rounded-full bg-primary"
+                      animate={{ x: ["-100%", "300%"] }}
+                      transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                  </motion.div>
+                </div>
+                <Loader2 className="size-4 animate-spin text-muted-foreground" />
+              </div>
+            )}
+            {current.status === "done" && (
+              <div className="flex items-start gap-3">
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 12, delay: 0.1 }}
+                  className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-green-500/15 text-green-600"
+                >
+                  <Check className="size-3.5" />
+                </motion.span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-green-600">Published · {current.difficulty} · {current.category}</p>
+                  <p className="mt-0.5 font-semibold leading-snug">{current.title}</p>
+                  <a
+                    href={`/problems/${current.slug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    Open question <ExternalLink className="size-3" />
+                  </a>
+                </div>
+              </div>
+            )}
+            {current.status === "error" && (
+              <p className="text-sm text-muted-foreground">
+                Couldn&apos;t create a sample question right now — you can still continue.{" "}
+                <button className="text-primary hover:underline" onClick={() => generateFor(active)}>
+                  Retry
+                </button>
+              </p>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="flex items-center gap-2">
         <button
           className="text-xs text-primary hover:underline"
