@@ -10,6 +10,7 @@ export type DocCategoryId =
   | "ai"
   | "api"
   | "guides"
+  | "courses"
   | "billing"
   | "faq";
 
@@ -36,6 +37,7 @@ export const DOC_CATEGORIES: DocCategory[] = [
   { id: "ai", title: "AI Tools", description: "The AI Mentor, the tools suite, and credits.", icon: "Sparkles" },
   { id: "api", title: "API & SDKs", description: "Authenticate and call the REST API from your code.", icon: "Code2" },
   { id: "guides", title: "Guides & Tutorials", description: "Step-by-step walkthroughs for common workflows.", icon: "BookOpen" },
+  { id: "courses", title: "Courses & Certificates", description: "Learn from video courses, track progress and earn certificates.", icon: "GraduationCap" },
   { id: "billing", title: "Plans & Billing", description: "Plans, subscriptions, coupons and invoices.", icon: "CreditCard" },
   { id: "faq", title: "FAQ", description: "Quick answers to common questions.", icon: "HelpCircle" },
 ];
@@ -471,6 +473,94 @@ Company Prep, Mock Interviews and the Resume Analyzer are part of paid plans.`,
   },
 
   // ── Billing ───────────────────────────────────────────────
+  {
+    slug: "how-courses-work",
+    category: "courses",
+    title: "How courses work",
+    description: "Lessons, quizzes, coding problems, progress and resuming where you left off.",
+    tags: ["course", "learn", "lesson", "video", "quiz", "progress"],
+    body: `# How courses work
+
+Courses are video lessons organised into sections. Switch between **Practice** and
+**Learn** from the top bar to find them.
+
+## Lesson types
+- **Video** — your playback position is saved, so you resume exactly where you stopped.
+- **Coding problem** — opens the same workspace you use for practice. Solve it and the lesson completes.
+- **Quiz** — pass the required score to complete it. Quizzes may unlock the next lesson.
+- **Reading** — notes and links from the instructor.
+
+## Tracking progress
+Finished lessons are ticked in the lesson list. **My courses** shows your progress and a
+**Continue** button that jumps to your last lesson. Lessons and courses count toward your
+streak, XP and badges.
+
+## Notes, questions and the AI mentor
+Take private, timestamped notes while you watch, ask the instructor a question under any lesson,
+and ask the AI mentor about what you're watching. It never gives away quiz answers.
+
+## Free previews and locked lessons
+Some lessons are free previews you can watch before enrolling. A lesson may be locked until you
+finish the previous required one, or until a set number of days after you enrol (a drip schedule).
+The lesson list tells you which.`,
+  },
+  {
+    slug: "course-access-and-refunds",
+    category: "courses",
+    title: "Course access, plans and refunds",
+    description: "Buying a course, plan-included courses, access limits and the 14-day refund window.",
+    tags: ["course", "refund", "access", "purchase", "plan", "expiry"],
+    body: `# Course access, plans and refunds
+
+## Getting a course
+- **Buy it** from the course page. The price shown is final — no extra taxes or fees are added at checkout.
+- **Included with your plan** — some courses come with the Go or Plus plan. The course page shows a one-click start; access lasts while your subscription does.
+- **Bundles** group several courses at one price.
+
+Every purchase creates an invoice you can open from **Settings → Billing & Usage**.
+
+## Refunds
+You can request a refund within **14 days of buying a course**. Email **info@setups.works** with
+the email on your account and the course name. Once refunded, access to the course is removed.
+
+## Access that ends
+Some courses have an access period. If yours has expired, the course page says so and you can
+renew from there. Your certificates stay valid and verifiable.
+
+## Videos won't play?
+Reload the page and make sure you're signed in to the account that bought the course. If it still
+fails, contact **info@setups.works** with the course and lesson name.`,
+  },
+  {
+    slug: "certificates-and-verification",
+    category: "courses",
+    title: "Certificates and how to verify them",
+    description: "Earn a certificate, share it, and let anyone check it is genuine.",
+    tags: ["certificate", "verify", "verification", "code", "share", "pdf"],
+    body: `# Certificates and how to verify them
+
+## Earning a certificate
+Finish every lesson in a course and a certificate is issued automatically. Find all of yours under
+**Learn → Certificates**. Your name and the course title are saved on the certificate when it is
+issued, so it stays valid even if either changes later.
+
+## Sharing and saving
+Open a certificate and choose **Print / save as PDF**. Each certificate has a unique verification code
+like \`SW-7K2M-9QXD-4TNB\` and its own link you can add to your résumé or LinkedIn.
+
+## Verifying a certificate
+Anyone — no account needed — can check a certificate:
+
+1. Go to **[Verify certificate](/verify)** (also linked in the site footer).
+2. Enter the code printed on the certificate.
+3. You'll see the learner's name, the course and the issue date if the code is genuine.
+
+To protect learners, lookups are rate-limited; if you're blocked, wait a minute and try again.
+
+## Something looks wrong?
+If your name or course title is misspelled, or a certificate is missing after you finished a course,
+email **info@setups.works** with the code or the course name.`,
+  },
   {
     slug: "plans-and-pricing",
     category: "billing",

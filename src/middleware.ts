@@ -18,6 +18,8 @@ const PUBLIC_PREFIXES = [
   "/invite", // referral share links (/invite/CODE) set a cookie and redirect
   "/api/cron", // scheduled jobs: idempotent and throttled inside the route (no session)
   "/certificate", // public certificate verification (the code is the credential)
+  "/verify", // public certificate lookup page
+  "/api/certificates/verify", // public lookup API (rate-limited by IP)
   "/join", // public campaign / offer landing page
   "/forgot-password",
   "/reset-password",

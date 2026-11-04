@@ -34,6 +34,7 @@ export async function allSitemapEntries(base: string): Promise<SitemapEntry[]> {
     { loc: `${base}/status`, lastmod: now, changefreq: "daily", priority: 0.4 },
     { loc: `${base}/design-guidelines`, lastmod: now, changefreq: "monthly", priority: 0.4 },
     { loc: `${base}/feedback`, lastmod: now, changefreq: "monthly", priority: 0.4 },
+    { loc: `${base}/verify`, lastmod: now, changefreq: "monthly", priority: 0.4 },
     { loc: `${base}/terms`, lastmod: now, changefreq: "yearly", priority: 0.3 },
     { loc: `${base}/privacy`, lastmod: now, changefreq: "yearly", priority: 0.3 },
     // Note: /login and /register are intentionally excluded — auth pages should

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { format } from "date-fns";
 import { Logo } from "@/components/shared/logo";
 import { JsonLd } from "@/components/json-ld";
@@ -9,6 +10,7 @@ import { normalizeCertificateCode } from "@/lib/lms/certificate";
 import { lmsEnabled } from "@/lib/lms/flag";
 import { APP_NAME } from "@/lib/constants";
 import { getCertificateByCode } from "@/services/lms-certificates";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +24,15 @@ export default async function CertificatePage({ params }: Props) {
   if (!lmsEnabled()) notFound();
   const code = normalizeCertificateCode((await params).code);
   if (!code) notFound();
+  const h = await headers();
+  const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "anonymous";
+  if (!(await rateLimit("verify", ip)).success) {
+    return (
+      <div className="flex min-h-svh items-center justify-center px-4 text-center text-sm text-muted-foreground">
+        Too many lookups from your network. Please wait a minute and try again.
+      </div>
+    );
+  }
   const cert = await getCertificateByCode(code);
   if (!cert) notFound();
 
@@ -35,6 +46,8 @@ export default async function CertificatePage({ params }: Props) {
         </div>
 
         <article className="rounded-2xl border-4 border-double bg-background p-8 text-center shadow-sm sm:p-14 print:rounded-none print:shadow-none">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt={APP_NAME} width={956} height={223} className="mx-auto mb-8 h-10 w-auto sm:h-12" />
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Certificate of completion</p>
           <p className="mt-8 text-sm text-muted-foreground">This certifies that</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">{cert.learnerName}</h1>

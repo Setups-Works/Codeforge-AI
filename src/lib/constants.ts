@@ -298,4 +298,6 @@ export const RATE_LIMITS = {
   aiGenerate: { requests: 5, window: "300 s" },
   api: { requests: 120, window: "60 s" },
   payment: { requests: 10, window: "60 s" },
+  /** Public certificate verification (anonymous, keyed by IP). */
+  verify: { requests: 15, window: "60 s" },
 } as const;
