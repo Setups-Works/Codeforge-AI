@@ -15,8 +15,8 @@ decisions). We build **one phase at a time**; each phase ships behind
 | 6 | Public SEO pages | `/courses` indexed with rich schema | ✅ committed |
 | 7 | Engagement | Reviews, Q&A, notes, certificates | ✅ committed and deployed |
 | 8 | Practice integration | Problem lessons, quizzes, AI mentor, XP | ✅ committed; migration applied, live-DB verified |
-| 9 | Growth & commerce | Course coupons, bundles, referrals, emails | ✅ committed; migrations 0020 + 0021 applied, live-DB verified |
-| 10 | Analytics & hardening | Admin analytics, refunds, invoices, video host upgrade, tests | ⬜ |
+| 9 | Growth & commerce | Course coupons, bundles, referrals, emails | ✅ pushed; migrations 0020 + 0021 applied, live-DB verified |
+| 10 | Analytics & hardening | Admin analytics, refunds, invoices, video host upgrade, tests | 🟡 refunds built; analytics, E2E, host upgrade not started |
 | 11 | Landing page | Home page showcases the full LMS (after all phases) | ⬜ |
 
 ---
@@ -312,6 +312,13 @@ attribution.
   adding real watch-time events and signed URLs if Drive limits bite.
 - Playwright E2E (browse → buy → watch), load/quota checks, rate limits,
   security review, accessibility pass.
+
+**Progress:** admin **refund** built (`refundOrder`, `POST /api/admin/orders/[id]/refund`, Refund button
+in `/admin/orders`): Razorpay refund when money was taken, order marked refunded, only the access that
+order granted is removed (progress, certificates and unrelated grants kept), idempotent and safe to retry.
+Live-DB verified except the actual Razorpay call (needs live keys). Learner self-service refunds are not
+built (admin-triggered only). **Not started:** admin analytics (revenue, enrolments, completion, drop-off),
+Playwright E2E, host upgrade, coupon-redemption reversal on refund.
 
 **Done when:** E2E green in CI, refunds verified in test mode, host-upgrade path
 proven with one course.

@@ -457,6 +457,49 @@ export async function handleFailedPayment(razorpayOrderId?: string): Promise<boo
   return true;
 }
 
+// ── Refunds ─────────────────────────────────────────────────────────────
+
+export type RefundResult = { ok: true; alreadyRefunded: boolean } | Fail;
+
+/**
+ * Refund a paid order: money back through Razorpay (when something was
+ * actually charged), the order marked refunded, and the access it granted
+ * removed. Progress and certificates are kept. Safe to retry: the status flip
+ * only happens once, and Razorpay's "already refunded" is treated as success.
+ */
+export async function refundOrder(orderId: string): Promise<RefundResult> {
+  const client = sb();
+  const { data, error } = await client.from("course_orders").select(ORDER_COLS).eq("id", orderId).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return fail(404, "Order not found");
+  const order = orderFromRow(data as OrderRow);
+  if (order.status === "refunded") return { ok: true, alreadyRefunded: true };
+  if (order.status !== "paid") return fail(409, "Only paid orders can be refunded");
+
+  if (order.razorpayPaymentId && order.amountInr > 0) {
+    try {
+      await getRazorpay().payments.refund(order.razorpayPaymentId, { amount: order.amountInr * 100, notes: { orderId: order.id, reason: "course refund" } });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : JSON.stringify(e);
+      if (!/already.*refund|fully refunded/i.test(message)) return fail(502, `Razorpay couldn't process the refund: ${message}`);
+    }
+  }
+
+  const { data: flipped, error: flipError } = await client
+    .from("course_orders")
+    .update({ status: "refunded", refunded_at: new Date().toISOString() })
+    .eq("id", order.id)
+    .eq("status", "paid")
+    .select("id");
+  if (flipError) throw new Error(flipError.message);
+  if (!flipped?.length) return { ok: true, alreadyRefunded: true };
+
+  // Remove only the access this order granted; a plan or admin grant stays.
+  const { data: removed } = await client.from("course_enrollments").delete().eq("order_id", order.id).select("course_id");
+  for (const r of (removed ?? []) as { course_id: string }[]) await refreshStudentCount(r.course_id);
+  return { ok: true, alreadyRefunded: false };
+}
+
 // ── Admin ───────────────────────────────────────────────────────────────
 
 export interface AdminOrder extends CourseOrder {

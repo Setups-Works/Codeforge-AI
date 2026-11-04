@@ -1,6 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { Loader2, CreditCard } from "@/components/icons";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { api } from "@/lib/lms/api";
 import { formatPrice } from "@/lib/plans";
 import { isRefundable } from "@/lib/lms/refund";
+import { COURSE_REFUND_DAYS } from "@/lib/lms/constants";
 import type { AdminOrder, OrderStatus } from "@/services/lms-orders";
 
 const VARIANT: Record<OrderStatus, "default" | "secondary" | "outline" | "destructive"> = {
@@ -18,6 +21,15 @@ const VARIANT: Record<OrderStatus, "default" | "secondary" | "outline" | "destru
 };
 
 export function OrdersManager() {
+  const qc = useQueryClient();
+  const refund = useMutation({
+    mutationFn: (id: string) => api(`/api/admin/orders/${id}/refund`, { method: "POST" }),
+    onSuccess: () => {
+      toast.success("Order refunded and access removed");
+      qc.invalidateQueries({ queryKey: ["admin-course-orders"] });
+    },
+    onError: (e) => toast.error(e.message),
+  });
   const { data, isLoading } = useQuery({
     queryKey: ["admin-course-orders"],
     queryFn: () => api<{ orders: (Omit<AdminOrder, "createdAt" | "paidAt"> & { createdAt: string; paidAt: string | null })[] }>("/api/admin/orders"),
@@ -49,6 +61,7 @@ export function OrdersManager() {
                 <TableHead>Amount</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Refundable</TableHead>
+                <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -64,6 +77,22 @@ export function OrdersManager() {
                   <TableCell><Badge variant={VARIANT[o.status]} className="capitalize">{o.status}</Badge></TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {o.status === "paid" ? (isRefundable(o.paidAt ? new Date(o.paidAt) : null) ? "Yes" : "Window closed") : "—"}
+                  </TableCell>
+                  <TableCell>
+                    {o.status === "paid" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={refund.isPending}
+                        onClick={() =>
+                          confirm(
+                            `Refund ${formatPrice(o.amountInr)} to ${o.userName ?? "this learner"} and remove their access?${isRefundable(o.paidAt ? new Date(o.paidAt) : null) ? "" : "\n\nThe ${COURSE_REFUND_DAYS}-day refund window has closed; refunding anyway."}`,
+                          ) && refund.mutate(o.id)
+                        }
+                      >
+                        Refund
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
