@@ -33,7 +33,8 @@ const CSP = [
   // Node runtime in iframes served from *.codesandbox.io.
   // Google ad units render inside doubleclick/googlesyndication iframes.
   // youtube-nocookie: privacy-enhanced player for Editorial video tutorials.
-  `frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://*.codesandbox.io https://www.google.com https://accounts.google.com https://www.youtube-nocookie.com ${ADS_FRAME_SRC}`,
+  // drive.google.com: course lessons play Google Drive videos in a /preview iframe.
+  `frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com https://*.codesandbox.io https://www.google.com https://accounts.google.com https://www.youtube-nocookie.com https://drive.google.com ${ADS_FRAME_SRC}`,
   // We still refuse to BE framed (clickjacking) regardless of the above.
   "frame-ancestors 'none'",
   "base-uri 'self'",
