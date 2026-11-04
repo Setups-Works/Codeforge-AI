@@ -53,6 +53,9 @@ export function CoursesManager() {
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline">
+            <Link href="/admin/courses/analytics">Analytics</Link>
+          </Button>
+          <Button asChild variant="outline">
             <Link href="/admin/bundles">Bundles</Link>
           </Button>
           <Button asChild variant="outline">

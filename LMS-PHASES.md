@@ -16,7 +16,7 @@ decisions). We build **one phase at a time**; each phase ships behind
 | 7 | Engagement | Reviews, Q&A, notes, certificates | ✅ committed and deployed |
 | 8 | Practice integration | Problem lessons, quizzes, AI mentor, XP | ✅ committed; migration applied, live-DB verified |
 | 9 | Growth & commerce | Course coupons, bundles, referrals, emails | ✅ pushed; migrations 0020 + 0021 applied, live-DB verified |
-| 10 | Analytics & hardening | Admin analytics, refunds, invoices, video host upgrade, tests | 🟡 refunds built; analytics, E2E, host upgrade not started |
+| 10 | Analytics & hardening | Admin analytics, refunds, invoices, video host upgrade, tests | 🟡 refunds + analytics built; E2E, host upgrade not started |
 | 11 | Landing page | Home page showcases the full LMS (after all phases) | ⬜ |
 
 ---
@@ -317,8 +317,12 @@ attribution.
 in `/admin/orders`): Razorpay refund when money was taken, order marked refunded, only the access that
 order granted is removed (progress, certificates and unrelated grants kept), idempotent and safe to retry.
 Live-DB verified except the actual Razorpay call (needs live keys). Learner self-service refunds are not
-built (admin-triggered only). **Not started:** admin analytics (revenue, enrolments, completion, drop-off),
-Playwright E2E, host upgrade, coupon-redemption reversal on refund.
+built (admin-triggered only). **Analytics** at `/admin/courses/analytics` (button on the courses list): net/gross/refunded revenue,
+orders, new enrolments, completions, active learners (7d), certificates for 7/30/90/365 days; per-course
+learners, completion rate, net revenue and rating; click a course for a lesson-by-lesson completion
+funnel with drop-off (drops of 20+ points highlighted). Maths in `lib/lms/analytics.ts` (tested);
+live-DB verified. Bundle sales are not attributed to individual courses.
+**Not started:** Playwright E2E, host upgrade, coupon-redemption reversal on refund.
 
 **Done when:** E2E green in CI, refunds verified in test mode, host-upgrade path
 proven with one course.

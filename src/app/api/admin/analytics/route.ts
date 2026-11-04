@@ -1,12 +1,16 @@
-import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/api-auth";
-import { cached } from "@/lib/redis";
-import { getAdminAnalytics } from "@/services/admin-stats";
+import { NextRequest, NextResponse } from "next/server";
+import { requireLmsAdmin } from "@/lib/lms/guard";
+import { getCourseStats, getOverview } from "@/services/lms-analytics";
 
-export async function GET() {
-  const { error } = await requireAdmin();
+export const runtime = "nodejs";
+
+const RANGES = [7, 30, 90, 365];
+
+export async function GET(req: NextRequest) {
+  const { error } = await requireLmsAdmin();
   if (error) return error;
-
-  const data = await cached("admin:analytics", 60, getAdminAnalytics);
-  return NextResponse.json(data);
+  const asked = Number(req.nextUrl.searchParams.get("days"));
+  const days = RANGES.includes(asked) ? asked : 30;
+  const [overview, courses] = await Promise.all([getOverview(days), getCourseStats()]);
+  return NextResponse.json({ overview, courses });
 }
