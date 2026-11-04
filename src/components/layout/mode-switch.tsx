@@ -34,7 +34,7 @@ export function ModeSwitch({ className, onNavigate }: { className?: string; onNa
             onClick={onNavigate}
             className={cn(
               "flex-1 rounded-md px-3 py-1 text-center text-xs font-medium transition-colors",
-              active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+              active ? (mode.id === "learn" ? "bg-[#006bff] text-white" : "bg-background text-foreground") : "text-muted-foreground hover:text-foreground",
             )}
           >
             {mode.label}

@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Markdown } from "@/components/shared/markdown";
 import { Curriculum } from "@/features/lms/curriculum";
 import { formatPrice } from "@/lib/plans";
-import { discountPercent, formatDuration } from "@/lib/lms/format";
+import { discountPercent, formatDuration, pluralize } from "@/lib/lms/format";
+import { CATEGORY_STYLE, DISCOUNT_STYLE, levelStyle } from "@/features/lms/colors";
 import type { CatalogLesson, CourseDetail } from "@/services/lms-catalog";
 
 /**
@@ -31,12 +32,12 @@ export function CourseDetailView({
   return (
       <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
         <div className="min-w-0 space-y-8">
-          <header className="space-y-3">
+          <header className="space-y-3 rounded-2xl border bg-muted/30 p-5 sm:p-7">
             <div className="flex flex-wrap gap-1.5">
-              {course.level && <Badge variant="secondary">{course.level}</Badge>}
-              {course.category && <Badge variant="outline">{course.category}</Badge>}
+              {course.level && <Badge variant="outline" className={levelStyle()}>{course.level}</Badge>}
+              {course.category && <Badge variant="outline" className={CATEGORY_STYLE}>{course.category}</Badge>}
             </div>
-            <h1 className="text-3xl font-black tracking-tight sm:text-4xl">{course.title}</h1>
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{course.title}</h1>
             {course.subtitle && <p className="text-lg text-muted-foreground">{course.subtitle}</p>}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
               {course.ratingCount > 0 && course.ratingAvg != null && (
@@ -59,7 +60,7 @@ export function CourseDetailView({
               <ul className="grid gap-2 sm:grid-cols-2">
                 {course.outcomes.map((o) => (
                   <li key={o} className="flex gap-2 text-sm">
-                    <Check className="mt-0.5 size-4 shrink-0 text-primary" /> {o}
+                    <Check className="mt-0.5 size-4 shrink-0 text-[#006bff]" /> {o}
                   </li>
                 ))}
               </ul>
@@ -120,11 +121,11 @@ export function CourseDetailView({
             )}
             <div className="space-y-4 p-5">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold">{formatPrice(course.priceInr)}</span>
+                <span className="text-3xl font-semibold tracking-tight">{formatPrice(course.priceInr)}</span>
                 {off > 0 && course.compareAtInr != null && (
                   <>
                     <span className="text-sm text-muted-foreground line-through">{formatPrice(course.compareAtInr)}</span>
-                    <Badge>{off}% off</Badge>
+                    <Badge className={DISCOUNT_STYLE}>{off}% off</Badge>
                   </>
                 )}
               </div>
@@ -133,11 +134,11 @@ export function CourseDetailView({
 
               <ul className="space-y-2 border-t pt-4 text-sm text-muted-foreground">
                 {course.lessonCount > 0 && (
-                  <li className="flex items-center gap-2"><BookOpen className="size-4" /> {course.lessonCount} lessons</li>
+                  <li className="flex items-center gap-2"><BookOpen className="size-4 text-[#006bff]" /> {pluralize(course.lessonCount, "lesson")}</li>
                 )}
-                {duration && <li className="flex items-center gap-2"><Clock className="size-4" /> {duration} of content</li>}
-                {course.level && <li className="flex items-center gap-2"><Layers className="size-4" /> {course.level}</li>}
-                <li className="flex items-center gap-2"><Globe className="size-4" /> {course.language.toUpperCase()}</li>
+                {duration && <li className="flex items-center gap-2"><Clock className="size-4 text-[#006bff]" /> {duration} of content</li>}
+                {course.level && <li className="flex items-center gap-2"><Layers className="size-4 text-[#006bff]" /> {course.level}</li>}
+                <li className="flex items-center gap-2"><Globe className="size-4 text-[#006bff]" /> {course.language.toUpperCase()}</li>
               </ul>
             </div>
           </div>

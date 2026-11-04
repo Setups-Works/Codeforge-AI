@@ -3,6 +3,8 @@ import { GraduationCap, Play } from "@/components/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { CTA, PLACEHOLDER_BG, PROGRESS_STYLE } from "@/features/lms/colors";
+import { cn } from "@/lib/utils";
 import type { MyCourse } from "@/services/lms-learn";
 
 /** A purchased course with its progress bar and a resume button. */
@@ -13,12 +15,12 @@ export function EnrolledCourseCard({ item }: { item: MyCourse }) {
 
   return (
     <div className="flex flex-col overflow-hidden rounded-2xl border bg-card">
-      <Link href={`/learn/courses/${course.slug}`} className="relative aspect-video bg-muted">
+      <Link href={`/learn/courses/${course.slug}`} className={cn("relative aspect-video", course.thumbnailUrl ? "bg-muted" : PLACEHOLDER_BG)}>
         {course.thumbnailUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={course.thumbnailUrl} alt="" loading="lazy" className="size-full object-cover" />
         ) : (
-          <div className="flex size-full items-center justify-center text-muted-foreground/40">
+          <div className="flex size-full items-center justify-center text-[#006bff]/60">
             <GraduationCap className="size-10" />
           </div>
         )}
@@ -29,13 +31,13 @@ export function EnrolledCourseCard({ item }: { item: MyCourse }) {
           {course.title}
         </Link>
         <div className="space-y-1.5">
-          <Progress value={progress.percent} />
+          <Progress value={progress.percent} className={PROGRESS_STYLE} />
           <p className="text-xs text-muted-foreground">
             {progress.completed} of {progress.total} lessons · {progress.percent}%
           </p>
         </div>
         {resumeLessonId && (
-          <Button asChild size="sm" className="mt-auto">
+          <Button asChild size="sm" className={cn("mt-auto", CTA)}>
             <Link href={`/learn/watch/${course.slug}/${resumeLessonId}`}>
               <Play className="size-4" />
               {finished ? "Watch again" : started ? "Continue" : "Start"}

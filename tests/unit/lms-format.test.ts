@@ -1,4 +1,4 @@
-import { discountPercent, formatDuration } from "@/lib/lms/format";
+import { discountPercent, formatDuration, pluralize } from "@/lib/lms/format";
 
 describe("formatDuration", () => {
   it.each([
@@ -22,5 +22,13 @@ describe("discountPercent", () => {
     expect(discountPercent(499, null)).toBe(0);
     expect(discountPercent(499, 499)).toBe(0);
     expect(discountPercent(499, 100)).toBe(0);
+  });
+});
+
+describe("pluralize", () => {
+  it("uses the singular only for exactly one", () => {
+    expect(pluralize(1, "lesson")).toBe("1 lesson");
+    expect(pluralize(0, "lesson")).toBe("0 lessons");
+    expect(pluralize(5, "lesson")).toBe("5 lessons");
   });
 });

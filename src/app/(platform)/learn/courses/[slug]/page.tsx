@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "@/components/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CTA } from "@/features/lms/colors";
 import { BuyCourseButton } from "@/features/lms/buy-course-button";
 import { CourseDetailView } from "@/features/lms/course-detail-view";
 import { paymentsEnabled } from "@/lib/razorpay";
@@ -63,7 +64,7 @@ export default async function LearnCoursePage({ params }: Props) {
   const action =
     enrolled || isAdmin ? (
       resumeLessonId ? (
-        <Button asChild className="w-full">
+        <Button asChild className={`w-full ${CTA}`}>
           <Link href={watchHref(resumeLessonId)}>
             {isAdmin ? "Open course" : enrollment?.lastLessonId ? "Continue learning" : "Start learning"}
           </Link>

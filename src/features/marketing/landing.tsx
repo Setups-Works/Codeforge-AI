@@ -35,7 +35,7 @@ import { APP_NAME, APP_VERSION, LANGUAGES } from "@/lib/constants";
 import { FAQS, type Faq } from "./faqs";
 import { LEARN_FEATURES, LEARN_STEPS, type LandingLearn } from "./lms-content";
 import { formatPrice } from "@/lib/plans";
-import { formatDuration } from "@/lib/lms/format";
+import { formatDuration, pluralize } from "@/lib/lms/format";
 import {
   SiJavascript,
   SiTypescript,
@@ -871,7 +871,7 @@ export function Landing({ problems, totalProblems, featuresByPlan, paymentsEnabl
                             {c.subtitle && <p className={cn("line-clamp-2 text-sm", inkSub)}>{c.subtitle}</p>}
                             <div className={cn("mt-auto flex flex-wrap items-center gap-x-3 pt-2 text-xs", inkFaint)}>
                               {c.ratingCount > 0 && c.ratingAvg != null && <span className="flex items-center gap-1"><Star className="size-3 text-amber-500" /> {c.ratingAvg.toFixed(1)} ({c.ratingCount})</span>}
-                              {c.lessonCount > 0 && <span>{c.lessonCount} lessons</span>}
+                              {c.lessonCount > 0 && <span>{pluralize(c.lessonCount, "lesson")}</span>}
                               {c.durationS > 0 && <span>{formatDuration(c.durationS)}</span>}
                             </div>
                             <p className={cn("text-base font-bold", inkHead)}>{formatPrice(c.priceInr)}</p>

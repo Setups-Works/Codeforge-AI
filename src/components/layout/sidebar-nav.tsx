@@ -48,7 +48,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                   key={item.href}
                   href={item.href}
                   onClick={onNavigate}
-                  className={cn(ROW, isActive(item) ? ACTIVE : IDLE)}
+                  className={cn(ROW, isActive(item) ? (learnMode ? "bg-[#006bff]/10 font-medium text-[#006bff]" : ACTIVE) : IDLE)}
                 >
                   <item.icon className="size-4" />
                   {item.title}

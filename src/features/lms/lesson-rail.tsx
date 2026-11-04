@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Check, ChevronDown, Lock } from "@/components/icons";
 import { LESSON_KIND_ICON } from "@/features/lms/lesson-kind";
+import { KIND_STYLE } from "@/features/lms/colors";
 import { cn } from "@/lib/utils";
 import { formatDuration } from "@/lib/lms/format";
 import type { CatalogSection } from "@/services/lms-catalog";
@@ -37,7 +38,7 @@ export function LessonRail({ courseSlug, sections, currentLessonId, completedIds
                     <span
                       className={cn(
                         "flex size-5 shrink-0 items-center justify-center rounded-full border text-[10px]",
-                        done ? "border-primary bg-primary text-primary-foreground" : "text-muted-foreground",
+                        done ? "border-[#006bff] bg-[#006bff] text-white" : cn("border-transparent", KIND_STYLE[lesson.kind].chip, KIND_STYLE[lesson.kind].icon),
                       )}
                     >
                       {done ? <Check className="size-3" /> : !openable ? <Lock className="size-3" /> : <Icon className="size-3" />}
@@ -50,7 +51,7 @@ export function LessonRail({ courseSlug, sections, currentLessonId, completedIds
                 );
                 const cls = cn(
                   "flex items-center gap-2 px-3 py-2 text-sm",
-                  current && "bg-accent font-medium",
+                  current && "bg-[#006bff]/10 font-medium text-[#006bff]",
                   openable ? "hover:bg-accent/60" : "cursor-not-allowed opacity-60",
                 );
                 return (

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { COURSE_LEVELS } from "@/lib/lms/constants";
 
 const ALL = "all";
+const ALL_LABEL: Record<string, string> = { category: "All categories", level: "All levels", price: "All prices", sort: "Sort: newest" };
 
 const PRICE_OPTIONS = [
   { value: "free", label: "Free" },
@@ -44,7 +45,7 @@ export function CourseFilters({ categories }: { categories: string[] }) {
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={ALL}>{key === "sort" ? "Sort: newest" : `All ${label.toLowerCase()}s`}</SelectItem>
+        <SelectItem value={ALL}>{ALL_LABEL[key] ?? `All ${label.toLowerCase()}`}</SelectItem>
         {options.map((o) => (
           <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
         ))}

@@ -5,6 +5,7 @@ import { ArrowLeft } from "@/components/icons";
 import { PublicHeader } from "@/components/layout/public-header";
 import { JsonLd } from "@/components/json-ld";
 import { Button } from "@/components/ui/button";
+import { CTA } from "@/features/lms/colors";
 import { CourseDetailView } from "@/features/lms/course-detail-view";
 import { auth } from "@/lib/auth";
 import { COURSE_REFUND_DAYS } from "@/lib/lms/constants";
@@ -57,11 +58,11 @@ export default async function PublicCoursePage({ params }: Props) {
   const watchHref = (lessonId: string) => `/learn/watch/${course.slug}/${lessonId}`;
 
   const action = signedIn ? (
-    <Button asChild className="w-full">
+    <Button asChild className={`w-full ${CTA}`}>
       <Link href={inApp}>{course.isFree ? "Enrol for free" : `Buy for ${formatPrice(course.priceInr)}`}</Link>
     </Button>
   ) : (
-    <Button asChild className="w-full">
+    <Button asChild className={`w-full ${CTA}`}>
       <Link href={`/login?callbackUrl=${encodeURIComponent(inApp)}`}>{course.isFree ? "Sign in to enrol" : "Sign in to buy"}</Link>
     </Button>
   );

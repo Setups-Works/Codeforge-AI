@@ -44,3 +44,8 @@ export function parseTimestamp(input: string): number | null {
   if (Number(sec) > 59) return null;
   return Number(h ?? 0) * 3600 + Number(min) * 60 + Number(sec);
 }
+
+/** "1 lesson", "2 lessons". */
+export function pluralize(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}

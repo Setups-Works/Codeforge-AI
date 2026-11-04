@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { CTA } from "@/features/lms/colors";
 import { Input } from "@/components/ui/input";
 import { formatPrice } from "@/lib/plans";
 import { api } from "@/lib/lms/api";
@@ -127,7 +128,7 @@ export function BuyCourseButton({ courseId, courseSlug, isFree, priceLabel, paym
 
   return (
     <div className="space-y-2">
-      <Button className="w-full" onClick={start} disabled={disabled}>
+      <Button className={`w-full ${CTA}`} onClick={start} disabled={disabled}>
         {busy && <Loader2 className="size-4 animate-spin" />}
         {includedPlanName ? `Start free with your ${includedPlanName} plan` : isFree ? "Enrol for free" : applied ? `Buy for ${formatPrice(applied.finalAmount)}` : `Buy for ${priceLabel}`}
       </Button>

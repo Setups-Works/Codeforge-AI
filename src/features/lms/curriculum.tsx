@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { ChevronDown, Eye } from "@/components/icons";
 import { LESSON_KIND_ICON } from "@/features/lms/lesson-kind";
+import { KIND_STYLE, PREVIEW_STYLE } from "@/features/lms/colors";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { formatDuration } from "@/lib/lms/format";
+import { formatDuration, pluralize } from "@/lib/lms/format";
 import type { CatalogLesson, CatalogSection } from "@/services/lms-catalog";
 
 /** Read-only curriculum outline. Uses native <details> so it needs no client JS. */
@@ -28,7 +30,7 @@ export function Curriculum({
               <ChevronDown className="size-4 shrink-0 transition-transform group-open:rotate-180" />
               <span className="min-w-0 flex-1 truncate">{section.title}</span>
               <span className="shrink-0 text-xs font-normal text-muted-foreground">
-                {section.lessons.length} lessons{total > 0 ? ` · ${formatDuration(total)}` : ""}
+                {pluralize(section.lessons.length, "lesson")}{total > 0 ? ` · ${formatDuration(total)}` : ""}
               </span>
             </summary>
             <ul className="divide-y border-t bg-muted/20">
@@ -39,11 +41,11 @@ export function Curriculum({
                   <>
                     {(() => {
                       const Icon = LESSON_KIND_ICON[lesson.kind];
-                      return <Icon className="size-4 shrink-0 text-muted-foreground" />;
+                      return <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg", KIND_STYLE[lesson.kind].chip)}><Icon className={cn("size-4", KIND_STYLE[lesson.kind].icon)} /></span>;
                     })()}
                     <span className="min-w-0 flex-1 truncate">{lesson.title}</span>
                     {lesson.isFreePreview && (
-                      <Badge variant="outline">
+                      <Badge variant="outline" className={PREVIEW_STYLE}>
                         <Eye /> Preview
                       </Badge>
                     )}
