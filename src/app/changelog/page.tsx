@@ -10,10 +10,33 @@ export const metadata = {
 
 const RELEASES: Release[] = [
   {
-    version: "3.5.0",
-    date: "November 2, 2026",
+    version: "3.6.0",
+    date: "November 5, 2026",
     tag: "Latest",
     tagColor: "bg-green-500/15 text-green-500 border-green-500/30",
+    changes: {
+      new: [
+        "Courses — a new Learn mode with a course catalogue, video lessons, progress tracking, Continue watching and a My courses page; switch between Practice and Learn from the top bar",
+        "Buy a course with Razorpay, get it with your Go or Plus plan when it's included, or save with course bundles — all billing now lives in one place under Settings → Billing & Usage, with invoices for plans and courses",
+        "Reviews, a wishlist, private timestamped lesson notes and per-lesson Q&A, plus a verifiable certificate when you finish a course",
+        "Coding-problem lessons, quizzes with a pass mark, lessons that unlock in order or over time, XP for learning, and an AI mentor that knows the lesson you're on",
+        "Course coupons, referral links (10% off a friend's first course, a reward coupon for you) and unlock notifications for scheduled lessons",
+        "Admin course studio — curriculum builder, Google Drive video links, bundles, order refunds and analytics with a lesson-by-lesson completion funnel",
+        "Course endpoints added to the public API reference",
+      ],
+      improved: [
+        "Public course pages for search engines, with rich course details, ratings and a sitemap entry for every published course",
+        "Richer structured data across the site: questions, pricing, docs, blog and the compiler",
+        "Invoices now escape names and addresses, and the Billing page lists coupons you've used",
+      ],
+      fixed: [],
+    },
+  },
+  {
+    version: "3.5.0",
+    date: "November 2, 2026",
+    tag: "Stable",
+    tagColor: "bg-blue-500/15 text-blue-500 border-blue-500/30",
     changes: {
       new: [
         "CodeForge AI is now Setups Works Lab — a new name, a new wordmark and a new home at labs.setups.works",

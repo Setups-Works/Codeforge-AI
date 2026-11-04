@@ -24,6 +24,228 @@ const userRefSchema = {
   },
 } as const;
 
+/* ── LMS (courses) ────────────────────────────────────────────────────────
+ * Compact builders keep this section readable. Every route below returns 404
+ * while NEXT_PUBLIC_LMS_ENABLED is off.
+ */
+const idParam = (name = "id", description = "Resource id (uuid)") => ({ name, in: "path", required: true, description, schema: { type: "string", format: "uuid" } });
+const body = (properties: Record<string, any>, required?: string[]) => ({
+  required: true,
+  content: { "application/json": { schema: { type: "object", ...(required ? { required } : {}), properties } } },
+});
+const res = (extra: Record<string, string> = {}) => ({
+  "200": { description: "OK" },
+  ...Object.fromEntries(Object.entries(extra).map(([code, description]) => [code, { description }])),
+});
+const learner = (summary: string, extra: Record<string, any> = {}) => ({ tags: ["Courses"], summary, ...extra });
+const adminOp = (summary: string, extra: Record<string, any> = {}) => ({ tags: ["Admin"], summary: `${summary} (admin)`, ...extra });
+const lessonQuery = { name: "lessonId", in: "query", required: true, schema: { type: "string", format: "uuid" } };
+const uuid = { type: "string", format: "uuid" };
+
+const paymentBody = body(
+  { razorpay_order_id: { type: "string" }, razorpay_payment_id: { type: "string" }, razorpay_signature: { type: "string" } },
+  ["razorpay_order_id", "razorpay_payment_id", "razorpay_signature"],
+);
+
+const lmsPaths: Record<string, any> = {
+  "/learn/courses/{id}/coupon": {
+    post: learner("Preview a coupon's discount on a course (nothing is redeemed)", {
+      parameters: [idParam()],
+      requestBody: body({ code: { type: "string" } }, ["code"]),
+      responses: res({ "404": "Course not found or free" }),
+    }),
+  },
+  "/learn/courses/{id}/checkout": {
+    post: learner("Start buying a course. Price is server-side; free and plan-included courses enrol immediately", {
+      parameters: [idParam()],
+      requestBody: { required: false, content: { "application/json": { schema: { type: "object", properties: { couponCode: { type: "string" } } } } } },
+      responses: res({ "409": "Already owned", "503": "Payments unavailable" }),
+    }),
+  },
+  "/learn/courses/{id}/verify": {
+    post: learner("Verify the Razorpay signature and enrol the buyer", { parameters: [idParam()], requestBody: paymentBody, responses: res({ "400": "Bad signature", "404": "Order not found" }) }),
+  },
+  "/learn/courses/{id}/review": {
+    put: learner("Create or update your review (owners only)", {
+      parameters: [idParam()],
+      requestBody: body({ rating: { type: "integer", minimum: 1, maximum: 5 }, body: { type: "string", nullable: true } }, ["rating"]),
+      responses: res({ "403": "Not enrolled" }),
+    }),
+    delete: learner("Delete your review", { parameters: [idParam()], responses: res({ "404": "No review" }) }),
+  },
+  "/learn/bundles/{id}/checkout": {
+    post: learner("Start buying a bundle (one payment enrols every course in it)", { parameters: [idParam()], responses: res({ "409": "Already own every course", "503": "Payments unavailable" }) }),
+  },
+  "/learn/bundles/{id}/verify": {
+    post: learner("Verify a bundle payment and enrol", { parameters: [idParam()], requestBody: paymentBody, responses: res({ "400": "Bad signature", "404": "Order not found" }) }),
+  },
+  "/learn/progress": {
+    post: learner("Mark a lesson completed or undo it. Quiz and problem lessons complete themselves", {
+      requestBody: body({ lessonId: uuid, status: { type: "string", enum: ["started", "completed"] } }, ["lessonId", "status"]),
+      responses: res({ "403": "No access, not enrolled, or auto-completing lesson", "429": "Rate limited" }),
+    }),
+  },
+  "/learn/lessons/{id}/status": {
+    get: learner("Is this lesson completed for me?", { parameters: [idParam()], responses: res() }),
+  },
+  "/learn/quiz": {
+    post: learner("Submit quiz answers. Correct answers are revealed only after passing", {
+      requestBody: body({ lessonId: uuid, answers: { type: "array", items: { type: "integer", nullable: true } } }, ["lessonId", "answers"]),
+      responses: res({ "403": "Not enrolled" }),
+    }),
+  },
+  "/learn/wishlist": {
+    post: learner("Save a course for later", { requestBody: body({ courseId: uuid }, ["courseId"]), responses: res({ "404": "Course not found" }) }),
+    delete: learner("Remove a course from the wishlist", { requestBody: body({ courseId: uuid }, ["courseId"]), responses: res() }),
+  },
+  "/learn/notes": {
+    get: learner("My notes for a lesson", { parameters: [lessonQuery], responses: res({ "403": "Not enrolled" }) }),
+    post: learner("Add a private note, optionally timestamped", {
+      requestBody: body({ lessonId: uuid, atSeconds: { type: "integer", nullable: true }, body: { type: "string" } }, ["lessonId", "body"]),
+      responses: res({ "201": "Created", "403": "Not enrolled" }),
+    }),
+  },
+  "/learn/notes/{id}": { delete: learner("Delete one of my notes", { parameters: [idParam()], responses: res({ "404": "Not found" }) }) },
+  "/learn/questions": {
+    get: learner("Questions and replies for a lesson", { parameters: [lessonQuery], responses: res({ "403": "Not enrolled" }) }),
+    post: learner("Ask a question or reply to one. Admin replies are labelled Instructor", {
+      requestBody: body({ lessonId: uuid, parentId: uuid, body: { type: "string" } }, ["lessonId", "body"]),
+      responses: res({ "201": "Created", "403": "Not enrolled" }),
+    }),
+  },
+  "/learn/questions/{id}": { delete: learner("Delete your post (admins can delete any)", { parameters: [idParam()], responses: res({ "404": "Not found" }) }) },
+  "/billing/course-invoice/{id}": {
+    get: { tags: ["Billing"], summary: "Printable HTML invoice for a course or bundle purchase (owner only, no tax)", parameters: [idParam("id", "Order id")], responses: { "200": { description: "HTML invoice" }, "404": { description: "Not found" } } },
+  },
+  "/cron/lms-emails": {
+    get: { tags: ["Courses"], summary: "Scheduled job: drip-unlock emails. Idempotent and throttled to once per hour", security: [], responses: res() },
+  },
+
+  /* admin */
+  "/admin/courses": {
+    get: adminOp("List courses", { responses: res({ "403": "Admin only" }) }),
+    post: adminOp("Create a draft course", { requestBody: body({ title: { type: "string" } }, ["title"]), responses: res({ "201": "Created" }) }),
+  },
+  "/admin/courses/{id}": {
+    get: adminOp("Course with sections and lessons", { parameters: [idParam()], responses: res({ "404": "Not found" }) }),
+    patch: adminOp("Update a course; publishing needs a lesson and a price (or free)", {
+      parameters: [idParam()],
+      requestBody: body({
+        title: { type: "string" },
+        priceInr: { type: "integer" },
+        isFree: { type: "boolean" },
+        includedInPlans: { type: "array", items: { type: "string", enum: ["go", "plus"] } },
+        status: { type: "string", enum: ["draft", "published", "archived"] },
+      }),
+      responses: res({ "400": "Validation error", "409": "Slug in use" }),
+    }),
+    delete: adminOp("Delete a course with no learners, orders or certificates", { parameters: [idParam()], responses: res({ "409": "Has learners, orders or certificates" }) }),
+  },
+  "/admin/courses/{id}/sections": { post: adminOp("Add a section", { parameters: [idParam()], requestBody: body({ title: { type: "string" } }, ["title"]), responses: res({ "201": "Created" }) }) },
+  "/admin/courses/{id}/sections/{sectionId}": {
+    patch: adminOp("Rename a section", { parameters: [idParam(), idParam("sectionId")], requestBody: body({ title: { type: "string" } }, ["title"]), responses: res() }),
+    delete: adminOp("Delete a section and its lessons", { parameters: [idParam(), idParam("sectionId")], responses: res() }),
+  },
+  "/admin/courses/{id}/lessons": {
+    post: adminOp("Add a lesson (video via Google Drive link, text, coding problem or quiz)", {
+      parameters: [idParam()],
+      requestBody: body({
+        sectionId: uuid,
+        title: { type: "string" },
+        kind: { type: "string", enum: ["video", "text", "problem", "quiz"] },
+        videoUrl: { type: "string" },
+        problemSlug: { type: "string" },
+        gateNext: { type: "boolean" },
+      }, ["sectionId", "title"]),
+      responses: res({ "201": "Created", "400": "Invalid link or problem" }),
+    }),
+    put: adminOp("Bulk-import lessons from Drive links (all or nothing)", {
+      parameters: [idParam()],
+      requestBody: body({ sectionId: uuid, entries: { type: "array", items: { type: "string", description: "`link` or `Title | link`" } } }, ["sectionId", "entries"]),
+      responses: res({ "201": "Created", "400": "A line is not a valid Drive file link" }),
+    }),
+  },
+  "/admin/courses/{id}/lessons/{lessonId}": {
+    patch: adminOp("Update or move a lesson", {
+      parameters: [idParam(), idParam("lessonId")],
+      requestBody: body({ title: { type: "string" }, isFreePreview: { type: "boolean" }, dripDays: { type: "integer", nullable: true } }),
+      responses: res(),
+    }),
+    delete: adminOp("Delete a lesson", { parameters: [idParam(), idParam("lessonId")], responses: res() }),
+  },
+  "/admin/courses/{id}/lessons/{lessonId}/quiz": {
+    get: adminOp("Read a quiz including correct answers", { parameters: [idParam(), idParam("lessonId")], responses: res({ "404": "Not found" }) }),
+    put: adminOp("Replace a quiz's questions and pass mark", {
+      parameters: [idParam(), idParam("lessonId")],
+      requestBody: body({
+        passPercent: { type: "integer" },
+        questions: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              prompt: { type: "string" },
+              options: { type: "array", items: { type: "string" } },
+              correctIndex: { type: "integer" },
+              explanation: { type: "string", nullable: true },
+            },
+          },
+        },
+      }, ["passPercent", "questions"]),
+      responses: res({ "400": "Invalid quiz" }),
+    }),
+  },
+  "/admin/courses/{id}/reorder": {
+    post: adminOp("Reorder sections or lessons", {
+      parameters: [idParam()],
+      requestBody: body({ type: { type: "string", enum: ["sections", "lessons"] }, sectionId: uuid, ids: { type: "array", items: uuid } }, ["type", "ids"]),
+      responses: res({ "400": "Order does not match current items" }),
+    }),
+  },
+  "/admin/courses/{id}/enrollments": {
+    get: adminOp("Enrolled learners", { parameters: [idParam()], responses: res() }),
+    post: adminOp("Grant a learner access", { parameters: [idParam()], requestBody: body({ userId: uuid }, ["userId"]), responses: res({ "201": "Granted", "404": "User not found" }) }),
+    delete: adminOp("Revoke access", { parameters: [idParam(), { name: "userId", in: "query", required: true, schema: uuid }], responses: res({ "404": "Not enrolled" }) }),
+  },
+  "/admin/courses/{id}/reviews": { get: adminOp("All reviews for a course, including hidden ones", { parameters: [idParam()], responses: res() }) },
+  "/admin/courses/thumbnail": {
+    post: adminOp("Upload a course or instructor image (PNG/JPEG/WebP, max 4 MB)", {
+      requestBody: { required: true, content: { "multipart/form-data": { schema: { type: "object", properties: { file: { type: "string", format: "binary" } } } } } },
+      responses: res({ "415": "Unsupported type" }),
+    }),
+  },
+  "/admin/reviews/{id}": { patch: adminOp("Hide or restore a review", { parameters: [idParam()], requestBody: body({ status: { type: "string", enum: ["visible", "hidden"] } }, ["status"]), responses: res() }) },
+  "/admin/orders": { get: adminOp("Course and bundle orders, newest first", { responses: res() }) },
+  "/admin/orders/{id}/refund": {
+    post: adminOp("Refund an order via Razorpay and remove the access it granted. Safe to repeat", { parameters: [idParam()], responses: res({ "409": "Order not paid", "502": "Razorpay refused the refund" }) }),
+  },
+  "/admin/bundles": {
+    get: adminOp("List bundles", { responses: res() }),
+    post: adminOp("Create a draft bundle", { requestBody: body({ title: { type: "string" } }, ["title"]), responses: res({ "201": "Created" }) }),
+  },
+  "/admin/bundles/{id}": {
+    get: adminOp("One bundle with its courses", { parameters: [idParam()], responses: res({ "404": "Not found" }) }),
+    patch: adminOp("Update a bundle; publishing needs 2+ published courses and a price", {
+      parameters: [idParam()],
+      requestBody: body({
+        title: { type: "string" },
+        priceInr: { type: "integer" },
+        courseIds: { type: "array", items: uuid },
+        status: { type: "string", enum: ["draft", "published", "archived"] },
+      }),
+      responses: res({ "400": "Validation error" }),
+    }),
+    delete: adminOp("Delete a bundle with no orders", { parameters: [idParam()], responses: res({ "409": "Has orders" }) }),
+  },
+  "/admin/analytics": {
+    get: adminOp("Revenue, enrolments, completions and per-course stats", {
+      parameters: [{ name: "days", in: "query", schema: { type: "integer", enum: [7, 30, 90, 365], default: 30 } }],
+      responses: res(),
+    }),
+  },
+  "/admin/analytics/courses/{id}": { get: adminOp("Lesson-by-lesson completion funnel for a course", { parameters: [idParam()], responses: res({ "404": "Not found" }) }) },
+};
+
 export const openApiSpec: Record<string, any> = {
   openapi: "3.0.3",
   info: {
@@ -62,6 +284,7 @@ export const openApiSpec: Record<string, any> = {
     { name: "Account", description: "Account management" },
     { name: "Blog", description: "AI-generated feature blog" },
     { name: "Careers", description: "Open roles and applications" },
+    { name: "Courses", description: "Learn mode: checkout, progress, quizzes, reviews, notes and Q&A. Available when the LMS is enabled (404 otherwise)" },
     { name: "Admin", description: "Admin-only endpoints (role: admin)" },
   ],
   components: {
@@ -2241,5 +2464,6 @@ export const openApiSpec: Record<string, any> = {
         responses: { "200": { description: "Saved; feature-access cache revalidated" }, "403": { description: "Admin only" } },
       },
     },
+    ...lmsPaths,
   },
 };
