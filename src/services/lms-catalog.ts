@@ -150,6 +150,13 @@ export async function listPublishedCourses(
   };
 }
 
+/** How many published courses are included with at least one subscription plan. */
+export async function countPlanIncludedCourses(): Promise<number> {
+  const { data, error } = await supabaseAdmin().from("courses").select("included_in_plans").eq("status", "published");
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as { included_in_plans: string[] | null }[]).filter((c) => (c.included_in_plans ?? []).length > 0).length;
+}
+
 /** Published course slugs + last-modified, for the sitemap. */
 export async function listPublishedCourseSlugs(): Promise<{ slug: string; updatedAt: Date }[]> {
   const { data, error } = await supabaseAdmin().from("courses").select("slug,updated_at").eq("status", "published");

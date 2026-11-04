@@ -3,6 +3,9 @@ import { DOC_ARTICLES, DOC_CATEGORIES } from "@/content/docs";
 import { APP_NAME, APP_DESCRIPTION } from "@/lib/constants";
 import { FOUNDER } from "@/lib/founder";
 import { listPublishedPosts } from "@/services/blog-store";
+import { lmsEnabled } from "@/lib/lms/flag";
+import { listPublishedCourses } from "@/services/lms-catalog";
+import { COURSE_REFUND_DAYS } from "@/lib/lms/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +27,27 @@ export async function GET() {
   });
 
   // Latest published blog posts (best-effort; never break llms.txt on DB error).
+  // Published courses (only while the LMS is on; best-effort like the blog list).
+  let courseSection = "";
+  if (lmsEnabled()) {
+    try {
+      const { items } = await listPublishedCourses({ limit: 48 });
+      if (items.length) {
+        courseSection = `## Courses
+
+${APP_NAME} sells video courses with lessons, coding-problem exercises, quizzes, progress tracking and verifiable completion certificates. Some courses are included with the Go and Plus plans, and bundles are available. Refunds are available for ${COURSE_REFUND_DAYS} days after purchase; prices include no extra taxes or fees. Catalogue: ${base}/courses
+
+${items.map((c) => `- [${c.title}](${base}/courses/${c.slug})${c.subtitle ? `: ${c.subtitle}` : ""}`).join("\n")}
+
+---
+
+`;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   let blogLines: string[] = [];
   try {
     const posts = await listPublishedPosts(100);
@@ -187,7 +211,7 @@ ${docLines.join("\n")}
 
 ---
 
-## Blog Posts
+${courseSection}## Blog Posts
 
 ${blogLines.length ? blogLines.join("\n") : `See all posts at ${base}/blog`}
 

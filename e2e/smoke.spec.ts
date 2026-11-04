@@ -16,7 +16,8 @@ test.describe("public pages smoke", () => {
     await expect(page.getByLabel("Email")).toBeVisible();
     // exact:true so this matches the password field, not the "Show password" toggle
     await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
+    // exact: the page also has a "Sign in with a passkey" button
+    await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
   });
 
   test("register page renders the signup form", async ({ page }) => {

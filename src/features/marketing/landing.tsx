@@ -32,7 +32,10 @@ import { Logo } from "@/components/shared/logo";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { DifficultyBadge } from "@/components/shared/difficulty-badge";
 import { APP_NAME, APP_VERSION, LANGUAGES } from "@/lib/constants";
-import { FAQS } from "./faqs";
+import { FAQS, type Faq } from "./faqs";
+import { LEARN_FEATURES, LEARN_STEPS, type LandingLearn } from "./lms-content";
+import { formatPrice } from "@/lib/plans";
+import { formatDuration } from "@/lib/lms/format";
 import {
   SiJavascript,
   SiTypescript,
@@ -435,7 +438,9 @@ function FloatChip({ className, children, delay = 0 }: { className?: string; chi
 
 /* ── page ─────────────────────────────────────────────────────────── */
 
-export function Landing({ problems, totalProblems, featuresByPlan, paymentsEnabled }: { problems: LandingProblem[]; totalProblems: number; featuresByPlan?: Record<"free" | "go" | "plus", { text: string; included: boolean }[]>; paymentsEnabled?: boolean }) {
+export function Landing({ problems, totalProblems, featuresByPlan, paymentsEnabled, learn, extraFaqs = [] }: { problems: LandingProblem[]; totalProblems: number; featuresByPlan?: Record<"free" | "go" | "plus", { text: string; included: boolean }[]>; paymentsEnabled?: boolean; learn?: LandingLearn; extraFaqs?: Faq[] }) {
+  const faqs = [...FAQS, ...extraFaqs];
+  const navItems = learn ? ([...NAV.slice(0, 3), ["Courses", "#learn"], ...NAV.slice(3)] as readonly (readonly [string, string])[]) : NAV;
   // Read auth on the client so the page itself can be statically rendered (no
   // per-request server work) — the header CTA hydrates to the right state.
   const { data: session } = useSession();
@@ -522,7 +527,7 @@ export function Landing({ problems, totalProblems, featuresByPlan, paymentsEnabl
         <div className={cn("mx-auto flex h-14 max-w-5xl items-center justify-between rounded-2xl px-3 sm:px-5", glass, "bg-white/80 dark:bg-[#0a0e1a]/70")}>
           <Logo />
           <nav className={cn("hidden items-center gap-6 text-sm md:flex", inkSub)}>
-            {NAV.map(([label, href]) => (
+            {navItems.map(([label, href]) => (
               <a key={label} href={href} onClick={navClick} className="transition-colors hover:text-neutral-900 dark:hover:text-white">
                 {label}
               </a>
@@ -561,7 +566,7 @@ export function Landing({ problems, totalProblems, featuresByPlan, paymentsEnabl
               className={cn("mx-auto mt-2 max-w-5xl overflow-hidden rounded-2xl md:hidden", glass, "bg-white/90 dark:bg-[#0a0e1a]/90")}
             >
               <nav className="flex flex-col gap-1 p-3">
-                {NAV.map(([label, href]) => (
+                {navItems.map(([label, href]) => (
                   <a key={label} href={href} onClick={navClick} className={cn("rounded-xl px-3 py-2.5 text-sm", inkSub, hoverRow)}>{label}</a>
                 ))}
               </nav>
@@ -819,6 +824,90 @@ export function Landing({ problems, totalProblems, featuresByPlan, paymentsEnabl
           </div>
         </section>
 
+        {/* ── COURSES ───────────────────────────────────────────────── */}
+        {learn && (
+          <section id="learn" className={cn("border-t py-16 sm:py-24", lineCls)}>
+            <SectionHead
+              eyebrow="COURSES"
+              title="Learn with real courses, then practise on real problems"
+              sub="Video lessons, coding exercises, quizzes and certificates — in the same workspace you already practise in."
+            />
+            <div className="mx-auto mt-12 max-w-6xl px-4 sm:px-6">
+              <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {LEARN_STEPS.map((step, i) => (
+                  <Reveal key={step.title} delay={i * 0.05}>
+                    <li className={cn(glassCard, "h-full list-none p-5")}>
+                      <span className="flex size-8 items-center justify-center rounded-full text-sm font-semibold text-white" style={{ background: ACCENT }}>{i + 1}</span>
+                      <h3 className={cn("mt-3 font-semibold", inkHead)}>{step.title}</h3>
+                      <p className={cn("mt-1 text-sm", inkSub)}>{step.desc}</p>
+                    </li>
+                  </Reveal>
+                ))}
+              </ol>
+
+              {learn.courses.length > 0 && (
+                <div className="mt-12">
+                  <div className="flex flex-wrap items-end justify-between gap-3">
+                    <h3 className={cn("text-xl font-semibold tracking-tight", inkHead)}>Start with a course</h3>
+                    <Link href="/courses" className="text-sm font-medium" style={{ color: ACCENT }}>
+                      Browse all {learn.total} {learn.total === 1 ? "course" : "courses"} <ArrowRight className="ml-0.5 inline size-3.5" />
+                    </Link>
+                  </div>
+                  <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    {learn.courses.map((c, i) => (
+                      <Reveal key={c.slug} delay={(i % 3) * 0.05}>
+                        <Link href={`/courses/${c.slug}`} className={cn(glassCard, "group flex h-full flex-col overflow-hidden transition-colors hover:border-[#006bff]/40")}>
+                          <div className="aspect-video w-full bg-black/[0.04] dark:bg-white/[0.04]">
+                            {c.thumbnailUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={c.thumbnailUrl} alt="" loading="lazy" className="size-full object-cover" />
+                            ) : (
+                              <div className={cn("flex size-full items-center justify-center", inkFaint)}><GraduationCap className="size-10" /></div>
+                            )}
+                          </div>
+                          <div className="flex flex-1 flex-col gap-1.5 p-4">
+                            {c.level && <span className={cn("text-xs", inkFaint)}>{c.level}</span>}
+                            <h4 className={cn("line-clamp-2 font-semibold leading-snug", inkHead)}>{c.title}</h4>
+                            {c.subtitle && <p className={cn("line-clamp-2 text-sm", inkSub)}>{c.subtitle}</p>}
+                            <div className={cn("mt-auto flex flex-wrap items-center gap-x-3 pt-2 text-xs", inkFaint)}>
+                              {c.ratingCount > 0 && c.ratingAvg != null && <span className="flex items-center gap-1"><Star className="size-3 text-amber-500" /> {c.ratingAvg.toFixed(1)} ({c.ratingCount})</span>}
+                              {c.lessonCount > 0 && <span>{c.lessonCount} lessons</span>}
+                              {c.durationS > 0 && <span>{formatDuration(c.durationS)}</span>}
+                            </div>
+                            <p className={cn("text-base font-bold", inkHead)}>{formatPrice(c.priceInr)}</p>
+                          </div>
+                        </Link>
+                      </Reveal>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {LEARN_FEATURES.map((f, i) => (
+                  <Reveal key={f.title} delay={(i % 4) * 0.04}>
+                    <div className={cn(glassCard, "h-full p-5")}>
+                      <span className={cn("flex size-10 items-center justify-center rounded-xl", glass)}><f.icon className="size-5" style={{ color: ACCENT }} /></span>
+                      <h3 className={cn("mt-3 font-semibold", inkHead)}>{f.title}</h3>
+                      <p className={cn("mt-1 text-sm", inkSub)}>{f.desc}</p>
+                    </div>
+                  </Reveal>
+                ))}
+              </div>
+
+              {(learn.hasPlanIncluded || learn.hasBundles) && (
+                <p className={cn("mt-8 text-center text-sm", inkSub)}>
+                  {learn.hasPlanIncluded && "Some courses are included with the Go and Plus plans. "}
+                  {learn.hasBundles && "Save more with course bundles."}
+                </p>
+              )}
+              <div className="mt-8 flex justify-center">
+                <Button asChild size="lg"><Link href="/courses">Explore courses <ArrowRight className="size-4" /></Link></Button>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* ── AI SUITE ──────────────────────────────────────────────── */}
         <section id="ai" className={cn("border-t py-16 sm:py-24", lineCls)}>
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -953,7 +1042,7 @@ export function Landing({ problems, totalProblems, featuresByPlan, paymentsEnabl
           <div className="mx-auto max-w-3xl px-4 sm:px-6">
             <SectionHead eyebrow="FAQ" title="Frequently asked" />
             <div className="mt-12 space-y-2.5">
-              {FAQS.map((faq, i) => (
+              {faqs.map((faq, i) => (
                 <div key={faq.q} className={cn(glassCard, "overflow-hidden")}>
                   <button
                     onClick={() => setOpenFaq(openFaq === i ? null : i)}

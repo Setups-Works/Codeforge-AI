@@ -16,8 +16,8 @@ decisions). We build **one phase at a time**; each phase ships behind
 | 7 | Engagement | Reviews, Q&A, notes, certificates | ✅ committed and deployed |
 | 8 | Practice integration | Problem lessons, quizzes, AI mentor, XP | ✅ committed; migration applied, live-DB verified |
 | 9 | Growth & commerce | Course coupons, bundles, referrals, emails | ✅ pushed; migrations 0020 + 0021 applied, live-DB verified |
-| 10 | Analytics & hardening | Admin analytics, refunds, invoices, video host upgrade, tests | 🟡 refunds + analytics built; E2E, host upgrade not started |
-| 11 | Landing page | Home page showcases the full LMS (after all phases) | ⬜ |
+| 10 | Analytics & hardening | Admin analytics, refunds, invoices, video host upgrade, tests | 🟡 refunds, analytics, E2E built; host upgrade not started |
+| 11 | Landing page | Home page showcases the full LMS (after all phases) | ✅ built (shows only while the LMS flag is on and a course exists) |
 
 ---
 
@@ -322,7 +322,15 @@ orders, new enrolments, completions, active learners (7d), certificates for 7/30
 learners, completion rate, net revenue and rating; click a course for a lesson-by-lesson completion
 funnel with drop-off (drops of 20+ points highlighted). Maths in `lib/lms/analytics.ts` (tested);
 live-DB verified. Bundle sales are not attributed to individual courses.
-**Not started:** Playwright E2E, host upgrade, coupon-redemption reversal on refund.
+**E2E** (`e2e/lms.spec.ts`, 14 tests, passing): seeds a published and a draft course through the
+Supabase REST API, then as an anonymous browser checks the catalogue and search, the course page
+(curriculum, price, sign-in CTA, `Course` JSON-LD, no Drive id in the HTML), the sign-in return URL,
+drafts hidden, learn pages redirecting to login, learner/admin APIs returning 401, invite cookie
+handling, noindex certificate 404s, the sitemap, `llms.txt` and the landing Courses section;
+cleans up afterwards. Run locally with `E2E_PORT=3120 E2E_CHROME=1 npx playwright test` (own dev
+server on its own port, installed Chrome). Signed-in flows (checkout, player, quizzes) are covered
+by service-level tests, not the browser, since they need real credentials.
+**Not started:** host upgrade, coupon-redemption reversal on refund.
 
 **Done when:** E2E green in CI, refunds verified in test mode, host-upgrade path
 proven with one course.
